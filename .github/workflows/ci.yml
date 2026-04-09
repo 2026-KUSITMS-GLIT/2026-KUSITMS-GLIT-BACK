@@ -5,13 +5,17 @@ on:
     branches:
       - dev
       - master
+  pull_request:
+    branches:
+      - dev
+      - master
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,6 +35,7 @@ jobs:
         run: ./gradlew build -x test
 
       - name: Set Role ARN by branch
+        if: github.event_name == 'push'
         run: |
           if [ "${{ github.ref }}" == "refs/heads/dev" ]; then
             echo "ROLE_ARN=arn:aws:iam::092504162781:role/gh-actions-deploy-stg" >> $GITHUB_ENV
@@ -39,16 +44,19 @@ jobs:
           fi
 
       - name: Configure AWS credentials (OIDC)
+        if: github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.ROLE_ARN }}
           aws-region: ap-northeast-2
 
       - name: Login to Amazon ECR
+        if: github.event_name == 'push'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push Docker image
+        if: github.event_name == 'push'
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: groute-ecr
