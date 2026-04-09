@@ -27,6 +27,7 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: 'gradle'
 
       - name: Gradle 실행 권한 부여
         run: chmod +x ./gradlew
@@ -34,13 +35,17 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build -x test
 
+      - name: Docker 이미지 빌드 검증 (PR용)
+        if: github.event_name == 'pull_request'
+        run: docker build -t test-image .
+
       - name: Set Role ARN by branch
         if: github.event_name == 'push'
         run: |
           if [ "${{ github.ref }}" == "refs/heads/dev" ]; then
-            echo "ROLE_ARN=arn:aws:iam::092504162781:role/gh-actions-deploy-stg" >> $GITHUB_ENV
+            echo "ROLE_ARN=${{ secrets.STG_ROLE_ARN }}" >> $GITHUB_ENV
           else
-            echo "ROLE_ARN=arn:aws:iam::092504162781:role/gh-actions-deploy-prod" >> $GITHUB_ENV
+            echo "ROLE_ARN=${{ secrets.PROD_ROLE_ARN }}" >> $GITHUB_ENV
           fi
 
       - name: Configure AWS credentials (OIDC)
