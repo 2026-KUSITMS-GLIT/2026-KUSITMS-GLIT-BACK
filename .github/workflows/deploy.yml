@@ -1,0 +1,116 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI - Build & Push to ECR"]
+    types:
+      - completed
+    branches:
+      - dev
+      - master
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 환경 설정 (브랜치 → stg/prod)
+        run: |
+          if [ "${{ github.event.workflow_run.head_branch }}" = "dev" ]; then
+            echo "DEPLOY_ENV=stg"                         >> $GITHUB_ENV
+            echo "ROLE_ARN=${{ secrets.STG_ROLE_ARN }}"  >> $GITHUB_ENV
+            echo "SSM_PATH=/groute/stg"                   >> $GITHUB_ENV
+          else
+            echo "DEPLOY_ENV=prod"                        >> $GITHUB_ENV
+            echo "ROLE_ARN=${{ secrets.PROD_ROLE_ARN }}" >> $GITHUB_ENV
+            echo "SSM_PATH=/groute/prod"                  >> $GITHUB_ENV
+          fi
+          echo "IMAGE_TAG=sha-${{ github.event.workflow_run.head_sha }}" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ap-northeast-2
+
+      - name: ECR 이미지 URI 구성
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.ap-northeast-2.amazonaws.com"
+          echo "ECR_REGISTRY=${ECR_REGISTRY}"                               >> $GITHUB_ENV
+          echo "FULL_IMAGE=${ECR_REGISTRY}/groute-ecr:${IMAGE_TAG}"         >> $GITHUB_ENV
+
+      - name: SSM SendCommand로 EC2 배포
+        run: |
+          # shell 변수와 jq 변수 충돌 방지를 위해 파일로 분리
+          cat << 'JQ_EOF' > /tmp/jq-deploy.jq
+          {
+            Targets: [{ Key: "tag:Env", Values: [$env_val] }],
+            DocumentName: "AWS-RunShellScript",
+            Parameters: {
+              commands: [
+                "set -e",
+                ("aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin " + $reg),
+                "docker stop groute-server 2>/dev/null || true",
+                "docker rm   groute-server 2>/dev/null || true",
+                ("docker pull " + $image),
+                ("aws ssm get-parameters-by-path --region ap-northeast-2 --path " + $ssmpath + " --recursive --with-decryption --query 'Parameters[*].[Name,Value]' --output text | awk -F'\\t' '{n=$1; sub(/.*\\//, \"\", n); print n\"=\"$2}' > /tmp/groute.env"),
+                ("docker run -d --name groute-server --restart unless-stopped --env-file /tmp/groute.env -e SPRING_PROFILES_ACTIVE=" + $env_val + " -p 8080:8080 " + $image),
+                "rm -f /tmp/groute.env"
+              ]
+            },
+            TimeoutSeconds: 300
+          }
+          JQ_EOF
+
+          jq -n \
+            --arg env_val "$DEPLOY_ENV" \
+            --arg reg     "$ECR_REGISTRY" \
+            --arg image   "$FULL_IMAGE" \
+            --arg ssmpath "$SSM_PATH" \
+            -f /tmp/jq-deploy.jq > /tmp/ssm-input.json
+
+          COMMAND_ID=$(aws ssm send-command \
+            --region ap-northeast-2 \
+            --cli-input-json file:///tmp/ssm-input.json \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM Command ID: $COMMAND_ID"
+          echo "COMMAND_ID=$COMMAND_ID" >> $GITHUB_ENV
+
+      - name: 배포 결과 확인 (최대 5분 대기)
+        run: |
+          for i in $(seq 1 20); do
+            STATUS=$(aws ssm list-command-invocations \
+              --region ap-northeast-2 \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" \
+              --output text 2>/dev/null || echo "Pending")
+            echo "[$i/20] $STATUS"
+            case "$STATUS" in
+              Success)
+                echo "배포 완료: $FULL_IMAGE"
+                exit 0
+                ;;
+              Failed|Cancelled|TimedOut|DeliveryTimedOut)
+                echo "배포 실패: $STATUS"
+                aws ssm list-command-invocations \
+                  --region ap-northeast-2 \
+                  --command-id "$COMMAND_ID" \
+                  --details \
+                  --query "CommandInvocations[0].CommandPlugins[0].Output" \
+                  --output text
+                exit 1
+                ;;
+            esac
+            sleep 15
+          done
+          echo "배포 타임아웃 (5분)"
+          exit 1
