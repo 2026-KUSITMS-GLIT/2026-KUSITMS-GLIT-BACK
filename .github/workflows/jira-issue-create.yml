@@ -63,7 +63,7 @@ jobs:
           AUTH=$(echo -n "$JIRA_USER_EMAIL:$JIRA_API_TOKEN" | base64 -w 0)
 
           PAYLOAD=$(jq -n \
-            --arg summary    "$GH_ISSUE_TITLE" \
+            --arg summary    "[백] $GH_ISSUE_TITLE" \
             --arg itype      "$GH_ISSUE_TYPE" \
             --arg gh_url     "$GH_ISSUE_URL" \
             --arg author     "$GH_ISSUE_AUTHOR" \
@@ -128,8 +128,8 @@ jobs:
           BRANCH="${{ steps.meta.outputs.branch_prefix }}/${JIRA_KEY}-${{ steps.meta.outputs.slug }}"
           echo "branch_name=$BRANCH" >> "$GITHUB_OUTPUT"
 
-          # 기본 브랜치(main)의 최신 SHA 조회
-          SHA=$(gh api "repos/${{ github.repository }}/git/ref/heads/main" --jq '.object.sha')
+          # 베이스 브랜치(dev)의 최신 SHA 조회
+          SHA=$(gh api "repos/${{ github.repository }}/git/ref/heads/dev" --jq '.object.sha')
 
           # 브랜치 생성
           gh api \
