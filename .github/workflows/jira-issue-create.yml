@@ -32,14 +32,25 @@ jobs:
           echo "issue_type=$ISSUE_TYPE"   >> "$GITHUB_OUTPUT"
           echo "branch_prefix=$BRANCH_PREFIX" >> "$GITHUB_OUTPUT"
 
-          # 브랜치 슬러그: 컨벤션 접두사(feat:, fix: …) 제거 → 영문/숫자만 남겨 하이픈화
+          # 브랜치 슬러그 결정 우선순위
+          # 1) 제목 끝에 `(english-slug)` 형태로 명시된 영어 슬러그가 있으면 그것을 사용
+          #    예) "feat: 토큰 재발급 API 구현 (token-refresh-api)" → "token-refresh-api"
+          # 2) 없으면 기존 파이프라인으로 제목에서 영문/숫자만 뽑아 하이픈화
           SLUG=$(echo "$ISSUE_TITLE" \
-            | sed 's/^[a-zA-Z]*:[[:space:]]*//' \
-            | tr '[:upper:]' '[:lower:]' \
-            | sed 's/[^a-z0-9]/-/g' \
-            | sed 's/-\+/-/g' \
-            | sed 's/^-\|-$//g' \
+            | grep -oE '\([a-z0-9][a-z0-9-]*\)[[:space:]]*$' \
+            | tr -d '() ' \
             | cut -c1-40)
+
+          if [ -z "$SLUG" ]; then
+            # 컨벤션 접두사(feat:, fix: …) 제거 → 영문/숫자만 남겨 하이픈화
+            SLUG=$(echo "$ISSUE_TITLE" \
+              | sed 's/^[a-zA-Z]*:[[:space:]]*//' \
+              | tr '[:upper:]' '[:lower:]' \
+              | sed 's/[^a-z0-9]/-/g' \
+              | sed 's/-\+/-/g' \
+              | sed 's/^-\|-$//g' \
+              | cut -c1-40)
+          fi
 
           # 슬러그가 비거나 하이픈만 남으면 이슈 번호로 대체
           if [ -z "$(echo "$SLUG" | tr -d '-')" ]; then
