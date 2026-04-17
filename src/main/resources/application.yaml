@@ -78,6 +78,11 @@ springdoc:
     path: /v3/api-docs
     enabled: true
 
+app:
+  swagger:
+    server-url: http://localhost:8080
+    server-description: Local
+
 ---
 # ===== 로컬 개발 환경 =====
 spring:
@@ -110,6 +115,11 @@ spring:
   flyway:
     baseline-on-migrate: false
 
+app:
+  swagger:
+    server-url: https://stg.api.glit.today
+    server-description: Staging
+
 logging:
   level:
     com.groute: INFO
@@ -133,6 +143,11 @@ springdoc:
     enabled: false
   api-docs:
     enabled: false
+
+app:
+  swagger:
+    server-url: https://api.glit.today
+    server-description: Production
 
 logging:
   level:
