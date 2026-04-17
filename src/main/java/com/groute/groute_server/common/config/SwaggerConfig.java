@@ -6,7 +6,9 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,6 +22,12 @@ import org.springframework.context.annotation.Configuration;
 )
 public class SwaggerConfig {
 
+    @Value("${app.swagger.server-url}")
+    private String serverUrl;
+
+    @Value("${app.swagger.server-description}")
+    private String serverDescription;
+
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
@@ -27,7 +35,8 @@ public class SwaggerConfig {
                         .title("GLIT API")
                         .description("GLIT 백엔드 API 문서")
                         .version("v1.0.0"))
-                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
+                .addServersItem(new Server().url(serverUrl).description(serverDescription));
     }
 
     @Bean
