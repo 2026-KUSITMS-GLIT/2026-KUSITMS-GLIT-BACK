@@ -5,6 +5,7 @@
 - `1. Workflow 개요` — 전체적인 워크플로우 이해용
 - `2. Git Convention` — 실제 작업 시 컨벤션 확인용
 - `3. 프로젝트 폴더 구조` — 아키텍처 기반 디렉터리 규칙
+- `4. Swagger 작성 가이드` — API 작업 시 Swagger 어노테이션 규칙
 
 ---
 
@@ -253,3 +254,67 @@ src/main/java/com/groute/groute_server/
 - 단순 CRUD 성격 → **Layered** 구조로 추가
 - 외부 의존성이 다수이거나 도메인 규칙이 복잡 → **Hexagonal** 구조로 추가
 - 구조 결정이 모호할 경우 PR 전에 팀 내 논의를 거쳐 결정합니다.
+
+---
+
+## 4. Swagger 작성 가이드
+
+API 작업 시 프론트엔드가 Swagger UI에서 스펙을 바로 확인할 수 있도록 아래 어노테이션을 반드시 작성합니다.
+
+> **자동으로 처리되는 것** (직접 설정 불필요)
+> - 도메인별 그룹화 — `GroupedOpenApi`가 패키지 기준으로 자동 분리
+> - JWT 인증 — 글로벌 `@SecurityScheme` 적용 완료
+> - 서버 URL — 환경별(local/stg/prod) 자동 적용
+
+### 4.1 Controller 레벨
+
+| 어노테이션 | 용도 |
+| --- | --- |
+| `@Tag(name = "...", description = "...")` | 컨트롤러 그룹 이름 및 설명. Swagger UI에서 그룹 제목으로 표시 |
+
+```java
+@Tag(name = "회원", description = "온보딩·마이페이지 API")
+@RestController
+@RequestMapping("/api/v1/users")
+public class UserController { }
+```
+
+### 4.2 엔드포인트 레벨
+
+| 어노테이션 | 용도 |
+| --- | --- |
+| `@Operation(summary = "...", description = "...")` | API 한 줄 요약 + 상세 설명 |
+| `@ApiResponse(responseCode = "...", description = "...")` | 응답 코드별 설명 |
+
+```java
+@Operation(summary = "닉네임 변경", description = "마이페이지에서 닉네임을 변경합니다.")
+@ApiResponse(responseCode = "200", description = "변경 성공")
+@ApiResponse(responseCode = "400", description = "유효하지 않은 닉네임")
+@PutMapping("/nickname")
+public ApiResponse<Void> updateNickname(...) { }
+```
+
+**인증이 불필요한 엔드포인트**의 경우에만 `@SecurityRequirement`를 빈 값으로 설정하여 글로벌 인증을 제외합니다.
+
+```java
+@Operation(summary = "소셜 로그인")
+@SecurityRequirement(name = "")
+@PostMapping("/auth/login")
+public ApiResponse<LoginResponse> login(...) { }
+```
+
+### 4.3 DTO 레벨
+
+| 어노테이션 | 용도 |
+| --- | --- |
+| `@Schema(description = "...", example = "...")` | 필드 설명 + 예시값 |
+
+```java
+public record CreateUserRequest(
+        @Schema(description = "닉네임", example = "겨레")
+        String nickname,
+
+        @Schema(description = "직군", example = "DEVELOPER")
+        String jobGroup
+) { }
+```
