@@ -1,6 +1,7 @@
 package com.groute.groute_server.common.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,9 +30,16 @@ import lombok.Getter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
 
+    @Schema(description = "요청 성공 여부", example = "true")
     private final boolean success;
+
+    @Schema(description = "HTTP 상태 코드", example = "200")
     private final String code;
+
+    @Schema(description = "응답 메시지", example = "조회 성공")
     private final String message;
+
+    @Schema(description = "응답 데이터")
     private final T data;
 
     public static <T> ApiResponse<T> ok(String message, T data) {

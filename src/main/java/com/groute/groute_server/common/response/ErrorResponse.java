@@ -2,9 +2,9 @@ package com.groute.groute_server.common.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.groute.groute_server.common.exception.ErrorCode;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
@@ -23,9 +23,16 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponse {
 
+    @Schema(description = "요청 성공 여부", example = "false")
     private final boolean success;
+
+    @Schema(description = "커스텀 에러 코드", example = "COMMON_001")
     private final String code;
+
+    @Schema(description = "에러 메시지", example = "잘못된 입력값입니다.")
     private final String message;
+
+    @Schema(description = "필드별 상세 에러 목록 (Validation 에러 시)")
     private final List<FieldError> errors;
 
     public static ErrorResponse of(ErrorCode errorCode) {
@@ -44,8 +51,13 @@ public class ErrorResponse {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class FieldError {
 
+        @Schema(description = "에러 발생 필드명", example = "nickname")
         private final String field;
+
+        @Schema(description = "입력된 값", example = "")
         private final String value;
+
+        @Schema(description = "에러 사유", example = "닉네임은 필수입니다.")
         private final String reason;
 
         public static FieldError of(String field, String value, String reason) {
