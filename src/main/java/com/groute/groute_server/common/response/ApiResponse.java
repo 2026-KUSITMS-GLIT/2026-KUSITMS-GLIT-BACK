@@ -5,6 +5,25 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 공통 API 응답 래퍼.
+ *
+ * <p>모든 API 엔드포인트는 이 클래스를 통해 일관된 형식으로 응답을 반환한다.
+ * null 필드는 JSON 직렬화 시 생략된다.</p>
+ *
+ * <pre>{@code
+ * // 데이터 + 메시지
+ * ApiResponse.ok("조회 성공", userDto);
+ *
+ * // 데이터만
+ * ApiResponse.ok(userDto);
+ *
+ * // 메시지만
+ * ApiResponse.ok("삭제 완료");
+ * }</pre>
+ *
+ * @param <T> 응답 데이터 타입
+ */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)

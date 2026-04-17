@@ -9,6 +9,15 @@ import lombok.Getter;
 
 import java.util.List;
 
+/**
+ * 공통 에러 응답 DTO.
+ *
+ * <p>{@code success}는 항상 {@code false}이며, Validation 에러 시
+ * {@code errors} 필드에 필드별 상세 정보가 포함된다.</p>
+ *
+ * @see ErrorCode
+ * @see FieldError
+ */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)

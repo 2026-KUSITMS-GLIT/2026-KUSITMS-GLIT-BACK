@@ -4,6 +4,17 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
+/**
+ * 애플리케이션 에러 코드 정의.
+ *
+ * <p>공통 에러는 {@code COMMON_} 프리픽스를 사용하며,
+ * 도메인별 에러 코드는 각 도메인 패키지에서 추가한다.</p>
+ *
+ * <pre>
+ * // 도메인 에러 코드 추가 예시
+ * USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다."),
+ * </pre>
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {

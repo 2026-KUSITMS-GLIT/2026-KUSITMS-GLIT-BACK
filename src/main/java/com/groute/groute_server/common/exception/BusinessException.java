@@ -2,6 +2,17 @@ package com.groute.groute_server.common.exception;
 
 import lombok.Getter;
 
+/**
+ * 비즈니스 로직 예외의 베이스 클래스.
+ *
+ * <p>도메인 규칙 위반 시 {@link ErrorCode}와 함께 던지면
+ * {@link GlobalExceptionHandler}가 일관된 에러 응답으로 변환한다.</p>
+ *
+ * <pre>{@code
+ * throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+ * throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "게시글을 찾을 수 없습니다.");
+ * }</pre>
+ */
 @Getter
 public class BusinessException extends RuntimeException {
 
