@@ -15,6 +15,11 @@
     - 예) ./gradlew test
     - 예) Postman 컬렉션 실행
 
+### 커버리지 (JaCoCo)
+- 라인 커버리지: __%  (기준: 60% 이상)
+- [ ] `./gradlew test` 실행 후 `build/reports/jacoco/index.html`에서 수치 확인
+- (선택) 리포트 스크린샷 또는 60% 미달/특이사항 공유:
+
 ## 스크린샷/로그 (선택)
 - 필요한 경우 첨부
 
