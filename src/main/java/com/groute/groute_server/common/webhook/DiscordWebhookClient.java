@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Discord 웹훅 전송 클라이언트.
  *
@@ -31,9 +33,9 @@ public class DiscordWebhookClient {
     }
 
     @Async
-    public void send(DiscordEmbed embed) {
+    public CompletableFuture<Void> send(DiscordEmbed embed) {
         if (!isActive()) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
         try {
             restClient.post()
@@ -42,8 +44,10 @@ public class DiscordWebhookClient {
                     .body(DiscordWebhookPayload.of(embed))
                     .retrieve()
                     .toBodilessEntity();
+            return CompletableFuture.completedFuture(null);
         } catch (RestClientException e) {
             log.warn("Discord 웹훅 전송 실패: {}", e.getMessage());
+            return CompletableFuture.failedFuture(e);
         }
     }
 
