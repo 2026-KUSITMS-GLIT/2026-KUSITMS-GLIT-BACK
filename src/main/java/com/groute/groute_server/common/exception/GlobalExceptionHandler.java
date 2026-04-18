@@ -1,7 +1,10 @@
 package com.groute.groute_server.common.exception;
 
 import com.groute.groute_server.common.response.ErrorResponse;
+import com.groute.groute_server.common.webhook.ErrorWebhookNotifier;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -14,11 +17,16 @@ import java.util.List;
 /**
  * 전역 예외 처리기.
  *
- * <p>모든 예외를 {@link ErrorResponse} 형식으로 변환하여 일관된 에러 응답을 보장한다.</p>
+ * <p>모든 예외를 {@link ErrorResponse} 형식으로 변환하여 일관된 에러 응답을 보장한다.
+ * {@link BusinessException} 등 핸들링된 예외는 Discord 웹훅 알림 대상이 아니며,
+ * {@link #handleException} 로 떨어지는 unhandled 500만 {@link ErrorWebhookNotifier}로 알린다.</p>
  */
 @Slf4j
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final ErrorWebhookNotifier errorWebhookNotifier;
 
     @ExceptionHandler(BusinessException.class)
     protected ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
@@ -66,8 +74,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    protected ResponseEntity<ErrorResponse> handleException(Exception e) {
+    protected ResponseEntity<ErrorResponse> handleException(Exception e, HttpServletRequest request) {
         log.error("Unhandled Exception: ", e);
+        errorWebhookNotifier.notifyUnhandledError(e, request);
         return ResponseEntity
                 .internalServerError()
                 .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR));
