@@ -91,6 +91,11 @@ app:
     server-url: http://localhost:8080
     server-description: Local
 
+discord:
+  webhook:
+    enabled: false
+    url: ${DISCORD_WEBHOOK_URL:}
+
 ---
 # ===== 로컬 개발 환경 =====
 spring:
@@ -128,6 +133,11 @@ app:
     server-url: https://stg.api.glit.today
     server-description: Staging
 
+discord:
+  webhook:
+    enabled: true
+    url: ${DISCORD_WEBHOOK_URL}
+
 logging:
   level:
     com.groute: INFO
@@ -156,6 +166,11 @@ app:
   swagger:
     server-url: https://api.glit.today
     server-description: Production
+
+discord:
+  webhook:
+    enabled: true
+    url: ${DISCORD_WEBHOOK_URL}
 
 logging:
   level:
