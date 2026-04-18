@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -25,5 +25,5 @@ public class CoachmarkHistory extends BaseTimeEntity {
     private String coachmarkKey;
 
     @Column(name = "shown_at", nullable = false)
-    private LocalDateTime shownAt;
+    private OffsetDateTime shownAt;
 }

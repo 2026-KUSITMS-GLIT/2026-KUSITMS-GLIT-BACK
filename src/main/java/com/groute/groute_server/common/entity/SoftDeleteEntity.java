@@ -4,7 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * 논리 삭제(Soft Delete) 지원 엔티티 부모 클래스
@@ -17,5 +17,5 @@ public abstract class SoftDeleteEntity extends BaseTimeEntity {
     private boolean isDeleted = false;
 
     @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    private OffsetDateTime deletedAt;
 }
