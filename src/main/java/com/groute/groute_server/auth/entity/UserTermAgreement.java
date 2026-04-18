@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -30,7 +30,7 @@ public class UserTermAgreement extends BaseTimeEntity {
     private boolean agreed;
 
     @Column(name = "agreed_at", nullable = false)
-    private LocalDateTime agreedAt;
+    private OffsetDateTime agreedAt;
 
     @Column(name = "ip_address", length = 45)
     private String ipAddress;

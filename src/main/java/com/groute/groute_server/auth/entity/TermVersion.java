@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -32,7 +32,7 @@ public class TermVersion extends BaseTimeEntity {
     private String contentUrl;
 
     @Column(name = "effective_at", nullable = false)
-    private LocalDateTime effectiveAt;
+    private OffsetDateTime effectiveAt;
 
     @Column(name = "is_required", nullable = false)
     private boolean isRequired;

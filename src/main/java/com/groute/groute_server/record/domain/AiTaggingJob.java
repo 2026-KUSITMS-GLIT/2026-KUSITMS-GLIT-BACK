@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 @Getter
@@ -44,8 +44,8 @@ public class AiTaggingJob extends BaseTimeEntity {
     private String errorMessage;
 
     @Column(name = "started_at")
-    private LocalDateTime startedAt;
+    private OffsetDateTime startedAt;
 
     @Column(name = "finished_at")
-    private LocalDateTime finishedAt;
+    private OffsetDateTime finishedAt;
 }

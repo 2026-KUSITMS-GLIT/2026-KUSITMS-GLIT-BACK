@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -34,8 +34,8 @@ public class User extends SoftDeleteEntity {
     private String brandingTitle;
 
     @Column(name = "last_login_at")
-    private LocalDateTime lastLoginAt;
+    private OffsetDateTime lastLoginAt;
 
     @Column(name = "hard_delete_at")
-    private LocalDateTime hardDeleteAt;
+    private OffsetDateTime hardDeleteAt;
 }

@@ -3,6 +3,9 @@ spring:
   application:
     name: groute-server
 
+  jackson:
+    time-zone: UTC
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/groute_local}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
