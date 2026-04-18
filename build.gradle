@@ -51,3 +51,13 @@ tasks.named('test') {
 	useJUnitPlatform()
 	finalizedBy tasks.named('jacocoTestReport')
 }
+
+tasks.named('jacocoTestReport') {
+	dependsOn tasks.named('test')
+	reports {
+		html.required = true
+		xml.required = false
+		csv.required = false
+		html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
+	}
+}
