@@ -6,6 +6,7 @@
 - `2. Git Convention` — 실제 작업 시 컨벤션 확인용
 - `3. 프로젝트 폴더 구조` — 아키텍처 기반 디렉터리 규칙
 - `4. Swagger 작성 가이드` — API 작업 시 Swagger 어노테이션 규칙
+- `5. 테스트 커버리지 (JaCoCo)` — 테스트/커버리지 기준 및 실행 방법
 
 ---
 
@@ -318,3 +319,40 @@ public record CreateUserRequest(
         String jobGroup
 ) { }
 ```
+
+---
+
+## 5. 테스트 커버리지 (JaCoCo)
+
+서비스 레이어 비즈니스 로직을 중심으로 단위 테스트를 작성하며, 커버리지는 JaCoCo로 측정합니다.
+
+### 5.1 합의된 기준
+
+- **라인 커버리지 60% 이상**
+- 브랜치 커버리지는 현 단계에서 강제하지 않습니다.
+- 기준은 `jacocoTestCoverageVerification`으로 자동 검증되며, 미달 시 로컬 `./gradlew check` 단계에서 빌드가 실패합니다.
+
+### 5.2 실행 방법
+
+| 명령 | 용도 |
+| --- | --- |
+| `./gradlew test` | 테스트 실행 + HTML 리포트 생성 (`finalizedBy`로 자동) |
+| `./gradlew check` | 위 + 커버리지 기준(60%) 검증까지 수행. PR 올리기 전 권장 |
+
+리포트 경로: `build/reports/jacoco/index.html`
+
+### 5.3 커버리지 측정 제외 패키지
+
+로직이 거의 없거나 자동 생성되는 클래스는 커버리지 지표에서 제외됩니다.
+
+- `**/*Application*` — Spring Boot 엔트리 클래스
+- `**/dto/**`, `**/response/**` — 요청/응답 DTO 및 래퍼
+- `**/config/**` — 설정 클래스
+- `**/exception/**` — 예외/에러코드 정의
+- `**/Q*.class` — QueryDSL 자동 생성 클래스
+
+새 패키지 추가 또는 제외 정책 변경이 필요하면 `build.gradle`의 `jacocoExcludes`를 수정하고 팀에 공유합니다.
+
+### 5.4 PR 연동
+
+PR 템플릿의 **`커버리지 (JaCoCo)`** 섹션에 라인 커버리지 수치를 기입합니다. 자세한 체크리스트는 `.github/pull_request_template.md` 참조.
