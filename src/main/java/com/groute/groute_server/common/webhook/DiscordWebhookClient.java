@@ -1,8 +1,10 @@
 package com.groute.groute_server.common.webhook;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -27,9 +29,9 @@ public class DiscordWebhookClient {
     private final DiscordWebhookProperties properties;
     private final RestClient restClient;
 
-    public DiscordWebhookClient(DiscordWebhookProperties properties) {
+    public DiscordWebhookClient(DiscordWebhookProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
-        this.restClient = buildRestClient();
+        this.restClient = buildRestClient(objectMapper);
     }
 
     @Async
@@ -57,12 +59,16 @@ public class DiscordWebhookClient {
                 && !properties.url().isBlank();
     }
 
-    private static RestClient buildRestClient() {
+    private static RestClient buildRestClient(ObjectMapper objectMapper) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(CONNECT_TIMEOUT_MS);
         factory.setReadTimeout(READ_TIMEOUT_MS);
         return RestClient.builder()
                 .requestFactory(factory)
+                .messageConverters(converters -> {
+                    converters.clear();
+                    converters.add(new MappingJackson2HttpMessageConverter(objectMapper));
+                })
                 .build();
     }
 }
