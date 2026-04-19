@@ -55,12 +55,15 @@ jobs:
             Parameters: {
               commands: [
                 "set -e",
+                "docker compose version >/dev/null 2>&1 || apt-get install -y docker-compose-plugin",
                 ("aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin " + $reg),
+                "mkdir -p /home/ubuntu/groute",
+                ("aws ssm get-parameters-by-path --region ap-northeast-2 --path " + $ssmpath + " --recursive --with-decryption --query 'Parameters[*].[Name,Value]' --output text | awk -F'\\t' '{n=$1; sub(/.*\\//, \"\", n); print n\"=\"$2}' > /tmp/groute.env"),
+                "export REDIS_PASSWORD=$(grep '^REDIS_PASSWORD=' /tmp/groute.env | cut -d= -f2-)",
+                ("printf 'services:\\n  app:\\n    image: %s\\n    ports:\\n      - \"8080:8080\"\\n    env_file:\\n      - /tmp/groute.env\\n    environment:\\n      SPRING_PROFILES_ACTIVE: %s\\n      REDIS_HOST: redis\\n    depends_on:\\n      redis:\\n        condition: service_healthy\\n    restart: unless-stopped\\n  redis:\\n    image: redis:7.2-alpine\\n    command: >-\\n      redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 128mb --maxmemory-policy volatile-lru\\n    healthcheck:\\n      test: [\"CMD\", \"redis-cli\", \"-a\", \"${REDIS_PASSWORD}\", \"ping\"]\\n      interval: 10s\\n      timeout: 5s\\n      retries: 3\\n    restart: unless-stopped\\n' " + $image + " " + $env_val + " > /home/ubuntu/groute/docker-compose.yml"),
                 "docker stop groute-server 2>/dev/null || true",
                 "docker rm   groute-server 2>/dev/null || true",
-                ("docker pull " + $image),
-                ("aws ssm get-parameters-by-path --region ap-northeast-2 --path " + $ssmpath + " --recursive --with-decryption --query 'Parameters[*].[Name,Value]' --output text | awk -F'\\t' '{n=$1; sub(/.*\\//, \"\", n); print n\"=\"$2}' > /tmp/groute.env"),
-                ("docker run -d --name groute-server --restart unless-stopped --env-file /tmp/groute.env -e SPRING_PROFILES_ACTIVE=" + $env_val + " -p 8080:8080 " + $image),
+                "cd /home/ubuntu/groute && docker compose up -d --pull always",
                 "rm -f /tmp/groute.env"
               ]
             },
