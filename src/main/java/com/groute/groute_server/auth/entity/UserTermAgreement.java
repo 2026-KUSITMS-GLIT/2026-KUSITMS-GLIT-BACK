@@ -1,19 +1,20 @@
 package com.groute.groute_server.auth.entity;
 
+import java.time.OffsetDateTime;
+
+import jakarta.persistence.*;
+
 import com.groute.groute_server.common.entity.BaseTimeEntity;
 import com.groute.groute_server.user.entity.User;
-import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.OffsetDateTime;
 
 /**
  * 유저별 약관 동의/철회 이력.
  *
- * <p>append-only 테이블 — 기존 row는 절대 UPDATE/DELETE하지 않는다(감사 추적 및 법적 증빙).
- * 마케팅 동의 ON/OFF를 토글해도 매번 새 row를 INSERT한다.
- * 이 규약은 DB 트리거가 아닌 애플리케이션 레벨에서 보장한다.
+ * <p>append-only 테이블 — 기존 row는 절대 UPDATE/DELETE하지 않는다(감사 추적 및 법적 증빙). 마케팅 동의 ON/OFF를 토글해도 매번 새 row를
+ * INSERT한다. 이 규약은 DB 트리거가 아닌 애플리케이션 레벨에서 보장한다.
  */
 @Getter
 @NoArgsConstructor

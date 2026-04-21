@@ -1,9 +1,11 @@
 package com.groute.groute_server.auth.entity;
 
+import jakarta.persistence.*;
+
 import com.groute.groute_server.auth.enums.DevicePlatform;
 import com.groute.groute_server.common.entity.BaseTimeEntity;
 import com.groute.groute_server.user.entity.User;
-import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

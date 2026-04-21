@@ -1,21 +1,24 @@
 package com.groute.groute_server.record.domain;
 
-import com.groute.groute_server.common.entity.BaseTimeEntity;
-import com.groute.groute_server.record.domain.enums.JobStatus;
+import java.time.OffsetDateTime;
+import java.util.Map;
+
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.OffsetDateTime;
-import java.util.Map;
+import com.groute.groute_server.common.entity.BaseTimeEntity;
+import com.groute.groute_server.record.domain.enums.JobStatus;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * AI 태깅 비동기 잡 큐(REC006).
  *
- * <p>워커가 {@code SELECT FOR UPDATE SKIP LOCKED}로 QUEUED 잡을 폴링해 처리한다.
- * 최대 1회 재시도 허용(1차 실패 → 재시도 → 2차 실패 시 FAILED 확정).
+ * <p>워커가 {@code SELECT FOR UPDATE SKIP LOCKED}로 QUEUED 잡을 폴링해 처리한다. 최대 1회 재시도 허용(1차 실패 → 재시도 → 2차
+ * 실패 시 FAILED 확정).
  */
 @Getter
 @NoArgsConstructor
@@ -44,10 +47,7 @@ public class AiTaggingJob extends BaseTimeEntity {
     @Column(name = "request_payload", columnDefinition = "jsonb")
     private Map<String, Object> requestPayload;
 
-    /**
-     * AI 응답 원문.
-     * {primary_category, detail_tags[]} JSON. 디버깅 및 모델 교체 대비용 원본 보관.
-     */
+    /** AI 응답 원문. {primary_category, detail_tags[]} JSON. 디버깅 및 모델 교체 대비용 원본 보관. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "response_payload", columnDefinition = "jsonb")
     private Map<String, Object> responsePayload;

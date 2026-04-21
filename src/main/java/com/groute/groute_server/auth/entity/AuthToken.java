@@ -1,18 +1,20 @@
 package com.groute.groute_server.auth.entity;
 
+import java.time.OffsetDateTime;
+
+import jakarta.persistence.*;
+
 import com.groute.groute_server.common.entity.BaseTimeEntity;
 import com.groute.groute_server.user.entity.User;
-import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.OffsetDateTime;
 
 /**
  * 리프레시 토큰 저장(액세스 토큰은 stateless).
  *
- * <p>재발급 요청 시 {@link #refreshTokenHash}로 유효성 검증(ONB001).
- * 디바이스 단위로 추적하며, 로그아웃(MYP004)/탈퇴(MYP005) 시 {@link #revokedAt}을 set한다.
+ * <p>재발급 요청 시 {@link #refreshTokenHash}로 유효성 검증(ONB001). 디바이스 단위로 추적하며, 로그아웃(MYP004)/탈퇴(MYP005) 시
+ * {@link #revokedAt}을 set한다.
  */
 @Getter
 @NoArgsConstructor

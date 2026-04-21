@@ -1,22 +1,24 @@
 package com.groute.groute_server.report.domain;
 
+import java.util.Map;
+
+import jakarta.persistence.*;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.groute.groute_server.common.entity.BaseTimeEntity;
 import com.groute.groute_server.report.domain.enums.ReportStatus;
 import com.groute.groute_server.report.domain.enums.ReportType;
 import com.groute.groute_server.user.entity.User;
-import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
-import java.util.Map;
 
 /**
  * 리포트(RPT001).
  *
- * <p>미니(첫 10회 1회성) + 커리어(이후 10회 단위) 두 종류를 지원.
- * MVP에서는 결제 플로우 없이 무료 생성만 제공한다.
+ * <p>미니(첫 10회 1회성) + 커리어(이후 10회 단위) 두 종류를 지원. MVP에서는 결제 플로우 없이 무료 생성만 제공한다.
  */
 @Getter
 @NoArgsConstructor
@@ -50,10 +52,7 @@ public class Report extends BaseTimeEntity {
     @Column(name = "title", length = 200)
     private String title;
 
-    /**
-     * 리포트 본문 JSON.
-     * 통합 서사 요약 / 핵심 강점 / 전략적 어필 포인트 / 예상 면접 질문 / branding_title 등(RPT003).
-     */
+    /** 리포트 본문 JSON. 통합 서사 요약 / 핵심 강점 / 전략적 어필 포인트 / 예상 면접 질문 / branding_title 등(RPT003). */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "content_json", columnDefinition = "jsonb")
     private Map<String, Object> contentJson;
