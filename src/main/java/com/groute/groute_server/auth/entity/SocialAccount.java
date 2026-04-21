@@ -1,17 +1,18 @@
 package com.groute.groute_server.auth.entity;
 
+import jakarta.persistence.*;
+
 import com.groute.groute_server.auth.enums.SocialProvider;
 import com.groute.groute_server.common.entity.BaseTimeEntity;
 import com.groute.groute_server.user.entity.User;
-import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
  * 유저와 소셜 프로바이더 간 매핑.
  *
- * <p>한 유저가 여러 소셜 계정을 연결할 수 있다(ONB002).
- * 로그인 시 (provider, provider_uid) 조합으로 기존 유저를 찾는다.
+ * <p>한 유저가 여러 소셜 계정을 연결할 수 있다(ONB002). 로그인 시 (provider, provider_uid) 조합으로 기존 유저를 찾는다.
  */
 @Getter
 @NoArgsConstructor

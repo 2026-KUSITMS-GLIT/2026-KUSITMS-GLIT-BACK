@@ -1,8 +1,10 @@
 package com.groute.groute_server.record.domain;
 
+import jakarta.persistence.*;
+
 import com.groute.groute_server.common.entity.BaseTimeEntity;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
-import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -25,18 +27,12 @@ public class StarTag extends BaseTimeEntity {
     @JoinColumn(name = "star_record_id", nullable = false)
     private StarRecord starRecord;
 
-    /**
-     * 대표 역량 1개.
-     * 홈 잔디 색상 결정(HOM002). REC007 완료 화면에 노출.
-     */
+    /** 대표 역량 1개. 홈 잔디 색상 결정(HOM002). REC007 완료 화면에 노출. */
     @Enumerated(EnumType.STRING)
     @Column(name = "primary_category", nullable = false)
     private CompetencyCategory primaryCategory;
 
-    /**
-     * 세부 태그. AI가 자유롭게 생성(예: "이해관계자 조율").
-     * REC007 완료 화면에 최대 3개 노출.
-     */
+    /** 세부 태그. AI가 자유롭게 생성(예: "이해관계자 조율"). REC007 완료 화면에 최대 3개 노출. */
     @Column(name = "detail_tag", nullable = false, length = 50)
     private String detailTag;
 }

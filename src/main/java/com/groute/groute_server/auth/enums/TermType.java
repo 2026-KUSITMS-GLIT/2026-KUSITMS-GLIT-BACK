@@ -1,9 +1,6 @@
 package com.groute.groute_server.auth.enums;
 
-/**
- * 약관 종류.
- * 회원가입 시 동의가 필요한 법적 약관 구분.
- */
+/** 약관 종류. 회원가입 시 동의가 필요한 법적 약관 구분. */
 public enum TermType {
     /** 개인정보 처리방침 (필수). */
     PRIVACY_POLICY,

@@ -1,7 +1,7 @@
 package com.groute.groute_server.common.webhook;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
+import java.util.concurrent.CompletableFuture;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -10,14 +10,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-import java.util.concurrent.CompletableFuture;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Discord 웹훅 전송 클라이언트.
  *
- * <p>{@code discord.webhook.enabled}가 {@code false}이거나 URL이 비어 있으면 전송을 건너뛴다.
- * 네트워크 오류는 로그로만 남기고 호출자에게 전파하지 않아, 에러 알림 실패가 애플리케이션 응답을
- * 막지 않도록 한다. 전송은 {@link Async}로 처리되어 요청 처리 스레드를 블로킹하지 않는다.</p>
+ * <p>{@code discord.webhook.enabled}가 {@code false}이거나 URL이 비어 있으면 전송을 건너뛴다. 네트워크 오류는 로그로만 남기고
+ * 호출자에게 전파하지 않아, 에러 알림 실패가 애플리케이션 응답을 막지 않도록 한다. 전송은 {@link Async}로 처리되어 요청 처리 스레드를 블로킹하지 않는다.
  */
 @Slf4j
 @Component
@@ -40,7 +41,8 @@ public class DiscordWebhookClient {
             return CompletableFuture.completedFuture(null);
         }
         try {
-            restClient.post()
+            restClient
+                    .post()
                     .uri(properties.url())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(DiscordWebhookPayload.of(embed))
@@ -54,9 +56,7 @@ public class DiscordWebhookClient {
     }
 
     private boolean isActive() {
-        return properties.enabled()
-                && properties.url() != null
-                && !properties.url().isBlank();
+        return properties.enabled() && properties.url() != null && !properties.url().isBlank();
     }
 
     private static RestClient buildRestClient(ObjectMapper objectMapper) {
@@ -65,10 +65,11 @@ public class DiscordWebhookClient {
         factory.setReadTimeout(READ_TIMEOUT_MS);
         return RestClient.builder()
                 .requestFactory(factory)
-                .messageConverters(converters -> {
-                    converters.clear();
-                    converters.add(new MappingJackson2HttpMessageConverter(objectMapper));
-                })
+                .messageConverters(
+                        converters -> {
+                            converters.clear();
+                            converters.add(new MappingJackson2HttpMessageConverter(objectMapper));
+                        })
                 .build();
     }
 }

@@ -1,14 +1,15 @@
 package com.groute.groute_server.common.exception;
 
+import org.springframework.http.HttpStatus;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 
 /**
  * 애플리케이션 에러 코드 정의.
  *
- * <p>모든 에러 코드는 단일 enum에 정의하며, 도메인별 섹션 주석으로 구분한다.
- * 코드 값은 {@code {DOMAIN}_{NNN}} 형식을 따른다 (예: {@code COMMON_001}, {@code USER_001}).</p>
+ * <p>모든 에러 코드는 단일 enum에 정의하며, 도메인별 섹션 주석으로 구분한다. 코드 값은 {@code {DOMAIN}_{NNN}} 형식을 따른다 (예: {@code
+ * COMMON_001}, {@code USER_001}).
  *
  * <pre>
  * // 도메인 에러 코드 추가 예시

@@ -1,24 +1,26 @@
 package com.groute.groute_server.record.domain;
 
-import com.groute.groute_server.common.entity.BaseTimeEntity;
-import com.groute.groute_server.record.domain.enums.CompetencyCategory;
-import com.groute.groute_server.user.entity.User;
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.persistence.*;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import com.groute.groute_server.common.entity.BaseTimeEntity;
+import com.groute.groute_server.record.domain.enums.CompetencyCategory;
+import com.groute.groute_server.user.entity.User;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 /**
  * 일자별 역량 집계 테이블.
  *
- * <p>홈 잔디(HOM002)·레이더 차트(HOM003)의 성능 최적화용.
- * STAR 완료 시 upsert되며, (user_id, stat_date) UNIQUE 기준으로 ON CONFLICT 갱신.
- * 최근 3개월 구간만 조회 대상(HOM002).
+ * <p>홈 잔디(HOM002)·레이더 차트(HOM003)의 성능 최적화용. STAR 완료 시 upsert되며, (user_id, stat_date) UNIQUE 기준으로 ON
+ * CONFLICT 갱신. 최근 3개월 구간만 조회 대상(HOM002).
  */
 @Getter
 @NoArgsConstructor
@@ -46,18 +48,12 @@ public class DailyCompetencyStat extends BaseTimeEntity {
     @Column(name = "star_count", nullable = false)
     private Short starCount = 0;
 
-    /**
-     * 해당 날짜 대표 역량. 잔디 색상 결정.
-     * STAR 0건이면 NULL.
-     */
+    /** 해당 날짜 대표 역량. 잔디 색상 결정. STAR 0건이면 NULL. */
     @Enumerated(EnumType.STRING)
     @Column(name = "primary_category")
     private CompetencyCategory primaryCategory;
 
-    /**
-     * 레이더 차트용 카테고리별 카운트(HOM003).
-     * 예: {@code {"DISCOVERY_ANALYSIS":2,"PLANNING_EXECUTION":1,...}}
-     */
+    /** 레이더 차트용 카테고리별 카운트(HOM003). 예: {@code {"DISCOVERY_ANALYSIS":2,"PLANNING_EXECUTION":1,...}} */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "category_counts", nullable = false, columnDefinition = "jsonb")
     private Map<String, Object> categoryCounts = new HashMap<>();

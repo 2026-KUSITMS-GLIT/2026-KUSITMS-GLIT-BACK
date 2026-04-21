@@ -1,19 +1,20 @@
 package com.groute.groute_server.user.entity;
 
+import java.time.LocalTime;
+
+import jakarta.persistence.*;
+
 import com.groute.groute_server.common.entity.BaseTimeEntity;
 import com.groute.groute_server.user.enums.DayOfWeek;
-import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalTime;
 
 /**
  * 유저 알림 설정(MYP003).
  *
- * <p>요일 + 시간 조합으로 여러 슬롯을 등록할 수 있다.
- * 시간대는 07:00~자정(00:00) 범위 내 30분 단위로 제한(DB CHECK로 강제).
- * 스케줄러는 (day_of_week, notify_time) 기준으로 발송 대상 유저를 역조회한다.
+ * <p>요일 + 시간 조합으로 여러 슬롯을 등록할 수 있다. 시간대는 07:00~자정(00:00) 범위 내 30분 단위로 제한(DB CHECK로 강제). 스케줄러는
+ * (day_of_week, notify_time) 기준으로 발송 대상 유저를 역조회한다.
  */
 @Getter
 @NoArgsConstructor
@@ -34,10 +35,7 @@ public class NotificationSetting extends BaseTimeEntity {
     @Column(name = "day_of_week", nullable = false)
     private DayOfWeek dayOfWeek;
 
-    /**
-     * 알림 시각.
-     * 07:00~자정(00:00) 사이 30분 단위만 허용(MYP003). 범위·그리드 제약은 DB CHECK가 강제.
-     */
+    /** 알림 시각. 07:00~자정(00:00) 사이 30분 단위만 허용(MYP003). 범위·그리드 제약은 DB CHECK가 강제. */
     @Column(name = "notify_time", nullable = false)
     private LocalTime notifyTime;
 
