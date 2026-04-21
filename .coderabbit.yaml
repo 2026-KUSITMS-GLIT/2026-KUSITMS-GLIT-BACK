@@ -159,14 +159,14 @@ reviews:
         - 불변 선호: `record` 또는 final 필드. setter 노출 시 지적.
         - 엔티티를 직접 응답으로 노출하면 DTO로 감싸라고 제안(LAZY 프록시 직렬화 사고 방지).
 
-finishing_touches:
-  docstrings:
-    enabled: true
+  finishing_touches:
+    docstrings:
+      enabled: true
 
-pre_merge_checks:
-  title:
-    mode: "warning"
-  description:
-    mode: "warning"
-  issue_assessment:
-    mode: "warning"
+  pre_merge_checks:
+    title:
+      mode: "warning"
+    description:
+      mode: "warning"
+    issue_assessment:
+      mode: "warning"
