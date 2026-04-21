@@ -1,19 +1,19 @@
 package com.groute.groute_server.common.response;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.groute.groute_server.common.exception.ErrorCode;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.util.List;
-
 /**
  * 공통 에러 응답 DTO.
  *
- * <p>{@code success}는 항상 {@code false}이며, Validation 에러 시
- * {@code errors} 필드에 필드별 상세 정보가 포함된다.</p>
+ * <p>{@code success}는 항상 {@code false}이며, Validation 에러 시 {@code errors} 필드에 필드별 상세 정보가 포함된다.
  *
  * @see ErrorCode
  * @see FieldError

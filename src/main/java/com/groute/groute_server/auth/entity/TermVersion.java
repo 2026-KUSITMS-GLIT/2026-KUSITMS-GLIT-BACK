@@ -1,18 +1,19 @@
 package com.groute.groute_server.auth.entity;
 
+import java.time.OffsetDateTime;
+
+import jakarta.persistence.*;
+
 import com.groute.groute_server.auth.enums.TermType;
 import com.groute.groute_server.common.entity.BaseTimeEntity;
-import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.OffsetDateTime;
 
 /**
  * 약관/개인정보처리방침 버전 관리.
  *
- * <p>약관 개정 시마다 새 row를 생성한다. 본문은 외부 호스팅(노션/CMS) URL 또는 S3에 두고 URL만 저장.
- * 클라이언트는 웹뷰로 본문을 노출한다(MYP006).
+ * <p>약관 개정 시마다 새 row를 생성한다. 본문은 외부 호스팅(노션/CMS) URL 또는 S3에 두고 URL만 저장. 클라이언트는 웹뷰로 본문을 노출한다(MYP006).
  */
 @Getter
 @NoArgsConstructor

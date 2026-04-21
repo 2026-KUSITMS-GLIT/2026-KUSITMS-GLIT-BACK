@@ -1,7 +1,9 @@
 package com.groute.groute_server.record.domain;
 
-import com.groute.groute_server.common.entity.BaseTimeEntity;
 import jakarta.persistence.*;
+
+import com.groute.groute_server.common.entity.BaseTimeEntity;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

@@ -1,9 +1,6 @@
 package com.groute.groute_server.user.enums;
 
-/**
- * 요일.
- * 알림 설정(MYP003) 등에서 요일 체크박스 다중 선택에 사용.
- */
+/** 요일. 알림 설정(MYP003) 등에서 요일 체크박스 다중 선택에 사용. */
 public enum DayOfWeek {
     /** 월요일. */
     MON,
