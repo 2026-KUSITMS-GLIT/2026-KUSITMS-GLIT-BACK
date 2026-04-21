@@ -16,7 +16,6 @@ reviews:
   profile: "chill"
 
   high_level_summary: true
-  changed_files_summary: false
   poem: true
 
   path_filters:
