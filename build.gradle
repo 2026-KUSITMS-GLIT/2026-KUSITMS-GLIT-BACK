@@ -3,6 +3,7 @@ plugins {
 	id 'jacoco'
 	id 'org.springframework.boot' version '3.5.13'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'com.diffplug.spotless' version '6.25.0'
 }
 
 group = 'com.groute'
@@ -97,4 +98,19 @@ tasks.named('jacocoTestCoverageVerification') {
 
 tasks.named('check') {
 	dependsOn tasks.named('jacocoTestCoverageVerification')
+}
+
+spotless {
+	java {
+		// Google Java Format (AOSP 스타일: 4칸 들여쓰기)
+		googleJavaFormat().aosp()
+		// import 정렬 순서
+		importOrder('java', 'javax', 'jakarta', 'org', 'com')
+		// 사용하지 않는 import 제거
+		removeUnusedImports()
+		// 각 라인 끝 공백 제거
+		trimTrailingWhitespace()
+		// 파일 끝에 새로운 라인 추가
+		endWithNewline()
+	}
 }
