@@ -1,0 +1,173 @@
+# CodeRabbit Configuration
+
+language: ko
+
+tone_instructions: >
+  한국어로 작성. 이모지와 마크다운으로 가독성 높게.
+  무엇이 문제인지보다 왜 문제인지 이유 중심으로 설명하고, 대안 제시 시 선택 근거도 함께 명시.
+  각 코멘트는 P1~P5 우선순위를 앞에 표기해라.
+  - **P1** 🔴: 보안/크래시 등 치명적 문제 (반드시 반영)
+  - **P2** 🟠: 성능/아키텍처 위반 (적극 반영)
+  - **P3** 🟡: 컨벤션/가독성 (웬만하면 반영)
+  - **P4** 🔵: 사소한 개선 (선택)
+  - **P5** ⚪: 참고 의견 (무시 가능)
+
+reviews:
+  profile: "chill"
+
+  high_level_summary: true
+  changed_files_summary: false
+  poem: true
+
+  path_filters:
+    - "!**/*.md"
+    - "!**/build/**"
+    - "!**/target/**"
+    - "!**/.gradle/**"
+
+  auto_review:
+    enabled: true
+    base_branches:
+      - dev
+    drafts: false
+
+  path_instructions:
+    # ─────────────────────────────────────────────
+    # 전역: 커밋/네이밍/Javadoc (CONTRIBUTING 기반)
+    # ─────────────────────────────────────────────
+    - path: "**/*.java"
+      instructions: |
+        - 패키지는 `com.groute.groute_server.<domain>`을 따르며, 도메인 간 역참조(예: record가 report의 internal 클래스를 import)가 있는지 확인할 것.
+        - public 클래스/메서드는 간단한 Javadoc을 권장. 단, 자명한 getter/setter/빌더에는 강제하지 말 것.
+        - `@Deprecated` 없이 사용처가 있는 public API 삭제/시그니처 변경이 있으면 깨짐 가능성 지적.
+        - Lombok `@Data`, `@AllArgsConstructor`는 엔티티에서 지양. 불변이 필요한 DTO는 `record` 사용을 제안.
+        - 한국어 주석/식별자는 허용하지만, 식별자는 영문 camelCase 원칙.
+
+    # ─────────────────────────────────────────────
+    # common/ — 공통 설정·예외·응답
+    # ─────────────────────────────────────────────
+    - path: "src/main/java/com/groute/groute_server/common/**/*.java"
+      instructions: |
+        - common은 모든 도메인이 의존하므로, 반대로 common이 특정 도메인 패키지를 import하는지 반드시 차단.
+        - `ApiResponse`, `ErrorResponse`, `ErrorCode`, `BusinessException`의 시그니처/필드 변경은 전 도메인 응답 스펙에 영향 → breaking change로 간주하고 플래그.
+        - `GlobalExceptionHandler`에서 새로운 예외 매핑을 추가할 때는 `ErrorCode`에 대응 상수가 있는지, 중복 매핑이 없는지 검증.
+        - 새로운 `ErrorCode` 추가 시 HTTP 상태·코드 prefix(도메인 2~3자리) 규칙과 기존 네이밍 일관성 확인.
+        - `SecurityConfig` 수정 시 permitAll / authenticated 범위가 의도치 않게 넓어지지 않았는지, Swagger 경로(`/v3/api-docs/**`, `/swagger-ui/**`) 누락 여부 확인.
+        - `SwaggerConfig`의 `GroupedOpenApi` 패키지 매칭이 새 도메인에 맞게 갱신됐는지 확인.
+
+    # ─────────────────────────────────────────────
+    # Layered 모듈 (auth, user, home, calendar)
+    # ─────────────────────────────────────────────
+    - path: "src/main/java/com/groute/groute_server/{auth,user,home,calendar}/**/*.java"
+      instructions: |
+        - 의존 방향은 `controller → service → repository → entity`. 역방향(예: entity가 service를 import)이나 계층 건너뜀(controller가 repository를 직접 호출)은 반드시 지적.
+        - DTO는 controller 계층 입출력 전용. service 시그니처/리턴에 Request/Response DTO가 노출되면 지적.
+        - service 내부에서는 Entity 또는 도메인 객체 사용. DTO ↔ Entity 변환은 controller 또는 별도 mapper/정적 팩토리에서 수행하도록 제안.
+        - home은 조회 전용(QueryDSL Projection). 쓰기 로직이 들어오면 해당 도메인(record/user 등)으로 옮기도록 제안.
+        - auth는 `service/oauth/` 아래 `OAuthClient` 인터페이스 + provider별 구현체 패턴 유지. 구현체에 provider 분기 로직 누적 시 리팩토링 제안.
+
+    # ─────────────────────────────────────────────
+    # Hexagonal 모듈 (record, report) — 공통 규칙
+    # ─────────────────────────────────────────────
+    - path: "src/main/java/com/groute/groute_server/{record,report}/**/*.java"
+      instructions: |
+        - 의존 방향: `adapter → application → domain`. 역참조(domain이 adapter/application을 import, application이 adapter를 import)는 반드시 차단.
+        - Use Case 인터페이스는 `application/port/in`, 외부 의존 인터페이스는 `application/port/out`에 위치. 구현체가 잘못된 패키지에 있으면 지적.
+        - `adapter/in`은 `port/in`만 호출, `adapter/out`은 `port/out`만 구현. 컨트롤러가 `application/service`의 구체 클래스를 직접 주입받으면 플래그.
+
+    - path: "src/main/java/com/groute/groute_server/{record,report}/domain/**/*.java"
+      instructions: |
+        - domain은 순수 Java. `jakarta.persistence.*`, `org.springframework.*`, `com.fasterxml.jackson.*`, Lombok 외 프레임워크 애너테이션 사용 금지 → 발견 시 반드시 지적.
+        - JPA 엔티티·Repository·DTO·Swagger 애너테이션이 domain에 있으면 adapter/application으로 이동 제안.
+        - 불변 모델 선호. setter/가변 컬렉션 노출은 캡슐화 위반으로 지적.
+
+    - path: "src/main/java/com/groute/groute_server/{record,report}/application/port/**/*.java"
+      instructions: |
+        - port는 인터페이스만. 구현 클래스/상수/정적 유틸이 섞이면 분리 제안.
+        - `port/in` 메서드 시그니처에 adapter 전용 타입(HttpServletRequest, JPA Entity, Spring 객체)이 노출되면 지적.
+        - `port/out` 시그니처에 Web DTO가 들어오면 domain/command 객체로 치환 제안.
+
+    - path: "src/main/java/com/groute/groute_server/{record,report}/adapter/in/web/**/*.java"
+      instructions: |
+        - 컨트롤러는 `port/in`만 주입. `application/service`의 구현체를 직접 주입하면 지적.
+        - 비즈니스 분기/반복 로직이 컨트롤러에 있으면 Use Case로 이동 제안.
+
+    - path: "src/main/java/com/groute/groute_server/{record,report}/adapter/out/**/*.java"
+      instructions: |
+        - `port/out` 구현체는 단일 책임(persistence / ai / cache / storage / client)을 유지. 혼합되면 분리 제안.
+        - 외부 API/AI 호출은 타임아웃·재시도·예외 매핑(ErrorCode) 처리 여부 확인.
+        - JPA Repository 구현은 adapter/out/persistence에만 위치.
+
+    - path: "src/main/java/com/groute/groute_server/report/adapter/in/event/**/*.java"
+      instructions: |
+        - 이벤트 구독자는 얇게 유지: 수신 → Use Case 호출. 트랜잭션 경계(@TransactionalEventListener)·멱등성·실패 시 재처리 전략 주석/구현 여부 확인.
+
+    # ─────────────────────────────────────────────
+    # JPA Entity — 인덱스는 Flyway에 위임
+    # ─────────────────────────────────────────────
+    - path: "src/main/java/**/entity/**/*.java"
+      instructions: |
+        - 스키마/인덱스는 Flyway(`src/main/resources/db/migration`)가 단일 소스 오브 트루스.
+        - `@Table(indexes = ...)`, `@Index`, `@UniqueConstraint`(복합 유니크), `@Table(uniqueConstraints = ...)` 신규 추가는 반드시 지적하고 Flyway 마이그레이션 파일로 옮기라고 제안. PK/FK/단일 `@Column(unique = true)`는 예외.
+        - `ddl-auto`가 `update`/`create`로 바뀌는 변경이 함께 들어오면 스키마 드리프트 위험으로 플래그.
+        - 엔티티 필드 추가/삭제/타입 변경 시 대응 Flyway 마이그레이션이 같은 PR에 포함됐는지 확인. 없으면 누락 지적.
+        - 연관관계 기본 fetch는 LAZY 권장. EAGER 추가 시 N+1·성능 리스크 명시.
+        - `@Entity`에는 `@NoArgsConstructor(access = PROTECTED)` 권장. public 기본 생성자 노출은 지적.
+
+    # ─────────────────────────────────────────────
+    # Hexagonal 내 persistence 엔티티도 동일 규칙
+    # ─────────────────────────────────────────────
+    - path: "src/main/java/com/groute/groute_server/{record,report}/adapter/out/persistence/**/*.java"
+      instructions: |
+        - 여기의 JPA 엔티티는 persistence 전용. 도메인 모델(`record/domain`, `report/domain`)을 그대로 `@Entity`로 쓰지 말고 매핑 분리 권장.
+        - 인덱스/유니크 제약 정의는 엔티티 애너테이션이 아닌 Flyway 마이그레이션에서 관리. 엔티티에 선언된 경우 반드시 지적.
+        - Repository 쿼리는 QueryDSL 또는 `@Query`로 명시. 암묵적 파생쿼리 이름이 길어지면 QueryDSL로 리팩토링 제안.
+
+    # ─────────────────────────────────────────────
+    # Flyway 마이그레이션
+    # ─────────────────────────────────────────────
+    - path: "src/main/resources/db/migration/**/*.sql"
+      instructions: |
+        - 파일명: `V{version}__{snake_case_description}.sql` (예: `V20260418_01__add_user_nickname_index.sql`). 오타/공백/미스매치는 반드시 지적.
+        - 기존 버전 파일 수정은 체크섬 불일치로 배포 실패 → 과거 버전 파일 수정은 플래그하고 새 마이그레이션 추가 권장.
+        - 인덱스 생성은 PostgreSQL 기준 가능한 경우 `CREATE INDEX CONCURRENTLY` 고려(트랜잭션 블록 밖). 큰 테이블 대상 DDL은 락·다운타임 리스크 명시.
+        - `DROP TABLE`, `DROP COLUMN`, 타입 변경(`ALTER COLUMN ... TYPE`)은 데이터 손실/백필 필요 여부·롤백 전략을 코멘트로 요구.
+        - 인덱스·유니크 제약은 엔티티가 아닌 이 폴더에서만 선언(엔티티 `@Index`/`@UniqueConstraint`와 중복되지 않도록).
+        - `NOT NULL` 컬럼 추가 시 기본값 또는 2단계 마이그레이션(nullable 추가 → 백필 → NOT NULL) 전략 권고.
+
+    # ─────────────────────────────────────────────
+    # Controller — Swagger 필수
+    # ─────────────────────────────────────────────
+    - path: "src/main/java/**/controller/**/*.java"
+      instructions: |
+        - 클래스: `@Tag(name, description)` 필수. 엔드포인트: `@Operation(summary, description)` 필수, 주요 응답은 `@ApiResponse`.
+        - 인증 불필요 엔드포인트만 `@SecurityRequirement(name = "")`. 로그인 이후 엔드포인트에 빈 SecurityRequirement가 붙으면 지적.
+        - 컨트롤러 리턴 타입은 일관되게 `ApiResponse<T>` 사용(또는 `ResponseEntity<ApiResponse<T>>`). 혼용되면 일관성 지적.
+        - `@RequestMapping` 루트는 `/api/v{n}/<resource>` 패턴. 케밥/스네이크 혼용 금지.
+        - `@Valid`·`@Validated` 누락된 Request DTO 파라미터 지적.
+
+    - path: "src/main/java/com/groute/groute_server/{record,report}/adapter/in/web/**/*.java"
+      instructions: |
+        - 위 Swagger 규칙 + 컨트롤러가 `port/in` 인터페이스만 의존하도록 확인.
+
+    # ─────────────────────────────────────────────
+    # DTO — @Schema
+    # ─────────────────────────────────────────────
+    - path: "src/main/java/**/dto/**/*.java"
+      instructions: |
+        - 요청·응답 DTO 필드는 `@Schema(description, example)` 권장. 민감 정보(비밀번호, 토큰)는 `example` 금지·`accessMode = WRITE_ONLY` 검토.
+        - 요청 DTO는 Bean Validation(`@NotNull`, `@Size`, `@Email` 등) 적용 여부 확인.
+        - 불변 선호: `record` 또는 final 필드. setter 노출 시 지적.
+        - 엔티티를 직접 응답으로 노출하면 DTO로 감싸라고 제안(LAZY 프록시 직렬화 사고 방지).
+
+finishing_touches:
+  docstrings:
+    enabled: true
+
+pre_merge_checks:
+  title:
+    mode: "warning"
+  description:
+    mode: "warning"
+  issue_assessment:
+    mode: "warning"
