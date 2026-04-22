@@ -58,7 +58,7 @@ jobs:
                 "set -e",
                 "cleanup() { rm -f /tmp/groute.env; }",
                 "trap cleanup EXIT",
-                "docker compose version >/dev/null 2>&1 || (apt-get update && apt-get install -y docker-compose-plugin)",
+                "docker compose version >/dev/null 2>&1 || (apt-get update && apt-get install -y --no-install-recommends docker-compose-plugin)",
                 ("aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin " + $reg),
                 "mkdir -p /home/ssm-user/glit",
                 ("aws ssm get-parameters-by-path --region ap-northeast-2 --path " + $ssmpath + " --recursive --with-decryption --query 'Parameters[*].[Name,Value]' --output text | awk -F'\\t' '{n=$1; sub(/.*\\//, \"\", n); print n\"=\"$2}' > /tmp/groute.env"),
