@@ -7,6 +7,7 @@
 - `3. 프로젝트 폴더 구조` — 아키텍처 기반 디렉터리 규칙
 - `4. Swagger 작성 가이드` — API 작업 시 Swagger 어노테이션 규칙
 - `5. 테스트 커버리지 (JaCoCo)` — 테스트/커버리지 기준 및 실행 방법
+- `6. DB 마이그레이션 (Flyway)` — 마이그레이션 파일명 컨벤션 및 IntelliJ 템플릿
 
 ---
 
@@ -356,3 +357,30 @@ public record CreateUserRequest(
 ### 5.4 PR 연동
 
 PR 템플릿의 **`커버리지 (JaCoCo)`** 섹션에 라인 커버리지 수치를 기입합니다. 자세한 체크리스트는 `.github/pull_request_template.md` 참조.
+
+---
+
+## 6. DB 마이그레이션 (Flyway)
+
+스키마 변경은 모두 Flyway 마이그레이션 파일로 관리합니다. 파일은 `src/main/resources/db/migration/` 하위에 추가합니다.
+
+### 6.1 파일명 컨벤션
+
+- **형식**: `V{yyMMddhhmmss}__{snake_case_설명}.sql`
+- **규칙**
+  - `V` 접두사는 대문자
+  - 버전은 작성 시각 기반 `yyMMddhhmmss` (12자리)
+  - 버전과 설명 사이는 **언더스코어 2개(`__`)**
+  - 설명은 영문 snake_case로 작성
+- **예시**
+  ```
+  V260422153012__create_user_table.sql
+  V260422153045__add_nickname_to_user.sql
+  V260423091500__create_record_table.sql
+  ```
+
+### 6.2 IntelliJ IDEA File Template 설정
+
+파일명을 매번 수동으로 작성하지 않도록 IntelliJ File Template을 설정합니다. 설정 방법은 아래 링크 참고.
+
+- https://bitbard-dongni.tistory.com/55
