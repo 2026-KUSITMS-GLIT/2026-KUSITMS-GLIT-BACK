@@ -68,7 +68,7 @@ jobs:
                 ("aws s3 cp s3://glit-images/deploy/" + $sha + "/docker-compose.yml /home/ssm-user/glit/docker-compose.yml"),
                 "docker stop groute-server 2>/dev/null || true",
                 "docker rm   groute-server 2>/dev/null || true",
-                "cd /home/ssm-user/glit && docker compose up -d --pull always"
+                "cd /home/ssm-user/glit && docker compose up -d --pull always --wait"
               ]
             },
             TimeoutSeconds: 300
