@@ -40,4 +40,23 @@ public class SocialAccount extends BaseTimeEntity {
     /** 소셜에서 전달받은 이메일. 일부 프로바이더는 미제공이라 NULL 가능. */
     @Column(name = "email")
     private String email;
+
+    /** 신규 소셜 계정 연결 시 호출. User는 이미 저장되어 id가 할당된 managed 엔티티여야 한다. */
+    public static SocialAccount create(
+            User user, SocialProvider provider, String providerUid, String email) {
+        SocialAccount account = new SocialAccount();
+        account.user = user;
+        account.provider = provider;
+        account.providerUid = providerUid;
+        account.email = email;
+        return account;
+    }
+
+    /** 재로그인 시 provider 쪽 email이 변경되었다면 갱신. 동일하거나 null이면 no-op. */
+    public void updateEmail(String email) {
+        if (email == null || email.equals(this.email)) {
+            return;
+        }
+        this.email = email;
+    }
 }
