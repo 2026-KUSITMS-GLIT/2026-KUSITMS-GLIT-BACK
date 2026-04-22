@@ -32,6 +32,8 @@ public enum ErrorCode {
     // Auth
     UNSUPPORTED_OAUTH_PROVIDER(HttpStatus.BAD_REQUEST, "AUTH_001", "지원하지 않는 소셜 프로바이더입니다."),
     INVALID_OAUTH_RESPONSE(HttpStatus.BAD_GATEWAY, "AUTH_002", "소셜 프로바이더 응답 형식이 올바르지 않습니다."),
+    REFRESH_TOKEN_REQUIRED(HttpStatus.BAD_REQUEST, "AUTH_003", "리프레시 토큰이 전달되지 않았습니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_004", "유효하지 않은 리프레시 토큰입니다."),
     ;
 
     private final HttpStatus httpStatus;
