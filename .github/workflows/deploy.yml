@@ -56,6 +56,8 @@ jobs:
             Parameters: {
               commands: [
                 "set -e",
+                "cleanup() { rm -f /tmp/groute.env; }",
+                "trap cleanup EXIT",
                 "docker compose version >/dev/null 2>&1 || (apt-get update && apt-get install -y docker-compose-plugin)",
                 ("aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin " + $reg),
                 "mkdir -p /home/ssm-user/glit",
@@ -66,8 +68,7 @@ jobs:
                 ("aws s3 cp s3://glit-images/deploy/" + $sha + "/docker-compose.yml /home/ssm-user/glit/docker-compose.yml"),
                 "docker stop groute-server 2>/dev/null || true",
                 "docker rm   groute-server 2>/dev/null || true",
-                "cd /home/ssm-user/glit && docker compose up -d --pull always",
-                "rm -f /tmp/groute.env"
+                "cd /home/ssm-user/glit && docker compose up -d --pull always"
               ]
             },
             TimeoutSeconds: 300
