@@ -28,6 +28,10 @@ public enum ErrorCode {
     INVALID_REQUEST_BODY(HttpStatus.BAD_REQUEST, "COMMON_004", "요청 본문을 파싱할 수 없습니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "COMMON_005", "인증이 필요합니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "COMMON_006", "접근 권한이 없습니다."),
+
+    // Auth
+    UNSUPPORTED_OAUTH_PROVIDER(HttpStatus.BAD_REQUEST, "AUTH_001", "지원하지 않는 소셜 프로바이더입니다."),
+    INVALID_OAUTH_RESPONSE(HttpStatus.BAD_GATEWAY, "AUTH_002", "소셜 프로바이더 응답 형식이 올바르지 않습니다."),
     ;
 
     private final HttpStatus httpStatus;

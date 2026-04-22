@@ -4,12 +4,14 @@ import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserServ
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.auth.entity.SocialAccount;
 import com.groute.groute_server.auth.repository.SocialAccountRepository;
+import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.user.entity.User;
 import com.groute.groute_server.user.repository.UserRepository;
 
@@ -45,11 +47,15 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oauth2User = delegate.loadUser(userRequest);
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        OAuthAttributes attributes =
-                OAuthAttributes.from(registrationId, oauth2User.getAttributes());
-
-        User user = upsert(attributes);
-        return new PrincipalUser(user.getId(), attributes.provider(), attributes.attributes());
+        try {
+            OAuthAttributes attributes =
+                    OAuthAttributes.from(registrationId, oauth2User.getAttributes());
+            User user = upsert(attributes);
+            return new PrincipalUser(user.getId(), attributes.provider(), attributes.attributes());
+        } catch (BusinessException e) {
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error(e.getErrorCode().getCode()), e.getMessage(), e);
+        }
     }
 
     private User upsert(OAuthAttributes attributes) {
