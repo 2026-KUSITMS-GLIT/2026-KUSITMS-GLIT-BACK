@@ -49,7 +49,6 @@ spring:
             authorization-grant-type: authorization_code
             scope:
               - profile_nickname
-              - account_email
           google:
             client-name: Google
             client-id: ${GOOGLE_CLIENT_ID}
@@ -67,9 +66,8 @@ spring:
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
             scope:
-              - name
+              - nickname
               - email
-              - profile_image
         provider:
           kakao:
             authorization-uri: https://kauth.kakao.com/oauth/authorize
