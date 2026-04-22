@@ -16,6 +16,8 @@ import com.groute.groute_server.auth.service.TokenDeliveryService;
 import com.groute.groute_server.common.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +39,18 @@ public class AuthController {
     @Operation(
             summary = "액세스 토큰 재발급",
             description = "유효한 리프레시 토큰으로 새 access 토큰을 발급받는다. 리프레시 토큰은 rotate.")
+    @SecurityRequirement(name = "")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "재발급 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "리프레시 토큰 누락 또는 형식 오류"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 리프레시 토큰")
+    })
     @PostMapping("/reissue")
     public ApiResponse<TokenResponse> reissue(
             @CookieValue(name = "refreshToken", required = false) String refreshCookie,
