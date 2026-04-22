@@ -79,11 +79,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 SocialAccount.create(
                         user, attributes.provider(), attributes.providerUid(), attributes.email());
         socialAccountRepository.save(account);
-        log.info(
-                "신규 소셜 유저 생성: userId={}, provider={}, providerUid={}",
-                user.getId(),
-                attributes.provider(),
-                attributes.providerUid());
+        log.info("신규 소셜 유저 생성: userId={}, provider={}", user.getId(), attributes.provider());
         return user;
     }
 }
