@@ -63,4 +63,14 @@ public class User extends SoftDeleteEntity {
      */
     @Column(name = "hard_delete_at")
     private OffsetDateTime hardDeleteAt;
+
+    /** 소셜 로그인 신규 가입 시 호출. 온보딩 전이므로 프로필 필드는 모두 NULL로 둔다. */
+    public static User createForSocialLogin() {
+        return new User();
+    }
+
+    /** 로그인 성공 시 마지막 로그인 시각 갱신. */
+    public void recordLogin() {
+        this.lastLoginAt = OffsetDateTime.now();
+    }
 }
