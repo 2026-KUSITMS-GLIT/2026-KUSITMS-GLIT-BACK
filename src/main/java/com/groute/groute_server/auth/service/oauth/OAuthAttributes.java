@@ -3,6 +3,8 @@ package com.groute.groute_server.auth.service.oauth;
 import java.util.Map;
 
 import com.groute.groute_server.auth.enums.SocialProvider;
+import com.groute.groute_server.common.exception.BusinessException;
+import com.groute.groute_server.common.exception.ErrorCode;
 
 /**
  * provider별 OAuth2 사용자 응답을 공통 포맷으로 정규화.
@@ -23,7 +25,8 @@ public record OAuthAttributes(
 
     public OAuthAttributes {
         if (providerUid == null || providerUid.isBlank()) {
-            throw new IllegalArgumentException("providerUid가 비어 있습니다: provider=" + provider);
+            throw new BusinessException(
+                    ErrorCode.INVALID_OAUTH_RESPONSE, "providerUid가 비어 있습니다: provider=" + provider);
         }
     }
 
@@ -32,7 +35,10 @@ public record OAuthAttributes(
             case "kakao" -> ofKakao(attributes);
             case "google" -> ofGoogle(attributes);
             case "naver" -> ofNaver(attributes);
-            default -> throw new IllegalArgumentException("지원하지 않는 소셜 프로바이더: " + registrationId);
+            default ->
+                    throw new BusinessException(
+                            ErrorCode.UNSUPPORTED_OAUTH_PROVIDER,
+                            "지원하지 않는 소셜 프로바이더: " + registrationId);
         };
     }
 
@@ -54,7 +60,8 @@ public record OAuthAttributes(
 
     private static OAuthAttributes ofNaver(Map<String, Object> attributes) {
         if (!(attributes.get("response") instanceof Map<?, ?> response)) {
-            throw new IllegalArgumentException("네이버 응답 형식이 올바르지 않습니다: response 누락");
+            throw new BusinessException(
+                    ErrorCode.INVALID_OAUTH_RESPONSE, "네이버 응답 형식이 올바르지 않습니다: response 누락");
         }
         String providerUid = String.valueOf(response.get("id"));
         String email = response.get("email") instanceof String e ? e : null;
