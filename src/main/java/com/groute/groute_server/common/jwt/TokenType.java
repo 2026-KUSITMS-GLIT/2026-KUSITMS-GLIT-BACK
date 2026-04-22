@@ -1,4 +1,4 @@
-package com.groute.groute_server.auth.jwt;
+package com.groute.groute_server.common.jwt;
 
 /**
  * JWT 토큰 종류.

@@ -1,4 +1,4 @@
-package com.groute.groute_server.auth.resolver;
+package com.groute.groute_server.common.resolver;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -10,7 +10,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import com.groute.groute_server.auth.annotation.CurrentUser;
+import com.groute.groute_server.common.annotation.CurrentUser;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 

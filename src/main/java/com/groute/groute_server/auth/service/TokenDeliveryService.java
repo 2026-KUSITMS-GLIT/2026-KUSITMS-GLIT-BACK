@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 import com.groute.groute_server.auth.config.AuthProperties;
 import com.groute.groute_server.auth.dto.TokenResponse;
-import com.groute.groute_server.auth.jwt.JwtProperties;
+import com.groute.groute_server.common.jwt.JwtProperties;
 
 import lombok.RequiredArgsConstructor;
 

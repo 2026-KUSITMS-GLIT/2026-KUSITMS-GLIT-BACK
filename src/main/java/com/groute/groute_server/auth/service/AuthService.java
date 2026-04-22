@@ -3,12 +3,12 @@ package com.groute.groute_server.auth.service;
 import org.springframework.stereotype.Service;
 
 import com.groute.groute_server.auth.dto.TokenResponse;
-import com.groute.groute_server.auth.jwt.JwtTokenProvider;
-import com.groute.groute_server.auth.jwt.JwtValidationResult;
-import com.groute.groute_server.auth.jwt.TokenType;
 import com.groute.groute_server.auth.repository.RefreshTokenRepository;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.jwt.JwtTokenProvider;
+import com.groute.groute_server.common.jwt.JwtValidationResult;
+import com.groute.groute_server.common.jwt.TokenType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

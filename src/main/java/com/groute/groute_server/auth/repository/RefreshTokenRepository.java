@@ -8,7 +8,7 @@ import java.util.Optional;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.groute.groute_server.auth.jwt.JwtProperties;
+import com.groute.groute_server.common.jwt.JwtProperties;
 
 import lombok.RequiredArgsConstructor;
 
