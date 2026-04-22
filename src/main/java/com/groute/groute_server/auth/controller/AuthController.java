@@ -1,6 +1,7 @@
 package com.groute.groute_server.auth.controller;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,7 +40,7 @@ public class AuthController {
     @PostMapping("/reissue")
     public ApiResponse<TokenResponse> reissue(
             @CookieValue(name = "refreshToken", required = false) String refreshCookie,
-            @RequestBody(required = false) TokenReissueRequest request,
+            @Valid @RequestBody(required = false) TokenReissueRequest request,
             HttpServletResponse response) {
         String refreshToken = pickRefreshToken(refreshCookie, request);
         TokenResponse tokens = authService.reissue(refreshToken);
