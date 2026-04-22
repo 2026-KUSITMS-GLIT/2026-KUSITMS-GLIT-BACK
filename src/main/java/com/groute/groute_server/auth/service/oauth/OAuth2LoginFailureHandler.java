@@ -46,8 +46,7 @@ public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
         response.setStatus(errorCode.getHttpStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(
-                response.getWriter(), ErrorResponse.of(errorCode, exception.getMessage()));
+        objectMapper.writeValue(response.getWriter(), ErrorResponse.of(errorCode));
     }
 
     private ErrorCode resolveErrorCode(AuthenticationException exception) {
