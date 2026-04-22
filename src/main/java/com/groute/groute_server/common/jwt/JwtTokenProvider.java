@@ -1,4 +1,4 @@
-package com.groute.groute_server.auth.jwt;
+package com.groute.groute_server.common.jwt;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;

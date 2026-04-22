@@ -1,4 +1,4 @@
-package com.groute.groute_server.auth.filter;
+package com.groute.groute_server.common.filter;
 
 import java.io.IOException;
 import java.util.List;
@@ -16,9 +16,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.groute.groute_server.auth.jwt.JwtTokenProvider;
-import com.groute.groute_server.auth.jwt.JwtValidationResult;
-import com.groute.groute_server.auth.jwt.TokenType;
+import com.groute.groute_server.common.jwt.JwtTokenProvider;
+import com.groute.groute_server.common.jwt.JwtValidationResult;
+import com.groute.groute_server.common.jwt.TokenType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

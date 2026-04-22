@@ -15,9 +15,9 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.groute.groute_server.auth.dto.TokenResponse;
-import com.groute.groute_server.auth.jwt.JwtTokenProvider;
 import com.groute.groute_server.auth.repository.RefreshTokenRepository;
 import com.groute.groute_server.auth.service.TokenDeliveryService;
+import com.groute.groute_server.common.jwt.JwtTokenProvider;
 import com.groute.groute_server.common.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;

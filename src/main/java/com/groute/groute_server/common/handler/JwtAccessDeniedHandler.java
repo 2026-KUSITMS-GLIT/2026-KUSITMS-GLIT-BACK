@@ -1,4 +1,4 @@
-package com.groute.groute_server.auth.handler;
+package com.groute.groute_server.common.handler;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

@@ -1,4 +1,4 @@
-package com.groute.groute_server.auth.annotation;
+package com.groute.groute_server.common.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

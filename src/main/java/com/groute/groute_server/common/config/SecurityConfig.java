@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -12,25 +13,18 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.groute.groute_server.auth.filter.JwtAuthenticationFilter;
-import com.groute.groute_server.auth.handler.JwtAccessDeniedHandler;
-import com.groute.groute_server.auth.handler.JwtAuthenticationEntryPoint;
-import com.groute.groute_server.auth.service.oauth.CustomOAuth2UserService;
-import com.groute.groute_server.auth.service.oauth.OAuth2LoginFailureHandler;
-import com.groute.groute_server.auth.service.oauth.OAuth2LoginSuccessHandler;
+import com.groute.groute_server.common.filter.JwtAuthenticationFilter;
+import com.groute.groute_server.common.handler.JwtAccessDeniedHandler;
+import com.groute.groute_server.common.handler.JwtAuthenticationEntryPoint;
 
 import lombok.RequiredArgsConstructor;
 
 /**
- * Spring Security 설정.
+ * Spring Security 공통 JWT 필터 체인 설정.
  *
- * <p>인증이 필요 없는 경로({@link #PUBLIC_ENDPOINTS})를 제외한 모든 요청은 인증을 요구한다. OAuth2 로그인 플로우는 {@link
- * CustomOAuth2UserService}가 user-info 정규화·upsert를, {@link OAuth2LoginSuccessHandler}가 JWT 발급·응답을
- * 담당한다. 이후 API 요청은 {@link JwtAuthenticationFilter}가 Authorization 헤더의 access 토큰을 검증해
- * SecurityContext를 채운다.
- *
- * <p>세션: OAuth2 인가 코드 플로우의 state 유지 목적으로만 잠시 사용되며, SuccessHandler에서 즉시 invalidate. API 인증은
- * JWT-only.
+ * <p>OAuth2 로그인 플로우는 {@code auth/config/OAuth2SecurityConfig} (@Order(1))가 담당하며, 본 체인은 @Order(2)로 그
+ * 외 모든 API 요청에 적용된다. 인증이 필요 없는 경로({@link #PUBLIC_ENDPOINTS})를 제외한 모든 요청은 인증을 요구한다. {@link
+ * JwtAuthenticationFilter}가 Authorization 헤더의 access 토큰을 검증해 SecurityContext를 채운다.
  */
 @Configuration
 @EnableWebSecurity
@@ -48,14 +42,12 @@ public class SecurityConfig {
         "/actuator/**"
     };
 
-    private final CustomOAuth2UserService customOAuth2UserService;
-    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
-    private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     @Bean
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -67,14 +59,6 @@ public class SecurityConfig {
                                         .permitAll()
                                         .anyRequest()
                                         .authenticated())
-                .oauth2Login(
-                        oauth2 ->
-                                oauth2.userInfoEndpoint(
-                                                userInfo ->
-                                                        userInfo.userService(
-                                                                customOAuth2UserService))
-                                        .successHandler(oAuth2LoginSuccessHandler)
-                                        .failureHandler(oAuth2LoginFailureHandler))
                 .exceptionHandling(
                         ex ->
                                 ex.authenticationEntryPoint(jwtAuthenticationEntryPoint)
