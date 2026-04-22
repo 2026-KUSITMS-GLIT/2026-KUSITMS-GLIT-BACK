@@ -31,6 +31,7 @@ jobs:
             echo "SSM_PATH=/groute/prod"                  >> $GITHUB_ENV
           fi
           echo "IMAGE_TAG=sha-${{ github.event.workflow_run.head_sha }}" >> $GITHUB_ENV
+          echo "HEAD_SHA=${{ github.event.workflow_run.head_sha }}"    >> $GITHUB_ENV
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -62,7 +63,7 @@ jobs:
                 ("export APP_IMAGE=" + $image),
                 ("export SPRING_PROFILES_ACTIVE=" + $env_val),
                 "export REDIS_PASSWORD=$(grep '^REDIS_PASSWORD=' /tmp/groute.env | cut -d= -f2-)",
-                "aws s3 cp s3://glit-images/deploy/docker-compose.yml /home/ssm-user/glit/docker-compose.yml",
+                ("aws s3 cp s3://glit-images/deploy/" + $sha + "/docker-compose.yml /home/ssm-user/glit/docker-compose.yml"),
                 "docker stop groute-server 2>/dev/null || true",
                 "docker rm   groute-server 2>/dev/null || true",
                 "cd /home/ssm-user/glit && docker compose up -d --pull always",
@@ -78,6 +79,7 @@ jobs:
             --arg reg     "$ECR_REGISTRY" \
             --arg image   "$FULL_IMAGE" \
             --arg ssmpath "$SSM_PATH" \
+            --arg sha     "$HEAD_SHA" \
             -f /tmp/jq-deploy.jq > /tmp/ssm-input.json
 
           COMMAND_ID=$(aws ssm send-command \
