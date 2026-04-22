@@ -90,6 +90,10 @@ jwt:
   access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600000}
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:1209600000}
 
+auth:
+  refresh-token:
+    cookie-enabled: false
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -183,6 +187,10 @@ app:
   swagger:
     server-url: https://api.glit.today
     server-description: Production
+
+auth:
+  refresh-token:
+    cookie-enabled: true
 
 discord:
   webhook:
