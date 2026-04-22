@@ -70,3 +70,7 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "Pushed → $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: docker-compose.yml을 S3에 업로드
+        if: github.event_name == 'push'
+        run: aws s3 cp docker-compose.yml s3://glit-images/deploy/docker-compose.yml
