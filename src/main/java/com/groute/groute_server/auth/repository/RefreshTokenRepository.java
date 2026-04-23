@@ -19,8 +19,8 @@ import lombok.RequiredArgsConstructor;
  * 리프레시 토큰의 Redis 저장소.
  *
  * <p>키 포맷 {@code refresh:{userId}}, 값은 리프레시 토큰의 SHA-256 해시(hex), TTL은 {@link
- * JwtProperties#refreshTokenExpiration()}과 동일. 원문을 저장하지 않으므로 Redis 스냅샷/로그 유출 시에도 토큰 자체가 노출되지
- * 않는다. TTL 만료 시 Redis가 자동 제거하므로 별도 정리 배치는 불필요.
+ * JwtProperties#refreshTokenExpiration()}과 동일. 원문을 저장하지 않으므로 Redis 스냅샷/로그 유출 시에도 토큰 자체가 노출되지 않는다.
+ * TTL 만료 시 Redis가 자동 제거하므로 별도 정리 배치는 불필요.
  *
  * <p>로그아웃/탈퇴(MYP004·MYP005) 시 {@link #deleteByUserId(Long)}로 무효화하고, 재발급(ONB001) 시 {@link
  * #rotate(Long, String, String)}로 이전 값과 일치 확인 + 새 값 저장을 Lua 스크립트로 원자 실행한다. 두 단계가 분리되면 동시 요청이 같은
