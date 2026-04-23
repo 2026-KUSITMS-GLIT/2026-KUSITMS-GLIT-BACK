@@ -73,4 +73,14 @@ public class User extends SoftDeleteEntity {
     public void recordLogin() {
         this.lastLoginAt = OffsetDateTime.now();
     }
+
+    /**
+     * 마이페이지 프로필 수정(MYP002). 직군·상태를 덮어쓴다.
+     *
+     * <p>요청 바디가 항상 두 필드를 모두 포함한다는 전제(부분 수정 아님). null 허용 여부는 호출부 검증 책임이다.
+     */
+    public void updateProfile(JobRole jobRole, UserStatus userStatus) {
+        this.jobRole = jobRole;
+        this.userStatus = userStatus;
+    }
 }
