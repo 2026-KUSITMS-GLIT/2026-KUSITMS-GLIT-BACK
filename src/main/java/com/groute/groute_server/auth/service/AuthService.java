@@ -46,6 +46,7 @@ public class AuthService {
         String newRefreshToken = jwtTokenProvider.createRefreshToken(userId);
 
         if (!refreshTokenRepository.rotate(userId, refreshToken, newRefreshToken)) {
+            refreshTokenRepository.deleteByUserId(userId);
             throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
