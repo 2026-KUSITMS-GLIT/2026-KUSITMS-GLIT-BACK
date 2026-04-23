@@ -19,8 +19,8 @@ import lombok.extern.slf4j.Slf4j;
  * <p>검증·매칭 실패는 전부 {@link ErrorCode#INVALID_REFRESH_TOKEN} (401)로 일원화. 토큰 자체 누락은 그보다 앞 단계에서 {@link
  * ErrorCode#REFRESH_TOKEN_REQUIRED} (400)로 분리해, 클라이언트 버그(누락)와 실제 인증 실패를 구분.
  *
- * <p>성공 시 refresh 토큰을 rotate — 새 값으로 Redis 덮어쓰기. 탈취된 이전 토큰으로 재시도해도 Redis의 신규 값과 불일치라 실패하므로 일회성 토큰
- * 취약점을 완화한다.
+ * <p>성공 시 refresh 토큰을 rotate — {@link RefreshTokenRepository#rotate(Long, String, String)} 가 Lua
+ * 스크립트로 "이전 값 일치 확인 + 새 값 저장"을 원자 실행한다. 동시 요청이 들어와도 한 건만 성공하고 나머지는 401로 거절되어 일회성 회전 보장이 유지된다.
  */
 @Slf4j
 @Service
@@ -42,13 +42,12 @@ public class AuthService {
         }
 
         Long userId = jwtTokenProvider.getUserId(refreshToken);
-        if (!refreshTokenRepository.matches(userId, refreshToken)) {
-            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
-        }
-
         String newAccessToken = jwtTokenProvider.createAccessToken(userId);
         String newRefreshToken = jwtTokenProvider.createRefreshToken(userId);
-        refreshTokenRepository.save(userId, newRefreshToken);
+
+        if (!refreshTokenRepository.rotate(userId, refreshToken, newRefreshToken)) {
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
 
         log.debug("리프레시 성공: userId={}", userId);
         return new TokenResponse(newAccessToken, newRefreshToken);
