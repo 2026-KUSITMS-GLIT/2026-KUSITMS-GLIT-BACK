@@ -157,7 +157,7 @@ spring:
 
 app:
   swagger:
-    server-url: https://stg.api.glit.today
+    server-url: https://stg-api.glit.today
     server-description: Staging
 
 discord:
