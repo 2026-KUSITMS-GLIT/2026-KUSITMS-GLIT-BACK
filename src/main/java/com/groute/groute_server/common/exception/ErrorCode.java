@@ -37,6 +37,8 @@ public enum ErrorCode {
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다."),
+    INVALID_JOB_ROLE(HttpStatus.BAD_REQUEST, "USER_002", "지원하지 않는 사용자 직군입니다."),
+    INVALID_USER_STATUS(HttpStatus.BAD_REQUEST, "USER_003", "지원하지 않는 사용자 상태입니다."),
     ;
 
     private final HttpStatus httpStatus;
