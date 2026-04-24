@@ -72,4 +72,45 @@ class TokenDeliveryServiceTest {
             assertThat(response.getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
         }
     }
+
+    @Nested
+    @DisplayName("clear")
+    class Clear {
+
+        @Test
+        @DisplayName("쿠키 모드일 때 Set-Cookie에 Max-Age=0 refresh 쿠키를 심어 브라우저 측에서 삭제되게 한다")
+        void should_setExpiredRefreshCookie_when_cookieEnabled() {
+            // given
+            TokenDeliveryService service = serviceWithCookieEnabled(true);
+            MockHttpServletResponse response = new MockHttpServletResponse();
+
+            // when
+            service.clear(response);
+
+            // then
+            List<String> cookies = response.getHeaders(HttpHeaders.SET_COOKIE);
+            assertThat(cookies).hasSize(1);
+            assertThat(cookies.get(0))
+                    .contains("refreshToken=")
+                    .contains("Max-Age=0")
+                    .contains("Path=/")
+                    .contains("HttpOnly")
+                    .contains("Secure")
+                    .contains("SameSite=Strict");
+        }
+
+        @Test
+        @DisplayName("쿠키 모드가 꺼져 있을 때 Set-Cookie 헤더를 추가하지 않는다")
+        void should_notSetCookie_when_cookieDisabled() {
+            // given
+            TokenDeliveryService service = serviceWithCookieEnabled(false);
+            MockHttpServletResponse response = new MockHttpServletResponse();
+
+            // when
+            service.clear(response);
+
+            // then
+            assertThat(response.getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
+        }
+    }
 }
