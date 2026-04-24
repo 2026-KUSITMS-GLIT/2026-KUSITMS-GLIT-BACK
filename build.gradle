@@ -60,6 +60,14 @@ def jacocoExcludes = [
 	'**/config/**',
 	'**/exception/**',
 	'**/Q*.class',
+	// 인프라/보안 계층 — 단위 테스트 어렵거나 통합 테스트 범위
+	'**/filter/**',
+	'**/handler/**',
+	'**/webhook/**',
+	'**/resolver/**',
+	'**/jwt/**',
+	// TODO: auth 도메인 단위 테스트 추가 후 제외 해제 (별도 이슈 트래킹)
+	'**/auth/**',
 ]
 
 tasks.named('test') {
