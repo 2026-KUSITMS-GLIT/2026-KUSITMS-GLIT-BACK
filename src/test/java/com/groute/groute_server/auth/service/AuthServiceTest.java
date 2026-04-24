@@ -1,10 +1,12 @@
 package com.groute.groute_server.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.DisplayName;
@@ -128,6 +130,40 @@ class AuthServiceTest {
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INVALID_REFRESH_TOKEN);
             verify(refreshTokenRepository).deleteByUserId(userId);
+        }
+    }
+
+    @Nested
+    @DisplayName("로그아웃")
+    class Logout {
+
+        @Test
+        @DisplayName("logout을 호출했을 때 Redis의 refresh 토큰을 userId로 삭제한다")
+        void should_deleteRefreshTokenByUserId_when_logoutCalled() {
+            // given
+            Long userId = 42L;
+
+            // when
+            authService.logout(userId);
+
+            // then
+            verify(refreshTokenRepository).deleteByUserId(userId);
+        }
+
+        @Test
+        @DisplayName("logout을 두 번 호출해도 예외 없이 매 호출마다 deleteByUserId를 수행한다")
+        void should_beIdempotent_when_logoutCalledTwice() {
+            // given
+            Long userId = 42L;
+
+            // when & then
+            assertThatCode(
+                            () -> {
+                                authService.logout(userId);
+                                authService.logout(userId);
+                            })
+                    .doesNotThrowAnyException();
+            verify(refreshTokenRepository, times(2)).deleteByUserId(userId);
         }
     }
 }
