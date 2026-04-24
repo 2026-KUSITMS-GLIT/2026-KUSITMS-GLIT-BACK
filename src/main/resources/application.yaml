@@ -118,7 +118,9 @@ app:
     server-url: http://localhost:8080
     server-description: Local
   user:
-    default-profile-image-url: ${USER_DEFAULT_PROFILE_IMAGE_URL:}
+    # stg/prod는 SSM에서 USER_DEFAULT_PROFILE_IMAGE_URL 주입 필수 — 누락 시 부팅 실패(fail-fast)로 설정 오류 즉시 노출.
+    # 로컬은 하단 local 프로파일에서 빈 문자열 fallback 허용
+    default-profile-image-url: ${USER_DEFAULT_PROFILE_IMAGE_URL}
 
 discord:
   webhook:
@@ -137,6 +139,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+app:
+  user:
+    default-profile-image-url: ${USER_DEFAULT_PROFILE_IMAGE_URL:}
 
 logging:
   level:
