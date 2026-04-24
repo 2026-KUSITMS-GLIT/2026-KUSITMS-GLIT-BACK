@@ -8,6 +8,7 @@ import com.groute.groute_server.common.entity.SoftDeleteEntity;
 import com.groute.groute_server.user.enums.JobRole;
 import com.groute.groute_server.user.enums.UserStatus;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -21,7 +22,7 @@ import lombok.NoArgsConstructor;
  * nullable이며, 온보딩 완료 여부는 {@code nickname IS NOT NULL}로 판정한다.
  */
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "users")
 public class User extends SoftDeleteEntity {
