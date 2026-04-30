@@ -66,8 +66,6 @@ def jacocoExcludes = [
 	'**/webhook/**',
 	'**/resolver/**',
 	'**/jwt/**',
-	// TODO(#53): auth 도메인 단위 테스트 추가 후 제외 해제
-	'**/auth/**',
 ]
 
 tasks.named('test') {
