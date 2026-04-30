@@ -60,6 +60,12 @@ def jacocoExcludes = [
 	'**/config/**',
 	'**/exception/**',
 	'**/Q*.class',
+	// 인프라/보안 계층 — 단위 테스트 어렵거나 통합 테스트 범위
+	'**/filter/**',
+	'**/handler/**',
+	'**/webhook/**',
+	'**/resolver/**',
+	'**/jwt/**',
 ]
 
 tasks.named('test') {

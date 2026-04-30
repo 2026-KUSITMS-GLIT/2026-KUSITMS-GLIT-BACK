@@ -1,6 +1,7 @@
 package com.groute.groute_server.user.entity;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 import jakarta.persistence.*;
 
@@ -8,6 +9,7 @@ import com.groute.groute_server.common.entity.SoftDeleteEntity;
 import com.groute.groute_server.user.enums.JobRole;
 import com.groute.groute_server.user.enums.UserStatus;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -21,7 +23,7 @@ import lombok.NoArgsConstructor;
  * nullable이며, 온보딩 완료 여부는 {@code nickname IS NOT NULL}로 판정한다.
  */
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "users")
 public class User extends SoftDeleteEntity {
@@ -72,5 +74,15 @@ public class User extends SoftDeleteEntity {
     /** 로그인 성공 시 마지막 로그인 시각 갱신. */
     public void recordLogin() {
         this.lastLoginAt = OffsetDateTime.now();
+    }
+
+    /**
+     * 마이페이지 프로필 수정(MYP002). 직군·상태를 덮어쓴다.
+     *
+     * <p>요청 바디가 항상 두 필드를 모두 포함한다는 전제(부분 수정 아님). 엔티티 invariant 유지를 위해 호출부와 관계없이 null을 거부한다
+     */
+    public void updateProfile(JobRole jobRole, UserStatus userStatus) {
+        this.jobRole = Objects.requireNonNull(jobRole, "jobRole");
+        this.userStatus = Objects.requireNonNull(userStatus, "userStatus");
     }
 }
