@@ -66,5 +66,3 @@ application-secret.properties
 
 # Claude Code
 .claude/
-
- !.idea/fileTemplates/
