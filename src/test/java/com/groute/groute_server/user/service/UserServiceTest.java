@@ -60,6 +60,72 @@ class UserServiceTest {
     }
 
     @Nested
+    @DisplayName("온보딩 완료")
+    class CompleteOnboarding {
+
+        @Test
+        @DisplayName("성공 — 닉네임·직군·상태가 엔티티에 반영됨")
+        void completesOnboarding_whenValid() {
+            User user = User.createForSocialLogin();
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+
+            User result = userService.completeOnboarding(USER_ID, "겨레", "개발자", "재학 중");
+
+            assertThat(result.getNickname()).isEqualTo("겨레");
+            assertThat(result.getJobRole()).isEqualTo(JobRole.DEVELOPER);
+            assertThat(result.getUserStatus()).isEqualTo(UserStatus.STUDENT);
+        }
+
+        @Test
+        @DisplayName("실패 — 이미 온보딩 완료된 유저면 ONBOARDING_ALREADY_COMPLETED")
+        void throwsAlreadyCompleted_whenNicknameExists() {
+            User user = User.createForSocialLogin();
+            user.completeOnboarding("기존닉네임", JobRole.DEVELOPER, UserStatus.STUDENT);
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> userService.completeOnboarding(USER_ID, "새닉네임", "개발자", "재학 중"))
+                    .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
+                    .extracting(BusinessException::getErrorCode)
+                    .isEqualTo(ErrorCode.ONBOARDING_ALREADY_COMPLETED);
+        }
+
+        @Test
+        @DisplayName("실패 — 유저 없으면 USER_NOT_FOUND")
+        void throwsUserNotFound_whenUserMissing() {
+            given(userRepository.findById(USER_ID)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.completeOnboarding(USER_ID, "겨레", "개발자", "재학 중"))
+                    .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
+                    .extracting(BusinessException::getErrorCode)
+                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("실패 — 유효하지 않은 직군 라벨이면 INVALID_JOB_ROLE")
+        void throwsInvalidJobRole_whenJobRoleUnknown() {
+            User user = User.createForSocialLogin();
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> userService.completeOnboarding(USER_ID, "겨레", "몰라요", "재학 중"))
+                    .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
+                    .extracting(BusinessException::getErrorCode)
+                    .isEqualTo(ErrorCode.INVALID_JOB_ROLE);
+        }
+
+        @Test
+        @DisplayName("실패 — 유효하지 않은 상태 라벨이면 INVALID_USER_STATUS")
+        void throwsInvalidUserStatus_whenStatusUnknown() {
+            User user = User.createForSocialLogin();
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> userService.completeOnboarding(USER_ID, "겨레", "개발자", "백수"))
+                    .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
+                    .extracting(BusinessException::getErrorCode)
+                    .isEqualTo(ErrorCode.INVALID_USER_STATUS);
+        }
+    }
+
+    @Nested
     @DisplayName("내 프로필 수정")
     class UpdateMyProfile {
 
