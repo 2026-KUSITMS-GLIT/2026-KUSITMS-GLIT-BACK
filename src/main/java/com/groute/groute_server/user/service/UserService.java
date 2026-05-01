@@ -61,23 +61,26 @@ public class UserService {
     /**
      * 온보딩 일괄 완료 — 닉네임·직군·상태를 한 번에 저장한다.
      *
-     * <p>이미 온보딩이 완료된 유저({@code nickname != null})가 재요청하면 {@link
-     * ErrorCode#ONBOARDING_ALREADY_COMPLETED}를 던진다.
+     * <p>{@code nickname IS NULL} 조건부 단건 UPDATE로 원자적으로 처리해 동시 요청이 모두 성공하는 레이스를 방지한다. 0 rows 반환 시 유저
+     * 존재 여부로 {@link ErrorCode#USER_NOT_FOUND}와 {@link ErrorCode#ONBOARDING_ALREADY_COMPLETED}를
+     * 구분한다.
      */
     @Transactional
     public User completeOnboarding(
             Long userId, String nickname, String jobRoleLabel, String userStatusLabel) {
-        User user =
-                userRepository
-                        .findById(userId)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        if (user.getNickname() != null) {
-            throw new BusinessException(ErrorCode.ONBOARDING_ALREADY_COMPLETED);
-        }
         JobRole jobRole = parseJobRole(jobRoleLabel);
         UserStatus userStatus = parseUserStatus(userStatusLabel);
-        user.completeOnboarding(nickname, jobRole, userStatus);
-        return user;
+        int updated =
+                userRepository.completeOnboardingIfNotDone(userId, nickname, jobRole, userStatus);
+        if (updated == 0) {
+            if (!userRepository.existsById(userId)) {
+                throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            }
+            throw new BusinessException(ErrorCode.ONBOARDING_ALREADY_COMPLETED);
+        }
+        return userRepository
+                .findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
     private JobRole parseJobRole(String label) {
