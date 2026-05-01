@@ -10,9 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record OnboardCompleteRequest(
         @NotBlank(message = "닉네임은 필수입니다.")
                 @Size(min = 2, max = 12, message = "닉네임은 2자 이상 12자 이하여야 합니다.")
-                @Pattern(
-                        regexp = "^[가-힣a-zA-Z0-9]+$",
-                        message = "닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.")
+                @Pattern(regexp = "^[가-힣a-zA-Z0-9]+$", message = "닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.")
                 @Schema(description = "닉네임 (2~12자, 한글·영문·숫자)", example = "겨레")
                 String nickname,
         @NotBlank(message = "직군은 필수입니다.")
