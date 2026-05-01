@@ -71,13 +71,6 @@ public class User extends SoftDeleteEntity {
         return new User();
     }
 
-    /** 온보딩 완료 시 닉네임·직군·상태를 한 번에 저장. */
-    public void completeOnboarding(String nickname, JobRole jobRole, UserStatus userStatus) {
-        this.nickname = Objects.requireNonNull(nickname, "nickname");
-        this.jobRole = Objects.requireNonNull(jobRole, "jobRole");
-        this.userStatus = Objects.requireNonNull(userStatus, "userStatus");
-    }
-
     /** 로그인 성공 시 마지막 로그인 시각 갱신. */
     public void recordLogin() {
         this.lastLoginAt = OffsetDateTime.now();
