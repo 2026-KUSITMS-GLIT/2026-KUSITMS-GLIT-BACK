@@ -40,6 +40,7 @@ public enum ErrorCode {
     INVALID_JOB_ROLE(HttpStatus.BAD_REQUEST, "USER_002", "지원하지 않는 사용자 직군입니다."),
     INVALID_USER_STATUS(HttpStatus.BAD_REQUEST, "USER_003", "지원하지 않는 사용자 상태입니다."),
     ONBOARDING_ALREADY_COMPLETED(HttpStatus.CONFLICT, "USER_004", "이미 온보딩이 완료된 사용자입니다."),
+    ONBOARDING_NOT_COMPLETED(HttpStatus.FORBIDDEN, "USER_005", "온보딩을 먼저 완료해주세요."),
     ;
 
     private final HttpStatus httpStatus;
