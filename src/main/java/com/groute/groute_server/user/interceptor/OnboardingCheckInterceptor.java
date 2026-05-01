@@ -11,7 +11,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
-import com.groute.groute_server.user.repository.UserRepository;
+import com.groute.groute_server.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OnboardingCheckInterceptor implements HandlerInterceptor {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @Override
     public boolean preHandle(
@@ -38,13 +38,9 @@ public class OnboardingCheckInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        userRepository
-                .findById(userId)
-                .filter(user -> user.getNickname() == null)
-                .ifPresent(
-                        user -> {
-                            throw new BusinessException(ErrorCode.ONBOARDING_NOT_COMPLETED);
-                        });
+        if (!userService.isOnboardingCompleted(userId)) {
+            throw new BusinessException(ErrorCode.ONBOARDING_NOT_COMPLETED);
+        }
 
         return true;
     }

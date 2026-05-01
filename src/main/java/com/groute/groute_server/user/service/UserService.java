@@ -24,6 +24,14 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    /** 온보딩 완료 여부 — {@code nickname}이 NULL이면 미완료. */
+    public boolean isOnboardingCompleted(Long userId) {
+        return userRepository
+                .findById(userId)
+                .map(user -> user.getNickname() != null)
+                .orElse(false);
+    }
+
     /** 내 프로필 조회 — 존재하지 않으면 {@link ErrorCode#USER_NOT_FOUND}. */
     public User getMyProfile(Long userId) {
         return userRepository
