@@ -1,4 +1,4 @@
-package com.groute.groute_server.common.interceptor;
+package com.groute.groute_server.user.interceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

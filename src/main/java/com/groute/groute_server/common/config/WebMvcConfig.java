@@ -7,8 +7,8 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import com.groute.groute_server.common.interceptor.OnboardingCheckInterceptor;
 import com.groute.groute_server.common.resolver.CurrentUserArgumentResolver;
+import com.groute.groute_server.user.interceptor.OnboardingCheckInterceptor;
 
 import lombok.RequiredArgsConstructor;
 
