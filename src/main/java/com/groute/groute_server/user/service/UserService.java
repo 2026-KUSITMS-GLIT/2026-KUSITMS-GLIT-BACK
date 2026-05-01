@@ -50,6 +50,28 @@ public class UserService {
         return user;
     }
 
+    /**
+     * 온보딩 일괄 완료 — 닉네임·직군·상태를 한 번에 저장한다.
+     *
+     * <p>이미 온보딩이 완료된 유저({@code nickname != null})가 재요청하면 {@link
+     * ErrorCode#ONBOARDING_ALREADY_COMPLETED}를 던진다.
+     */
+    @Transactional
+    public User completeOnboarding(
+            Long userId, String nickname, String jobRoleLabel, String userStatusLabel) {
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (user.getNickname() != null) {
+            throw new BusinessException(ErrorCode.ONBOARDING_ALREADY_COMPLETED);
+        }
+        JobRole jobRole = parseJobRole(jobRoleLabel);
+        UserStatus userStatus = parseUserStatus(userStatusLabel);
+        user.completeOnboarding(nickname, jobRole, userStatus);
+        return user;
+    }
+
     private JobRole parseJobRole(String label) {
         try {
             return JobRole.fromLabel(label);
