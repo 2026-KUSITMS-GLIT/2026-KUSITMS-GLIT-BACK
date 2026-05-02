@@ -63,4 +63,18 @@ public class AiTaggingJob extends BaseTimeEntity {
     /** SUCCESS/FAILED 확정 시각. */
     @Column(name = "finished_at")
     private OffsetDateTime finishedAt;
+
+
+    /**
+     * 새 AI 태깅 잡을 생성한다.
+     *
+     * <p>REC-005 트리거 시 어댑터에서 호출한다. status는 QUEUED, retryCount는 0으로 초기화된다.
+     *
+     * @param starRecord 태깅 대상 STAR 기록
+     */
+    public AiTaggingJob(StarRecord starRecord) {
+        this.starRecord = starRecord;
+        this.status = JobStatus.QUEUED;
+        this.retryCount = 0;
+    }
 }

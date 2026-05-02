@@ -60,4 +60,29 @@ public class StarRecord extends SoftDeleteEntity {
     /** 완료 시각. 리포트 임계치(10회 단위) 카운트 기준(RPT001). */
     @Column(name = "completed_at")
     private OffsetDateTime completedAt;
+
+
+    /**
+     * 이 StarRecord가 특정 유저의 소유인지 확인한다.
+     *
+     * <p>AI 태깅 트리거 시 본인 소유 검증에 사용한다(REC-005).
+     *
+     * @param userId 검증할 유저 ID
+     * @return 소유자이면 true
+     */
+    public boolean isOwnedBy(Long userId) {
+        return this.user.getId().equals(userId);
+    }
+
+    /**
+     * AI 태깅 호출 가능한 상태인지 확인한다.
+     *
+     * <p>currentStep이 DONE이어야 AI 태깅 트리거 가능하다(REC-005).
+     * DONE은 S·T, A, R 3단계가 모두 작성 완료된 상태를 의미한다.
+     *
+     * @return DONE 단계이면 true
+     */
+    public boolean isReadyForTagging() {
+        return this.currentStep == StarStep.DONE;
+    }
 }
