@@ -24,4 +24,10 @@ public abstract class SoftDeleteEntity extends BaseTimeEntity {
     /** 논리 삭제 시각. {@link #isDeleted}=true와 함께 set. */
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
+
+    /** 논리 삭제 처리. */
+    public void softDelete() {
+        this.isDeleted = true;
+        this.deletedAt = OffsetDateTime.now();
+    }
 }
