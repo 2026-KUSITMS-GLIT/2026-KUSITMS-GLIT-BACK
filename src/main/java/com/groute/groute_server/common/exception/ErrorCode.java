@@ -41,6 +41,15 @@ public enum ErrorCode {
     INVALID_USER_STATUS(HttpStatus.BAD_REQUEST, "USER_003", "지원하지 않는 사용자 상태입니다."),
     ONBOARDING_ALREADY_COMPLETED(HttpStatus.CONFLICT, "USER_004", "이미 온보딩이 완료된 사용자입니다."),
     ONBOARDING_NOT_COMPLETED(HttpStatus.FORBIDDEN, "USER_005", "온보딩을 먼저 완료해주세요."),
+
+    // Record - StarRecord
+    STAR_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "REC_001", "STAR 기록을 찾을 수 없습니다."),
+    STAR_RECORD_NOT_READY(HttpStatus.BAD_REQUEST, "REC_002", "STAR 작성이 완료되지 않아 AI 태깅을 요청할 수 없습니다."),
+
+    // Record - AI Tagging
+    AI_TAGGING_ALREADY_RUNNING(HttpStatus.CONFLICT, "REC_003", "AI 태깅이 이미 진행 중입니다."),
+    AI_TAGGING_PERMANENTLY_FAILED(HttpStatus.BAD_REQUEST, "REC_004", "AI 태깅이 최종 실패하여 재시도할 수 없습니다."),
+    AI_TAGGING_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "REC_005", "AI 태깅이 아직 완료되지 않아 결과를 조회할 수 없습니다."),
     ;
 
     private final HttpStatus httpStatus;
