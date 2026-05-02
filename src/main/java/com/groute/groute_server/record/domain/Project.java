@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import com.groute.groute_server.common.entity.SoftDeleteEntity;
 import com.groute.groute_server.user.entity.User;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -14,8 +17,10 @@ import lombok.NoArgsConstructor;
  * <p>스크럼 제목 구성 시 드롭다운으로 노출되며, 사용자별로 고유한 태그명을 가진다(REC002). {@link #titleCount}=0일 때만 태그 삭제가
  * 허용된다(심화기록 포함 카운팅 기준).
  */
+@Builder
 @Getter
-@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "projects")
 public class Project extends SoftDeleteEntity {
@@ -35,4 +40,9 @@ public class Project extends SoftDeleteEntity {
     /** 비정규화 카운터: 이 프로젝트에 연결된 scrum_titles 수. 0이면 태그 삭제 가능(REC002 태그 삭제 조건). */
     @Column(name = "title_count", nullable = false)
     private Short titleCount = 0;
+
+    /** 태그명 수정. */
+    public void rename(String name) {
+        this.name = name;
+    }
 }
