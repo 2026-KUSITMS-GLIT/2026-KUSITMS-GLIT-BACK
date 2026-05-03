@@ -13,8 +13,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * {@link AiTaggingJobPort}의 JPA 구현체.
  *
- * <p>서비스는 이 클래스의 존재를 모른다. {@link AiTaggingJobPort} 인터페이스만 바라보며,
- * Spring이 실행 시점에 이 어댑터를 자동으로 주입한다.
+ * <p>서비스는 이 클래스의 존재를 모른다. {@link AiTaggingJobPort} 인터페이스만 바라보며, Spring이 실행 시점에 이 어댑터를 자동으로 주입한다.
  */
 @Component
 @RequiredArgsConstructor

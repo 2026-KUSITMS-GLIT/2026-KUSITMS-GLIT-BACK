@@ -24,8 +24,8 @@ import lombok.RequiredArgsConstructor;
 /**
  * AI 태깅 트리거·상태 폴링·결과 조회 엔드포인트.
  *
- * <p>STAR R단계 완료 후 AI 역량 태깅을 비동기로 처리한다 (REC-005~007).
- * 모든 엔드포인트는 로그인 사용자 본인 리소스만 다루므로 {@link CurrentUser}로 userId를 주입받는다.
+ * <p>STAR R단계 완료 후 AI 역량 태깅을 비동기로 처리한다 (REC-005~007). 모든 엔드포인트는 로그인 사용자 본인 리소스만 다루므로 {@link
+ * CurrentUser}로 userId를 주입받는다.
  */
 @Tag(name = "Record", description = "심화 기록(STAR) AI 태깅 API")
 @RestController
@@ -68,8 +68,7 @@ public class StarTaggingController {
     @PostMapping("/{starRecordId}/ai-tagging")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<Void> triggerAiTagging(
-            @PathVariable Long starRecordId,
-            @CurrentUser Long userId) {
+            @PathVariable Long starRecordId, @CurrentUser Long userId) {
         triggerAiTaggingUseCase.trigger(starRecordId, userId);
         return ApiResponse.created("AI 태깅 트리거 성공");
     }
@@ -81,7 +80,8 @@ public class StarTaggingController {
      */
     @Operation(
             summary = "AI 태깅 상태 폴링",
-            description = "AI 태깅 잡의 현재 상태와 재시도 횟수를 반환한다. FAILED && retryCount=0이면 재시도 가능, retryCount=1이면 최종 실패.")
+            description =
+                    "AI 태깅 잡의 현재 상태와 재시도 횟수를 반환한다. FAILED && retryCount=0이면 재시도 가능, retryCount=1이면 최종 실패.")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
@@ -98,9 +98,9 @@ public class StarTaggingController {
     })
     @GetMapping("/{starRecordId}/ai-tagging/status")
     public ApiResponse<AiTaggingStatusResponse> getAiTaggingStatus(
-            @PathVariable Long starRecordId,
-            @CurrentUser Long userId) {
-        AiTaggingStatusResponse response = getAiTaggingStatusUseCase.getStatus(starRecordId, userId);
+            @PathVariable Long starRecordId, @CurrentUser Long userId) {
+        AiTaggingStatusResponse response =
+                getAiTaggingStatusUseCase.getStatus(starRecordId, userId);
         return ApiResponse.ok(response);
     }
 
@@ -131,9 +131,9 @@ public class StarTaggingController {
     })
     @GetMapping("/{starRecordId}/ai-tagging/result")
     public ApiResponse<AiTaggingResultResponse> getAiTaggingResult(
-            @PathVariable Long starRecordId,
-            @CurrentUser Long userId) {
-        AiTaggingResultResponse response = getAiTaggingResultUseCase.getResult(starRecordId, userId);
+            @PathVariable Long starRecordId, @CurrentUser Long userId) {
+        AiTaggingResultResponse response =
+                getAiTaggingResultUseCase.getResult(starRecordId, userId);
         return ApiResponse.ok(response);
     }
 }
