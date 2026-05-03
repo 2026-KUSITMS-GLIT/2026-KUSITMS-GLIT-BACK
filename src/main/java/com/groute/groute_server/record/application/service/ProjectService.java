@@ -1,7 +1,9 @@
 package com.groute.groute_server.record.application.service;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,20 +38,21 @@ public class ProjectService implements ProjectUseCase {
     }
 
     @Override
-    public Page<Project> getProjects(Long userId, Pageable pageable) {
+    public Page<Project> getProjects(Long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return projectPort.findAllByUserId(userId, pageable);
     }
 
     @Transactional
     @Override
     public Project updateProject(Long userId, Long projectId, String name) {
-        if (projectPort.existsByUserIdAndName(userId, name)) {
-            throw new BusinessException(ErrorCode.PROJECT_NAME_DUPLICATE);
-        }
         Project project =
                 projectPort
                         .findByIdAndUserId(projectId, userId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
+        if (projectPort.existsByUserIdAndName(userId, name)) {
+            throw new BusinessException(ErrorCode.PROJECT_NAME_DUPLICATE);
+        }
         project.rename(name);
         return project;
     }

@@ -1,7 +1,6 @@
 package com.groute.groute_server.record.application.port.in;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import com.groute.groute_server.record.domain.Project;
 
@@ -10,7 +9,7 @@ public interface ProjectUseCase {
 
     Project createProject(Long userId, String name);
 
-    Page<Project> getProjects(Long userId, Pageable pageable);
+    Page<Project> getProjects(Long userId, int page, int size);
 
     Project updateProject(Long userId, Long projectId, String name);
 

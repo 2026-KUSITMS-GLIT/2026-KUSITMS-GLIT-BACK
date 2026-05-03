@@ -2,6 +2,8 @@ package com.groute.groute_server.record.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -19,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
@@ -101,11 +102,10 @@ class ProjectServiceTest {
         @DisplayName("성공 — 페이지 결과 반환")
         void returnsPage_whenValid() {
             Project project = buildProject("졸업프로젝트", (short) 0);
-            Pageable pageable = PageRequest.of(0, 5);
-            Page<Project> page = new PageImpl<>(List.of(project), pageable, 1);
-            given(projectPort.findAllByUserId(USER_ID, pageable)).willReturn(page);
+            Page<Project> page = new PageImpl<>(List.of(project), PageRequest.of(0, 5), 1);
+            given(projectPort.findAllByUserId(eq(USER_ID), any())).willReturn(page);
 
-            Page<Project> result = projectService.getProjects(USER_ID, pageable);
+            Page<Project> result = projectService.getProjects(USER_ID, 0, 5);
 
             assertThat(result).isSameAs(page);
         }
@@ -131,6 +131,9 @@ class ProjectServiceTest {
         @Test
         @DisplayName("실패 — 이름 중복이면 PROJECT_NAME_DUPLICATE")
         void throwsDuplicate_whenNameExists() {
+            Project project = buildProject("졸업프로젝트", (short) 0);
+            given(projectPort.findByIdAndUserId(PROJECT_ID, USER_ID))
+                    .willReturn(Optional.of(project));
             given(projectPort.existsByUserIdAndName(USER_ID, "새이름")).willReturn(true);
 
             assertThatThrownBy(() -> projectService.updateProject(USER_ID, PROJECT_ID, "새이름"))
@@ -142,7 +145,6 @@ class ProjectServiceTest {
         @Test
         @DisplayName("실패 — 프로젝트 없으면 PROJECT_NOT_FOUND")
         void throwsNotFound_whenProjectMissing() {
-            given(projectPort.existsByUserIdAndName(USER_ID, "새이름")).willReturn(false);
             given(projectPort.findByIdAndUserId(PROJECT_ID, USER_ID)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> projectService.updateProject(USER_ID, PROJECT_ID, "새이름"))
