@@ -52,6 +52,12 @@ public enum ErrorCode {
     STAR_NOT_FOUND(HttpStatus.NOT_FOUND, "RECORD_006", "심화기록을 찾을 수 없습니다."),
     STAR_FORBIDDEN(HttpStatus.FORBIDDEN, "RECORD_007", "본인의 심화기록만 접근할 수 있습니다."),
 
+    // Record - AI Tagging
+    AI_TAGGING_ALREADY_RUNNING(HttpStatus.CONFLICT, "REC_003", "AI 태깅이 이미 진행 중입니다."),
+    AI_TAGGING_PERMANENTLY_FAILED(HttpStatus.BAD_REQUEST, "REC_004", "AI 태깅이 최종 실패하여 재시도할 수 없습니다."),
+    AI_TAGGING_NOT_COMPLETED(
+            HttpStatus.BAD_REQUEST, "REC_005", "AI 태깅이 아직 완료되지 않아 결과를 조회할 수 없습니다."),
+
     // Calendar
     CALENDAR_INVALID_DATE_FORMAT(
             HttpStatus.BAD_REQUEST, "CALENDAR_001", "날짜 형식이 올바르지 않습니다. (yyyy-MM-dd)"),
