@@ -38,6 +38,7 @@ public class Project extends SoftDeleteEntity {
     private String name;
 
     /** 비정규화 카운터: 이 프로젝트에 연결된 scrum_titles 수. 0이면 태그 삭제 가능(REC002 태그 삭제 조건). */
+    @Builder.Default
     @Column(name = "title_count", nullable = false)
     private Short titleCount = 0;
 
