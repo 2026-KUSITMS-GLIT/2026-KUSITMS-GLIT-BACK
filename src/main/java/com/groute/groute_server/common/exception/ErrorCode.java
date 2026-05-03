@@ -41,6 +41,11 @@ public enum ErrorCode {
     INVALID_USER_STATUS(HttpStatus.BAD_REQUEST, "USER_003", "지원하지 않는 사용자 상태입니다."),
     ONBOARDING_ALREADY_COMPLETED(HttpStatus.CONFLICT, "USER_004", "이미 온보딩이 완료된 사용자입니다."),
     ONBOARDING_NOT_COMPLETED(HttpStatus.FORBIDDEN, "USER_005", "온보딩을 먼저 완료해주세요."),
+
+    // Project
+    PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "PROJECT_001", "프로젝트 태그를 찾을 수 없습니다."),
+    PROJECT_NAME_DUPLICATE(HttpStatus.CONFLICT, "PROJECT_002", "이미 존재하는 프로젝트 태그 이름입니다."),
+    PROJECT_HAS_RECORDS(HttpStatus.CONFLICT, "PROJECT_003", "연결된 기록이 있어 삭제할 수 없습니다."),
     ;
 
     private final HttpStatus httpStatus;
