@@ -26,17 +26,14 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * AI 태깅 비즈니스 로직.
  *
- * <p>REC-005(트리거), REC-006(상태 폴링), REC-007(결과 조회) 유스케이스를 구현한다.
- * 외부 의존성(DB)은 포트 인터페이스를 통해서만 접근한다.
+ * <p>REC-005(트리거), REC-006(상태 폴링), REC-007(결과 조회) 유스케이스를 구현한다. 외부 의존성(DB)은 포트 인터페이스를 통해서만 접근한다.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AiTaggingService implements
-        TriggerAiTaggingUseCase,
-        GetAiTaggingStatusUseCase,
-        GetAiTaggingResultUseCase {
+public class AiTaggingService
+        implements TriggerAiTaggingUseCase, GetAiTaggingStatusUseCase, GetAiTaggingResultUseCase {
 
     private final StarRecordPort starRecordPort;
     private final AiTaggingJobPort aiTaggingJobPort;
@@ -46,6 +43,7 @@ public class AiTaggingService implements
      * REC-005: AI 태깅 트리거.
      *
      * <p>기존 잡 상태에 따라 분기한다.
+     *
      * <ul>
      *   <li>잡 없거나 FAILED {@code &&} retryCount=0 → 새 잡 생성
      *   <li>RUNNING → 409 Conflict
@@ -56,8 +54,10 @@ public class AiTaggingService implements
     @Transactional
     public void trigger(Long starRecordId, Long userId) {
         // 1. StarRecord 조회
-        StarRecord starRecord = starRecordPort.findById(starRecordId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
+        StarRecord starRecord =
+                starRecordPort
+                        .findById(starRecordId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
 
         // 2. 본인 소유 확인
         if (!starRecord.isOwnedBy(userId)) {
@@ -70,14 +70,18 @@ public class AiTaggingService implements
         }
 
         // 4. 기존 잡 상태 분기
-        aiTaggingJobPort.findLatestByStarRecordId(starRecordId).ifPresent(job -> {
-            if (job.getStatus() == JobStatus.RUNNING) {
-                throw new BusinessException(ErrorCode.AI_TAGGING_ALREADY_RUNNING);
-            }
-            if (job.getStatus() == JobStatus.FAILED && job.getRetryCount() >= 1) {
-                throw new BusinessException(ErrorCode.AI_TAGGING_PERMANENTLY_FAILED);
-            }
-        });
+        aiTaggingJobPort
+                .findLatestByStarRecordId(starRecordId)
+                .ifPresent(
+                        job -> {
+                            if (job.getStatus() == JobStatus.RUNNING) {
+                                throw new BusinessException(ErrorCode.AI_TAGGING_ALREADY_RUNNING);
+                            }
+                            if (job.getStatus() == JobStatus.FAILED && job.getRetryCount() >= 1) {
+                                throw new BusinessException(
+                                        ErrorCode.AI_TAGGING_PERMANENTLY_FAILED);
+                            }
+                        });
 
         // 5. 새 잡 생성 (QUEUED)
         aiTaggingJobPort.save(starRecord);
@@ -92,8 +96,10 @@ public class AiTaggingService implements
     @Override
     public AiTaggingStatusResponse getStatus(Long starRecordId, Long userId) {
         // 1. StarRecord 조회
-        StarRecord starRecord = starRecordPort.findById(starRecordId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
+        StarRecord starRecord =
+                starRecordPort
+                        .findById(starRecordId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
 
         // 2. 본인 소유 확인
         if (!starRecord.isOwnedBy(userId)) {
@@ -101,8 +107,10 @@ public class AiTaggingService implements
         }
 
         // 3. 가장 최근 잡 조회
-        AiTaggingJob job = aiTaggingJobPort.findLatestByStarRecordId(starRecordId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
+        AiTaggingJob job =
+                aiTaggingJobPort
+                        .findLatestByStarRecordId(starRecordId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
 
         return AiTaggingStatusResponse.from(job);
     }
@@ -115,8 +123,10 @@ public class AiTaggingService implements
     @Override
     public AiTaggingResultResponse getResult(Long starRecordId, Long userId) {
         // 1. StarRecord 조회
-        StarRecord starRecord = starRecordPort.findById(starRecordId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
+        StarRecord starRecord =
+                starRecordPort
+                        .findById(starRecordId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
 
         // 2. 본인 소유 확인
         if (!starRecord.isOwnedBy(userId)) {
@@ -124,8 +134,10 @@ public class AiTaggingService implements
         }
 
         // 3. 가장 최근 잡 조회
-        AiTaggingJob job = aiTaggingJobPort.findLatestByStarRecordId(starRecordId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
+        AiTaggingJob job =
+                aiTaggingJobPort
+                        .findLatestByStarRecordId(starRecordId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
 
         // 4. SUCCESS 상태 확인
         if (job.getStatus() != JobStatus.SUCCESS) {

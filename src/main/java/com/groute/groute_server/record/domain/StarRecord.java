@@ -61,7 +61,6 @@ public class StarRecord extends SoftDeleteEntity {
     @Column(name = "completed_at")
     private OffsetDateTime completedAt;
 
-
     /**
      * 이 StarRecord가 특정 유저의 소유인지 확인한다.
      *
@@ -77,8 +76,7 @@ public class StarRecord extends SoftDeleteEntity {
     /**
      * AI 태깅 호출 가능한 상태인지 확인한다.
      *
-     * <p>currentStep이 DONE이어야 AI 태깅 트리거 가능하다(REC-005).
-     * DONE은 S·T, A, R 3단계가 모두 작성 완료된 상태를 의미한다.
+     * <p>currentStep이 DONE이어야 AI 태깅 트리거 가능하다(REC-005). DONE은 S·T, A, R 3단계가 모두 작성 완료된 상태를 의미한다.
      *
      * @return DONE 단계이면 true
      */

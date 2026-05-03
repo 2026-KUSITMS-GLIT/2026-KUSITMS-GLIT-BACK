@@ -64,7 +64,6 @@ public class AiTaggingJob extends BaseTimeEntity {
     @Column(name = "finished_at")
     private OffsetDateTime finishedAt;
 
-
     /**
      * 새 AI 태깅 잡을 생성한다.
      *
