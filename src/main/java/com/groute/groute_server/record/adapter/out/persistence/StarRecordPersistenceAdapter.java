@@ -26,6 +26,11 @@ class StarRecordPersistenceAdapter implements StarRecordRepositoryPort {
     }
 
     @Override
+    public Optional<StarRecord> findById(Long starRecordId) {
+        return jpaRepository.findByIdAndIsDeletedFalse(starRecordId);
+    }
+
+    @Override
     public void softDeleteById(Long id) {
         jpaRepository.softDeleteById(id);
     }

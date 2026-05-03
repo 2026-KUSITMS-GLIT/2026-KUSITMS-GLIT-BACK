@@ -31,6 +31,9 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
                     + "WHERE sr.scrum.id IN :scrumIds AND sr.isDeleted = false")
     int deleteAllByScrumIdIn(@Param("scrumIds") Collection<Long> scrumIds);
 
+    /** 논리 삭제된 레코드를 제외한 단건 조회. */
+    Optional<StarRecord> findByIdAndIsDeletedFalse(Long id);
+
     /** 단건 상세 조회. 응답 카테고리·부제목 매핑을 위해 Scrum·Title·Project까지 fetch join. */
     @Query(
             "SELECT sr FROM StarRecord sr "

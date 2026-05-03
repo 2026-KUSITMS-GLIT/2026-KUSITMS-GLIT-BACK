@@ -15,6 +15,9 @@ public interface StarRecordRepositoryPort {
     /** 응답 카테고리·부제목 매핑을 위해 Scrum·Title·Project까지 fetch join 한 단건 조회. */
     Optional<StarRecord> findByIdWithScrum(Long id);
 
+    /** 논리 삭제된 레코드를 제외한 단건 조회. */
+    Optional<StarRecord> findById(Long starRecordId);
+
     /** 단건 soft-delete. cascade(Scrum.hasStar=false 등)는 호출자가 별도 처리. */
     void softDeleteById(Long id);
 }
