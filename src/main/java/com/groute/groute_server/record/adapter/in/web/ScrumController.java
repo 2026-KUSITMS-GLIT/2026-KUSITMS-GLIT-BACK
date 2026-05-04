@@ -1,7 +1,6 @@
 package com.groute.groute_server.record.adapter.in.web;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 
 import jakarta.validation.Valid;
 
@@ -12,8 +11,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.groute.groute_server.common.annotation.CurrentUser;
-import com.groute.groute_server.common.exception.BusinessException;
-import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.common.response.ApiResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.SyncDailyScrumRequest;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumUseCase;
@@ -63,16 +60,8 @@ public class ScrumController {
             @CurrentUser Long userId,
             @RequestParam("date") String dateRaw,
             @Valid @RequestBody SyncDailyScrumRequest request) {
-        LocalDate date = parseDate(dateRaw);
+        LocalDate date = DateParam.parseIso(dateRaw);
         syncDailyScrumUseCase.syncDailyScrum(request.toCommand(userId, date));
         return ApiResponse.ok("동기화 성공");
-    }
-
-    private LocalDate parseDate(String raw) {
-        try {
-            return LocalDate.parse(raw);
-        } catch (DateTimeParseException e) {
-            throw new BusinessException(ErrorCode.CALENDAR_INVALID_DATE_FORMAT);
-        }
     }
 }
