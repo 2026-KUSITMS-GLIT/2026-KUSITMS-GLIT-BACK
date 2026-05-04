@@ -93,6 +93,6 @@ public class AuthController {
     public ApiResponse<Void> logout(@CurrentUser Long userId, HttpServletResponse response) {
         authService.logout(userId);
         tokenDeliveryService.clear(response);
-        return ApiResponse.ok("로그아웃 성공");
+        return null;
     }
 }
