@@ -11,6 +11,6 @@ public interface ScrumTitleRepositoryPort {
     /** 요청 titleId 중 본인 소유인 것만 반환. 결과 크기로 미존재/타인 소유 판별. */
     List<ScrumTitle> findAllByIdInAndUserId(Collection<Long> ids, Long userId);
 
-    /** 비정규화 카운터 동기화. delta는 음수 가능 (Scrum 신규 +1, 삭제 -1). */
-    void applyScrumCountDelta(Long titleId, int delta);
+    /** 비정규화 카운터 동기화. increment는 음수 가능 (Scrum 신규 +1, 삭제 -1). */
+    void applyScrumCountIncrement(Long titleId, int increment);
 }
