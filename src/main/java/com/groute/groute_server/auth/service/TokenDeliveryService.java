@@ -38,8 +38,7 @@ public class TokenDeliveryService {
                     HttpHeaders.SET_COOKIE,
                     buildRefreshCookie(
                                     refreshToken,
-                                    Duration.ofMillis(
-                                            jwtProperties.refreshTokenExpiration())) // 쿠키 만료시간 설정
+                                    Duration.ofMillis(jwtProperties.refreshTokenExpiration())) // 쿠키 만료시간 설정
                             .toString());
             return new TokenResponse(accessToken, null);
         }
@@ -49,16 +48,15 @@ public class TokenDeliveryService {
     /**
      * 쿠키 프로필에서 refresh 쿠키를 만료시켜 브라우저 측에서 삭제되게 한다.
      *
-     * <p>{@link #deliver}가 심은 쿠키와 동일한 속성(name·path·HttpOnly·Secure·SameSite)으로 maxAge만 0으로 내려야
-     * 브라우저가 기존 쿠키와 매칭해 덮어쓰며 제거한다. 속성이 하나라도 다르면 별개 쿠키로 인식되어 기존 쿠키가 그대로 남는다. 비쿠키 프로필에서는 no-op.
+     * <p>{@link #deliver}가 심은 쿠키와 동일한 속성(name·path·HttpOnly·Secure·SameSite)으로 maxAge만 0으로
+     * 내려야 브라우저가 기존 쿠키와 매칭해 덮어쓰며 제거한다. 속성이 하나라도 다르면 별개 쿠키로 인식되어 기존 쿠키가 그대로 남는다. 비쿠키 프로필에서는 no-op.
      */
     public void clear(HttpServletResponse response) {
         if (!authProperties.refreshToken().cookieEnabled()) {
             return;
         }
         response.addHeader(
-                HttpHeaders.SET_COOKIE,
-                buildRefreshCookie("", Duration.ZERO).toString()); // 쿠기 즉시 무효화
+                HttpHeaders.SET_COOKIE, buildRefreshCookie("", Duration.ZERO).toString()); // 쿠기 즉시 무효화
     }
 
     private ResponseCookie buildRefreshCookie(String value, Duration maxAge) {
