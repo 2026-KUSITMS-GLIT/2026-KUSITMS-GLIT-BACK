@@ -2,6 +2,8 @@ package com.groute.groute_server.record.adapter.in.web.dto;
 
 import java.util.List;
 
+import com.groute.groute_server.common.exception.BusinessException;
+import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.domain.StarTag;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 import com.groute.groute_server.record.domain.enums.JobStatus;
@@ -24,6 +26,7 @@ public record AiTaggingResultResponse(
                 CompetencyCategory primaryCategory,
         @Schema(description = "세부 태그 목록 (최대 3개)", example = "[\"이해관계자 조율\", \"UX 설계\", \"품질 관리\"]")
                 List<String> detailTags) {
+
     /**
      * star_tags 목록에서 응답 DTO를 생성한다.
      *
@@ -32,8 +35,12 @@ public record AiTaggingResultResponse(
      *
      * @param tags AI 태깅 결과 태그 목록 (1개 이상 보장)
      * @return 결과 응답 DTO
+     * @throws BusinessException tags가 비어있으면 AI_TAGGING_JOB_NOT_FOUND 예외 발생
      */
     public static AiTaggingResultResponse from(List<StarTag> tags) {
+        if (tags.isEmpty()) {
+            throw new BusinessException(ErrorCode.AI_TAGGING_JOB_NOT_FOUND);
+        }
         CompetencyCategory primaryCategory = tags.get(0).getPrimaryCategory();
         List<String> detailTags = tags.stream().map(StarTag::getDetailTag).toList();
         return new AiTaggingResultResponse(JobStatus.SUCCESS, primaryCategory, detailTags);
