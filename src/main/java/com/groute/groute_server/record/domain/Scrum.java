@@ -55,4 +55,14 @@ public class Scrum extends SoftDeleteEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "selected_competency")
     private CompetencyCategory selectedCompetency;
+
+    /** 신규 스크럼 팩토리. {@code hasStar}는 false, {@code selectedCompetency}는 NULL로 초기화한다. */
+    public static Scrum create(User user, ScrumTitle title, String content, LocalDate scrumDate) {
+        Scrum scrum = new Scrum();
+        scrum.user = user;
+        scrum.title = title;
+        scrum.content = content;
+        scrum.scrumDate = scrumDate;
+        return scrum;
+    }
 }
