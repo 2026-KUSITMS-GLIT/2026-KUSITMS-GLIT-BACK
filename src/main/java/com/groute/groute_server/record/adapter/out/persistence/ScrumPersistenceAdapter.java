@@ -56,4 +56,9 @@ class ScrumPersistenceAdapter implements ScrumQueryPort, ScrumWritePort {
         }
         jpaRepository.softDeleteAllByIdIn(ids);
     }
+
+    @Override
+    public void clearHasStar(Long scrumId) {
+        jpaRepository.clearHasStarById(scrumId);
+    }
 }
