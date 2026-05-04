@@ -19,8 +19,8 @@ import lombok.extern.slf4j.Slf4j;
  * <p>검증·매칭 실패는 전부 {@link ErrorCode#INVALID_REFRESH_TOKEN} (401)로 일원화. 토큰 자체 누락은 그보다 앞 단계에서 {@link
  * ErrorCode#REFRESH_TOKEN_REQUIRED} (400)로 분리해, 클라이언트 버그(누락)와 실제 인증 실패를 구분.
  *
- * <p>재발급 성공 시 refresh 토큰을 rotate — {@link RefreshTokenRepository#rotate(Long, String, String)}가 Lua
- * 스크립트로 "이전 값 일치 확인 + 새 값 저장"을 원자 실행한다. 동시 요청이 들어와도 한 건만 성공하고 나머지는 401로 거절되어 일회성 회전 보장이 유지된다.
+ * <p>재발급 성공 시 refresh 토큰을 rotate — {@link RefreshTokenRepository#rotate(Long, String, String)}가
+ * Lua 스크립트로 "이전 값 일치 확인 + 새 값 저장"을 원자 실행한다. 동시 요청이 들어와도 한 건만 성공하고 나머지는 401로 거절되어 일회성 회전 보장이 유지된다.
  *
  * <p>로그아웃은 rotate의 대칭쌍으로 {@link RefreshTokenRepository#deleteByUserId(Long)}만 수행 — userId 하나로 해당
  * 유저의 refresh를 통째로 무효화한다(탈취된 refresh 포함). 브라우저 쿠키 제거는 Controller 계층이 {@code
