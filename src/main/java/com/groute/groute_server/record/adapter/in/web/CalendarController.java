@@ -1,7 +1,6 @@
 package com.groute.groute_server.record.adapter.in.web;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,8 +8,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.groute.groute_server.common.annotation.CurrentUser;
-import com.groute.groute_server.common.exception.BusinessException;
-import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.common.response.ApiResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.CalendarDailyResponse;
 import com.groute.groute_server.record.application.port.in.calendar.GetDailyCalendarQuery;
@@ -51,18 +48,10 @@ public class CalendarController {
     @GetMapping("/daily")
     public ApiResponse<CalendarDailyResponse> getDailyCalendar(
             @CurrentUser Long userId, @RequestParam("date") String dateRaw) {
-        LocalDate date = parseDate(dateRaw);
+        LocalDate date = DateParam.parseIso(dateRaw);
         return ApiResponse.ok(
                 CalendarDailyResponse.from(
                         getDailyCalendarUseCase.getDailyCalendar(
                                 new GetDailyCalendarQuery(userId, date))));
-    }
-
-    private LocalDate parseDate(String raw) {
-        try {
-            return LocalDate.parse(raw);
-        } catch (DateTimeParseException e) {
-            throw new BusinessException(ErrorCode.CALENDAR_INVALID_DATE_FORMAT);
-        }
     }
 }
