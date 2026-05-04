@@ -1,6 +1,7 @@
 package com.groute.groute_server.record.adapter.out.persistence;
 
 import java.util.Collection;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,7 +13,7 @@ import com.groute.groute_server.record.domain.StarRecord;
 /**
  * 심화 STAR 기록(StarRecord) JPA 레포지토리.
  *
- * <p>스크럼 sync 시 삭제 대상 Scrum의 STAR 기록을 cascade soft-delete 하기 위해 사용한다.
+ * <p>스크럼 sync 시 cascade soft-delete (CAL-002), 단건 상세 조회·삭제 (CAL-003)에 사용한다.
  */
 public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long> {
 
@@ -29,4 +30,21 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
                     + "SET sr.isDeleted = true, sr.deletedAt = CURRENT_TIMESTAMP "
                     + "WHERE sr.scrum.id IN :scrumIds AND sr.isDeleted = false")
     int deleteAllByScrumIdIn(@Param("scrumIds") Collection<Long> scrumIds);
+
+    /** 단건 상세 조회. 응답 카테고리·부제목 매핑을 위해 Scrum·Title·Project까지 fetch join. */
+    @Query(
+            "SELECT sr FROM StarRecord sr "
+                    + "JOIN FETCH sr.scrum s "
+                    + "JOIN FETCH s.title t "
+                    + "JOIN FETCH t.project "
+                    + "WHERE sr.id = :id AND sr.isDeleted = false")
+    Optional<StarRecord> findByIdWithScrum(@Param("id") Long id);
+
+    /** 단건 soft-delete. cascade(Scrum.hasStar=false 등)는 호출자가 별도 처리. */
+    @Modifying
+    @Query(
+            "UPDATE StarRecord sr "
+                    + "SET sr.isDeleted = true, sr.deletedAt = CURRENT_TIMESTAMP "
+                    + "WHERE sr.id = :id AND sr.isDeleted = false")
+    int softDeleteById(@Param("id") Long id);
 }
