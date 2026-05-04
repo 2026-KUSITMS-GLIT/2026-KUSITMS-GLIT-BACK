@@ -39,6 +39,17 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다."),
     INVALID_JOB_ROLE(HttpStatus.BAD_REQUEST, "USER_002", "지원하지 않는 사용자 직군입니다."),
     INVALID_USER_STATUS(HttpStatus.BAD_REQUEST, "USER_003", "지원하지 않는 사용자 상태입니다."),
+
+    // Record
+    TITLE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECORD_001", "스크럼 제목을 찾을 수 없습니다."),
+    SCRUM_NOT_FOUND(HttpStatus.NOT_FOUND, "RECORD_002", "스크럼을 찾을 수 없습니다."),
+    SCRUM_EDIT_LOCKED_14D(HttpStatus.CONFLICT, "RECORD_003", "2주 이상 지난 스크럼은 수정할 수 없어요."),
+    SCRUM_EDIT_LOCKED_STAR(HttpStatus.CONFLICT, "RECORD_004", "심화기록이 작성된 스크럼은 수정할 수 없어요."),
+    SCRUM_DATE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "RECORD_005", "하루에 작성할 수 있는 스크럼은 최대 5개입니다."),
+
+    // Calendar
+    CALENDAR_INVALID_DATE_FORMAT(
+            HttpStatus.BAD_REQUEST, "CALENDAR_001", "날짜 형식이 올바르지 않습니다. (yyyy-MM-dd)"),
     ;
 
     private final HttpStatus httpStatus;
