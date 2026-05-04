@@ -1,0 +1,38 @@
+package com.groute.groute_server.record.adapter.out.persistence;
+
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.groute.groute_server.record.domain.Scrum;
+
+/**
+ * 데일리 스크럼(Scrum) JPA 레포지토리.
+ *
+ * <p>일자별 조회 시 ScrumTitle·Project를 fetch join 하여 N+1을 회피한다. 모든 조회는 {@code is_deleted = false} 기준.
+ */
+public interface ScrumJpaRepository extends JpaRepository<Scrum, Long> {
+
+    /** 일자별 사용자 스크럼 전체. 응답 그룹핑을 위해 titleId·id 오름차순 고정. */
+    @Query(
+            "SELECT s FROM Scrum s "
+                    + "JOIN FETCH s.title t "
+                    + "JOIN FETCH t.project "
+                    + "WHERE s.user.id = :userId "
+                    + "AND s.scrumDate = :date "
+                    + "AND s.isDeleted = false "
+                    + "ORDER BY t.id ASC, s.id ASC")
+    List<Scrum> findAllByUserIdAndScrumDate(
+            @Param("userId") Long userId, @Param("date") LocalDate date);
+
+    /** 요청 scrumId 집합 중 본인 소유인 것만 반환. 결과 크기로 미존재/타인 소유를 판별한다. */
+    @Query(
+            "SELECT s FROM Scrum s "
+                    + "WHERE s.id IN :ids AND s.user.id = :userId AND s.isDeleted = false")
+    List<Scrum> findAllByIdInAndUserId(
+            @Param("ids") Collection<Long> ids, @Param("userId") Long userId);
+}
