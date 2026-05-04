@@ -16,4 +16,7 @@ public interface ScrumWritePort {
 
     /** soft-delete (is_deleted=true). cascade는 호출자가 별도 포트로 처리. */
     void softDeleteAllByIdIn(Collection<Long> ids);
+
+    /** STAR 단독 삭제 시 Scrum.hasStar 플래그를 false로 동기화. */
+    void clearHasStar(Long scrumId);
 }
