@@ -117,8 +117,6 @@ app:
   swagger:
     server-url: http://localhost:8080
     server-description: Local
-  user:
-    default-profile-image-url: ${USER_DEFAULT_PROFILE_IMAGE_URL:}
 
 discord:
   webhook:
