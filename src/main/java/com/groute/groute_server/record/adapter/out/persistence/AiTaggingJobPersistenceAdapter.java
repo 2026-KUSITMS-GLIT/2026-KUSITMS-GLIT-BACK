@@ -23,7 +23,7 @@ public class AiTaggingJobPersistenceAdapter implements AiTaggingJobPort {
 
     @Override
     public Optional<AiTaggingJob> findLatestByStarRecordId(Long starRecordId) {
-        return aiTaggingJobRepository.findLatestByStarRecordId(starRecordId);
+        return aiTaggingJobRepository.findTopByStarRecordIdOrderByCreatedAtDesc(starRecordId);
     }
 
     @Override

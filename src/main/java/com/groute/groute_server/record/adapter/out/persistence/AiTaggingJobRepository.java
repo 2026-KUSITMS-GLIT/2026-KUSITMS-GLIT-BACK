@@ -3,8 +3,6 @@ package com.groute.groute_server.record.adapter.out.persistence;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import com.groute.groute_server.record.domain.AiTaggingJob;
 
@@ -18,7 +16,5 @@ public interface AiTaggingJobRepository extends JpaRepository<AiTaggingJob, Long
      * @param starRecordId 조회할 STAR 기록 ID
      * @return 가장 최근 잡 (없으면 empty)
      */
-    @Query(
-            "SELECT j FROM AiTaggingJob j WHERE j.starRecord.id = :starRecordId ORDER BY j.createdAt DESC LIMIT 1")
-    Optional<AiTaggingJob> findLatestByStarRecordId(@Param("starRecordId") Long starRecordId);
+    Optional<AiTaggingJob> findTopByStarRecordIdOrderByCreatedAtDesc(Long starRecordId);
 }
