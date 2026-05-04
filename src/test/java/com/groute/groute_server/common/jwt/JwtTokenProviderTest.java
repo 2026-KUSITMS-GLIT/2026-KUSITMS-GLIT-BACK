@@ -17,7 +17,8 @@ import io.jsonwebtoken.security.Keys;
 
 class JwtTokenProviderTest {
 
-    private static final String SECRET = "test-secret-key-must-be-at-least-32-bytes-long-for-hs256!!";
+    private static final String SECRET =
+            "test-secret-key-must-be-at-least-32-bytes-long-for-hs256!!";
     private static final long ACCESS_TTL_MILLIS = 900_000L;
     private static final long REFRESH_TTL_MILLIS = 1_209_600_000L;
     private static final Long USER_ID = 42L;
@@ -105,10 +106,8 @@ class JwtTokenProviderTest {
         void should_returnInvalid_when_signatureDoesNotMatch() {
             // given
             String otherSecret = "another-secret-key-also-32-bytes-long-for-hs256!!";
-            SecretKey otherKey =
-                    Keys.hmacShaKeyFor(otherSecret.getBytes(StandardCharsets.UTF_8));
-            String foreignToken =
-                    Jwts.builder().subject("42").signWith(otherKey).compact();
+            SecretKey otherKey = Keys.hmacShaKeyFor(otherSecret.getBytes(StandardCharsets.UTF_8));
+            String foreignToken = Jwts.builder().subject("42").signWith(otherKey).compact();
             JwtTokenProvider provider = provider();
 
             // when
