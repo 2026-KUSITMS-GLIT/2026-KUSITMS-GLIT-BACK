@@ -5,7 +5,7 @@ import static org.mockito.BDDMockito.given;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -203,7 +203,7 @@ class CalendarQueryServiceTest {
         ReflectionTestUtils.setField(scrum, "id", id);
         ReflectionTestUtils.setField(scrum, "hasStar", hasStar);
         OffsetDateTime createdAt =
-                createdLocalDate.atStartOfDay().atOffset(ZoneOffset.UTC).plusHours(6);
+                createdLocalDate.atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
         ReflectionTestUtils.setField(scrum, "createdAt", createdAt);
         return scrum;
     }
