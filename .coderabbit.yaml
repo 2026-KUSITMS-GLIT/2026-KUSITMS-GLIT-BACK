@@ -142,7 +142,7 @@ reviews:
         - 클래스: `@Tag(name, description)` 필수. 엔드포인트: `@Operation(summary, description)` 필수, 주요 응답은 `@ApiResponse`.
         - 인증 불필요 엔드포인트만 `@SecurityRequirement(name = "")`. 로그인 이후 엔드포인트에 빈 SecurityRequirement가 붙으면 지적.
         - 컨트롤러 리턴 타입은 일관되게 `ApiResponse<T>` 사용(또는 `ResponseEntity<ApiResponse<T>>`). 혼용되면 일관성 지적.
-        - `@RequestMapping` 루트는 `/api/<resource>` 패턴. 케밥/스네이크 혼용 금지.
+        - `@RequestMapping` 루트는 `/api/v{n}/<resource>` 패턴. 케밥/스네이크 혼용 금지.
         - `@Valid`·`@Validated` 누락된 Request DTO 파라미터 지적.
 
     - path: "src/main/java/com/groute/groute_server/{record,report}/adapter/in/web/**/*.java"
