@@ -19,7 +19,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 @Schema(description = "일자별 스크럼 sync 요청")
 public record SyncDailyScrumRequest(
-        @NotNull @Valid @Schema(description = "ScrumTitle 단위 그룹 목록") List<GroupRequest> groups) {
+        @NotNull @Schema(description = "ScrumTitle 단위 그룹 목록")
+                List<@NotNull @Valid GroupRequest> groups) {
 
     public SyncDailyScrumCommand toCommand(Long userId, LocalDate date) {
         return new SyncDailyScrumCommand(
@@ -29,7 +30,7 @@ public record SyncDailyScrumRequest(
     @Schema(description = "ScrumTitle 그룹")
     public record GroupRequest(
             @NotNull @Schema(description = "기존 스크럼 제목 ID", example = "12") Long titleId,
-            @NotNull @Valid @Schema(description = "그룹 내 항목 목록") List<ItemRequest> items) {
+            @NotNull @Schema(description = "그룹 내 항목 목록") List<@NotNull @Valid ItemRequest> items) {
 
         SyncDailyScrumCommand.GroupCommand toCommand() {
             return new SyncDailyScrumCommand.GroupCommand(
