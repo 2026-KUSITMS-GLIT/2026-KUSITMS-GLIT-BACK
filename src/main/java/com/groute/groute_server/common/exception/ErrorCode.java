@@ -54,13 +54,11 @@ public enum ErrorCode {
 
     // Record - StarRecord
     STAR_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "REC_001", "STAR 기록을 찾을 수 없습니다."),
-    STAR_RECORD_NOT_READY(
-            HttpStatus.BAD_REQUEST, "REC_002", "STAR 작성이 완료되지 않아 AI 태깅을 요청할 수 없습니다."),
+    STAR_RECORD_NOT_READY(HttpStatus.BAD_REQUEST, "REC_002", "STAR 작성이 완료되지 않아 AI 태깅을 요청할 수 없습니다."),
 
     // Record - AI Tagging
     AI_TAGGING_ALREADY_RUNNING(HttpStatus.CONFLICT, "REC_003", "AI 태깅이 이미 진행 중입니다."),
-    AI_TAGGING_PERMANENTLY_FAILED(
-            HttpStatus.BAD_REQUEST, "REC_004", "AI 태깅이 최종 실패하여 재시도할 수 없습니다."),
+    AI_TAGGING_PERMANENTLY_FAILED(HttpStatus.BAD_REQUEST, "REC_004", "AI 태깅이 최종 실패하여 재시도할 수 없습니다."),
     AI_TAGGING_NOT_COMPLETED(
             HttpStatus.BAD_REQUEST, "REC_005", "AI 태깅이 아직 완료되지 않아 결과를 조회할 수 없습니다."),
     AI_TAGGING_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "REC_006", "AI 태깅 잡을 찾을 수 없습니다."),
