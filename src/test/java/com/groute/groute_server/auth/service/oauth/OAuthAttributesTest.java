@@ -20,16 +20,13 @@ class OAuthAttributesTest {
     class Kakao {
 
         @Test
-        @DisplayName("정상 응답일 때 (KAKAO, providerUid, email)로 정규화한다")
-        void should_normalize_when_kakaoResponseIsValid() {
-            // given
+        @DisplayName("정상 응답을 (KAKAO, providerUid, email)로 정규화한다")
+        void parsesNormalResponse() {
             Map<String, Object> attributes =
                     Map.of("id", 1234567890L, "kakao_account", Map.of("email", "user@kakao.com"));
 
-            // when
             OAuthAttributes result = OAuthAttributes.from("kakao", attributes);
 
-            // then
             assertThat(result.provider()).isEqualTo(SocialProvider.KAKAO);
             assertThat(result.providerUid()).isEqualTo("1234567890");
             assertThat(result.email()).isEqualTo("user@kakao.com");
@@ -37,28 +34,23 @@ class OAuthAttributesTest {
         }
 
         @Test
-        @DisplayName("kakao_account가 없을 때 email을 null로 정규화한다")
-        void should_normalizeWithNullEmail_when_kakaoAccountMissing() {
-            // given
+        @DisplayName("kakao_account가 없어도 email을 null로 정상 파싱한다")
+        void parsesWhenKakaoAccountMissing() {
             Map<String, Object> attributes = Map.of("id", 42L);
 
-            // when
             OAuthAttributes result = OAuthAttributes.from("kakao", attributes);
 
-            // then
             assertThat(result.provider()).isEqualTo(SocialProvider.KAKAO);
             assertThat(result.providerUid()).isEqualTo("42");
             assertThat(result.email()).isNull();
         }
 
         @Test
-        @DisplayName("id가 누락됐을 때 INVALID_OAUTH_RESPONSE를 던진다")
-        void should_throwInvalidOAuthResponse_when_kakaoIdMissing() {
-            // given
+        @DisplayName("id가 누락되면 INVALID_OAUTH_RESPONSE")
+        void throwsWhenIdMissing() {
             Map<String, Object> attributes =
                     Map.of("kakao_account", Map.of("email", "user@kakao.com"));
 
-            // when & then
             assertThatThrownBy(() -> OAuthAttributes.from("kakao", attributes))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
@@ -71,16 +63,15 @@ class OAuthAttributesTest {
     class Google {
 
         @Test
-        @DisplayName("정상 응답일 때 (GOOGLE, providerUid, email)로 정규화한다")
-        void should_normalize_when_googleResponseIsValid() {
-            // given
+        @DisplayName("정상 응답을 (GOOGLE, providerUid, email)로 정규화한다")
+        void parsesNormalResponse() {
             Map<String, Object> attributes =
-                    Map.of("sub", "google-sub-001", "email", "user@gmail.com");
+                    Map.of(
+                            "sub", "google-sub-001",
+                            "email", "user@gmail.com");
 
-            // when
             OAuthAttributes result = OAuthAttributes.from("google", attributes);
 
-            // then
             assertThat(result.provider()).isEqualTo(SocialProvider.GOOGLE);
             assertThat(result.providerUid()).isEqualTo("google-sub-001");
             assertThat(result.email()).isEqualTo("user@gmail.com");
@@ -88,12 +79,10 @@ class OAuthAttributesTest {
         }
 
         @Test
-        @DisplayName("sub가 누락됐을 때 INVALID_OAUTH_RESPONSE를 던진다")
-        void should_throwInvalidOAuthResponse_when_googleSubMissing() {
-            // given
+        @DisplayName("sub가 누락되면 INVALID_OAUTH_RESPONSE")
+        void throwsWhenSubMissing() {
             Map<String, Object> attributes = Map.of("email", "user@gmail.com");
 
-            // when & then
             assertThatThrownBy(() -> OAuthAttributes.from("google", attributes))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
@@ -106,16 +95,17 @@ class OAuthAttributesTest {
     class Naver {
 
         @Test
-        @DisplayName("정상 응답일 때 response 하위 값을 (NAVER, providerUid, email)로 정규화한다")
-        void should_normalize_when_naverResponseIsValid() {
-            // given
+        @DisplayName("response 하위 값을 (NAVER, providerUid, email)로 정규화한다")
+        void parsesNormalResponse() {
             Map<String, Object> attributes =
-                    Map.of("response", Map.of("id", "naver-id-001", "email", "user@naver.com"));
+                    Map.of(
+                            "response",
+                            Map.of(
+                                    "id", "naver-id-001",
+                                    "email", "user@naver.com"));
 
-            // when
             OAuthAttributes result = OAuthAttributes.from("naver", attributes);
 
-            // then
             assertThat(result.provider()).isEqualTo(SocialProvider.NAVER);
             assertThat(result.providerUid()).isEqualTo("naver-id-001");
             assertThat(result.email()).isEqualTo("user@naver.com");
@@ -123,12 +113,10 @@ class OAuthAttributesTest {
         }
 
         @Test
-        @DisplayName("response 루트가 없을 때 INVALID_OAUTH_RESPONSE를 던진다")
-        void should_throwInvalidOAuthResponse_when_naverResponseMissing() {
-            // given
+        @DisplayName("response 루트가 없으면 INVALID_OAUTH_RESPONSE")
+        void throwsWhenResponseMissing() {
             Map<String, Object> attributes = Map.of("id", "naver-id-001");
 
-            // when & then
             assertThatThrownBy(() -> OAuthAttributes.from("naver", attributes))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
@@ -136,12 +124,10 @@ class OAuthAttributesTest {
         }
 
         @Test
-        @DisplayName("response.id가 누락됐을 때 INVALID_OAUTH_RESPONSE를 던진다")
-        void should_throwInvalidOAuthResponse_when_naverIdMissing() {
-            // given
+        @DisplayName("response.id가 누락되면 INVALID_OAUTH_RESPONSE")
+        void throwsWhenIdMissing() {
             Map<String, Object> attributes = Map.of("response", Map.of("email", "user@naver.com"));
 
-            // when & then
             assertThatThrownBy(() -> OAuthAttributes.from("naver", attributes))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
@@ -154,23 +140,21 @@ class OAuthAttributesTest {
     class Registration {
 
         @Test
-        @DisplayName("registrationId 대소문자가 섞여 있을 때 동일 provider로 매칭한다")
-        void should_matchProvider_when_registrationIdCaseMixed() {
-            // given
+        @DisplayName("대소문자가 섞여 있어도 provider를 매칭한다")
+        void matchesCaseInsensitively() {
             Map<String, Object> attributes =
-                    Map.of("sub", "google-sub-001", "email", "user@gmail.com");
+                    Map.of(
+                            "sub", "google-sub-001",
+                            "email", "user@gmail.com");
 
-            // when
             OAuthAttributes result = OAuthAttributes.from("GOOGLE", attributes);
 
-            // then
             assertThat(result.provider()).isEqualTo(SocialProvider.GOOGLE);
         }
 
         @Test
-        @DisplayName("미지원 registrationId일 때 UNSUPPORTED_OAUTH_PROVIDER를 던진다")
-        void should_throwUnsupportedProvider_when_registrationIdNotSupported() {
-            // when & then
+        @DisplayName("미지원 registrationId면 UNSUPPORTED_OAUTH_PROVIDER")
+        void throwsOnUnsupportedProvider() {
             assertThatThrownBy(() -> OAuthAttributes.from("apple", Map.of()))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
