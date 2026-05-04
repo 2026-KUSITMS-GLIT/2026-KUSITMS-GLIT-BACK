@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,4 +23,11 @@ public interface ScrumTitleJpaRepository extends JpaRepository<ScrumTitle, Long>
                     + "WHERE t.id IN :ids AND t.user.id = :userId AND t.isDeleted = false")
     List<ScrumTitle> findAllByIdInAndUserId(
             @Param("ids") Collection<Long> ids, @Param("userId") Long userId);
+
+    /** 비정규화 카운터(scrum_count) 증감. increment는 음수 가능. */
+    @Modifying
+    @Query(
+            "UPDATE ScrumTitle t SET t.scrumCount = t.scrumCount + :increment "
+                    + "WHERE t.id = :id AND t.isDeleted = false")
+    int applyScrumCountIncrement(@Param("id") Long id, @Param("increment") int increment);
 }

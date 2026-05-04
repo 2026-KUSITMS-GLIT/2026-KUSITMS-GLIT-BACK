@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -35,4 +36,16 @@ public interface ScrumJpaRepository extends JpaRepository<Scrum, Long> {
                     + "WHERE s.id IN :ids AND s.user.id = :userId AND s.isDeleted = false")
     List<Scrum> findAllByIdInAndUserId(
             @Param("ids") Collection<Long> ids, @Param("userId") Long userId);
+
+    /** 본문 변경. 호출자가 14일·hasStar 검증 선행. */
+    @Modifying
+    @Query("UPDATE Scrum s SET s.content = :content " + "WHERE s.id = :id AND s.isDeleted = false")
+    int updateContent(@Param("id") Long id, @Param("content") String content);
+
+    /** soft-delete. cascade는 호출자가 별도 처리. */
+    @Modifying
+    @Query(
+            "UPDATE Scrum s SET s.isDeleted = true, s.deletedAt = CURRENT_TIMESTAMP "
+                    + "WHERE s.id IN :ids AND s.isDeleted = false")
+    int softDeleteAllByIdIn(@Param("ids") Collection<Long> ids);
 }
