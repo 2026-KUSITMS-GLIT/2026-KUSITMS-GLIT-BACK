@@ -34,9 +34,8 @@ public class UserService {
     /**
      * 프로필 수정 — 한글 라벨을 enum으로 변환해 엔티티에 덮어쓴다.
      *
-     * <p>라벨 파싱 실패는 필드별로 구분된 400 응답을 반환한다 — 직군은 {@link ErrorCode#INVALID_JOB_ROLE}, 상태는 {@link
-     * ErrorCode#INVALID_USER_STATUS}. enum에서 던지는 {@link IllegalArgumentException}을 {@link
-     * BusinessException}으로 래핑해 일관된 에러 포맷을 유지한다.
+     * <p>라벨 파싱 실패는 {@link ErrorCode#INVALID_INPUT}으로 400 응답. enum에서 던지는 {@link
+     * IllegalArgumentException}을 {@link BusinessException}으로 래핑해 일관된 에러 포맷을 유지한다.
      */
     @Transactional
     public User updateMyProfile(Long userId, String jobRoleLabel, String userStatusLabel) {
@@ -54,7 +53,7 @@ public class UserService {
         try {
             return JobRole.fromLabel(label);
         } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.INVALID_JOB_ROLE, e.getMessage());
+            throw new BusinessException(ErrorCode.INVALID_INPUT, e.getMessage());
         }
     }
 
@@ -62,7 +61,7 @@ public class UserService {
         try {
             return UserStatus.fromLabel(label);
         } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.INVALID_USER_STATUS, e.getMessage());
+            throw new BusinessException(ErrorCode.INVALID_INPUT, e.getMessage());
         }
     }
 }
