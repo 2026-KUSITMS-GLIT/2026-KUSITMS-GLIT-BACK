@@ -65,7 +65,6 @@ def jacocoExcludes = [
 	'**/handler/**',
 	'**/webhook/**',
 	'**/resolver/**',
-	'**/jwt/**',
 ]
 
 tasks.named('test') {
