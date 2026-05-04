@@ -110,7 +110,8 @@ public class AiTaggingService
         AiTaggingJob job =
                 aiTaggingJobPort
                         .findLatestByStarRecordId(starRecordId)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
+                        .orElseThrow(
+                                () -> new BusinessException(ErrorCode.AI_TAGGING_JOB_NOT_FOUND));
 
         return AiTaggingStatusResponse.from(job);
     }
@@ -137,7 +138,8 @@ public class AiTaggingService
         AiTaggingJob job =
                 aiTaggingJobPort
                         .findLatestByStarRecordId(starRecordId)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
+                        .orElseThrow(
+                                () -> new BusinessException(ErrorCode.AI_TAGGING_JOB_NOT_FOUND));
 
         // 4. SUCCESS 상태 확인
         if (job.getStatus() != JobStatus.SUCCESS) {

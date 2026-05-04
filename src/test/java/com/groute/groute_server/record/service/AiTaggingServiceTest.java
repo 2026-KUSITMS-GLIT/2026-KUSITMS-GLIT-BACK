@@ -235,8 +235,8 @@ class AiTaggingServiceTest {
         }
 
         @Test
-        @DisplayName("실패 — 잡 없으면 STAR_RECORD_NOT_FOUND")
-        void throwsNotFound_whenJobMissing() {
+        @DisplayName("실패 — 잡 없으면 AI_TAGGING_JOB_NOT_FOUND")
+        void throwsJobNotFound_whenJobMissing() {
             StarRecord record = makeStarRecord(USER_ID, StarStep.DONE);
             given(starRecordPort.findById(STAR_RECORD_ID)).willReturn(Optional.of(record));
             given(aiTaggingJobPort.findLatestByStarRecordId(STAR_RECORD_ID))
@@ -245,7 +245,7 @@ class AiTaggingServiceTest {
             assertThatThrownBy(() -> aiTaggingService.getStatus(STAR_RECORD_ID, USER_ID))
                     .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
                     .extracting(BusinessException::getErrorCode)
-                    .isEqualTo(ErrorCode.STAR_RECORD_NOT_FOUND);
+                    .isEqualTo(ErrorCode.AI_TAGGING_JOB_NOT_FOUND);
         }
     }
 
@@ -300,6 +300,20 @@ class AiTaggingServiceTest {
                     .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
                     .extracting(BusinessException::getErrorCode)
                     .isEqualTo(ErrorCode.FORBIDDEN);
+        }
+
+        @Test
+        @DisplayName("실패 — 잡 없으면 AI_TAGGING_JOB_NOT_FOUND")
+        void throwsJobNotFound_whenJobMissing() {
+            StarRecord record = makeStarRecord(USER_ID, StarStep.DONE);
+            given(starRecordPort.findById(STAR_RECORD_ID)).willReturn(Optional.of(record));
+            given(aiTaggingJobPort.findLatestByStarRecordId(STAR_RECORD_ID))
+                    .willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> aiTaggingService.getResult(STAR_RECORD_ID, USER_ID))
+                    .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
+                    .extracting(BusinessException::getErrorCode)
+                    .isEqualTo(ErrorCode.AI_TAGGING_JOB_NOT_FOUND);
         }
 
         @Test
