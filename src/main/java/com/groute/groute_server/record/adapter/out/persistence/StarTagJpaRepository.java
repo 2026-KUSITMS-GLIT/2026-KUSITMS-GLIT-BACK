@@ -16,6 +16,6 @@ import com.groute.groute_server.record.domain.StarTag;
  */
 public interface StarTagJpaRepository extends JpaRepository<StarTag, Long> {
 
-    @Query("SELECT t FROM StarTag t WHERE t.starRecord.id = :starRecordId")
+    @Query("SELECT t FROM StarTag t WHERE t.starRecord.id = :starRecordId ORDER BY t.id ASC")
     List<StarTag> findAllByStarRecordId(@Param("starRecordId") Long starRecordId);
 }
