@@ -23,6 +23,7 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort
 import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
+import com.groute.groute_server.user.entity.User;
 
 @ExtendWith(MockitoExtension.class)
 class CalendarQueryServiceTest {
@@ -198,7 +199,7 @@ class CalendarQueryServiceTest {
             String content,
             boolean hasStar,
             LocalDate createdLocalDate) {
-        Scrum scrum = Scrum.create(null, title, content, DATE);
+        Scrum scrum = Scrum.create(User.createForSocialLogin(), title, content, DATE);
         ReflectionTestUtils.setField(scrum, "id", id);
         ReflectionTestUtils.setField(scrum, "hasStar", hasStar);
         OffsetDateTime createdAt =

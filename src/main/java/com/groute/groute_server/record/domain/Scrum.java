@@ -1,6 +1,7 @@
 package com.groute.groute_server.record.domain;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 import jakarta.persistence.*;
 
@@ -59,10 +60,10 @@ public class Scrum extends SoftDeleteEntity {
     /** 신규 스크럼 팩토리. {@code hasStar}는 false, {@code selectedCompetency}는 NULL로 초기화한다. */
     public static Scrum create(User user, ScrumTitle title, String content, LocalDate scrumDate) {
         Scrum scrum = new Scrum();
-        scrum.user = user;
-        scrum.title = title;
-        scrum.content = content;
-        scrum.scrumDate = scrumDate;
+        scrum.user = Objects.requireNonNull(user, "user");
+        scrum.title = Objects.requireNonNull(title, "title");
+        scrum.content = Objects.requireNonNull(content, "content");
+        scrum.scrumDate = Objects.requireNonNull(scrumDate, "scrumDate");
         return scrum;
     }
 }
