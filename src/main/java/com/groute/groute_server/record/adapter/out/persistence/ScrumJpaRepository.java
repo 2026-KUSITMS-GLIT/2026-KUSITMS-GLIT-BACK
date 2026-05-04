@@ -48,4 +48,9 @@ public interface ScrumJpaRepository extends JpaRepository<Scrum, Long> {
             "UPDATE Scrum s SET s.isDeleted = true, s.deletedAt = CURRENT_TIMESTAMP "
                     + "WHERE s.id IN :ids AND s.isDeleted = false")
     int softDeleteAllByIdIn(@Param("ids") Collection<Long> ids);
+
+    /** STAR 단독 삭제 시 Scrum.hasStar 플래그 해제. */
+    @Modifying
+    @Query("UPDATE Scrum s SET s.hasStar = false " + "WHERE s.id = :id AND s.isDeleted = false")
+    int clearHasStarById(@Param("id") Long id);
 }
