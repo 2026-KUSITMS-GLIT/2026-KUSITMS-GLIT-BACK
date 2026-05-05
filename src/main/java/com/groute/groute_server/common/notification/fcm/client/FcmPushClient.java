@@ -2,8 +2,6 @@ package com.groute.groute_server.common.notification.fcm.client;
 
 import java.util.Optional;
 
-import com.groute.groute_server.common.notification.fcm.model.FcmPayload;
-import com.groute.groute_server.common.notification.fcm.model.SendResult;
 import org.springframework.stereotype.Component;
 
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -13,6 +11,8 @@ import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.Notification;
 import com.google.firebase.messaging.WebpushConfig;
 import com.google.firebase.messaging.WebpushFcmOptions;
+import com.groute.groute_server.common.notification.fcm.model.FcmPayload;
+import com.groute.groute_server.common.notification.fcm.model.SendResult;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
