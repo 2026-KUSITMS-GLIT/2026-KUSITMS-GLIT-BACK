@@ -66,6 +66,15 @@ public class User extends SoftDeleteEntity {
     @Column(name = "hard_delete_at")
     private OffsetDateTime hardDeleteAt;
 
+    /**
+     * 알림 카피 라운드로빈 인덱스(MYP-004).
+     *
+     * <p>스케줄러가 발송 시 카피 풀에서 이 인덱스 위치의 카피를 사용하고, 발송 후 {@link #advanceCopyIndex(int)}로 갱신한다. 가입 시 0부터
+     * 시작해 A→B→C→A 순으로 순환한다(기획 A).
+     */
+    @Column(name = "notification_copy_index", nullable = false)
+    private short notificationCopyIndex = 0;
+
     /** 소셜 로그인 신규 가입 시 호출. 온보딩 전이므로 프로필 필드는 모두 NULL로 둔다. */
     public static User createForSocialLogin() {
         return new User();
@@ -84,5 +93,20 @@ public class User extends SoftDeleteEntity {
     public void updateProfile(JobRole jobRole, UserStatus userStatus) {
         this.jobRole = Objects.requireNonNull(jobRole, "jobRole");
         this.userStatus = Objects.requireNonNull(userStatus, "userStatus");
+    }
+
+    /**
+     * 알림 카피 라운드로빈 인덱스 갱신(MYP-004).
+     *
+     * <p>스케줄러가 발송을 마친 직후 호출한다. {@code (currentIndex + 1) % total}로 다음 카피를 가리키며, 풀 크기({@code
+     * total})가 줄어 인덱스가 범위를 벗어나도 mod 연산으로 안전하게 정규화된다.
+     *
+     * @param total 카피 풀 크기. 1 이상이어야 한다.
+     */
+    public void advanceCopyIndex(int total) {
+        if (total <= 0) {
+            throw new IllegalArgumentException("total must be > 0, got " + total);
+        }
+        this.notificationCopyIndex = (short) (((this.notificationCopyIndex + 1) % total));
     }
 }
