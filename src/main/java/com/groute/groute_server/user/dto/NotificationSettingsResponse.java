@@ -10,8 +10,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 /**
  * 알림 설정 조회 응답(MYP-004 GET).
  *
- * <p>최상위 {@code isActive}는 활성 슬롯이 1개 이상이면 {@code true}로 도출한다(슬롯 존재 ⇔ 알림 활성, 기획). 향후 설정 마스터 토글
- * 컬럼이 도입되면 도출 로직만 교체하면 되도록 응답 스키마는 그대로 유지한다.
+ * <p>최상위 {@code isActive}는 활성 슬롯이 1개 이상이면 {@code true}로 도출한다(슬롯 존재 ⇔ 알림 활성, 기획). 향후 설정 마스터 토글 컬럼이
+ * 도입되면 도출 로직만 교체하면 되도록 응답 스키마는 그대로 유지한다.
  */
 public record NotificationSettingsResponse(
         @Schema(description = "알림 활성화 여부 (활성 슬롯이 1개 이상이면 true)", example = "true") boolean isActive,
