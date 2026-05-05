@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.util.List;
@@ -130,6 +132,19 @@ class ProjectServiceTest {
             Project result = projectService.updateProject(USER_ID, PROJECT_ID, "새이름");
 
             assertThat(result.getName()).isEqualTo("새이름");
+        }
+
+        @Test
+        @DisplayName("성공 — 같은 이름으로 수정하면 그대로 반환")
+        void returnsProject_whenNameUnchanged() {
+            Project project = buildProject("졸업프로젝트", (short) 0);
+            given(projectPort.findByIdAndUserId(PROJECT_ID, USER_ID))
+                    .willReturn(Optional.of(project));
+
+            Project result = projectService.updateProject(USER_ID, PROJECT_ID, "졸업프로젝트");
+
+            assertThat(result.getName()).isEqualTo("졸업프로젝트");
+            verify(projectPort, never()).existsByUserIdAndName(any(), any());
         }
 
         @Test

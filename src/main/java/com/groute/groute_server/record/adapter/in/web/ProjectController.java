@@ -61,9 +61,14 @@ public class ProjectController {
     }
 
     @Operation(summary = "프로젝트 태그 목록 조회", description = "생성 시간 내림차순으로 페이지 단위 조회한다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "조회 성공")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "유효하지 않은 page/size 입력값")
+    })
     @GetMapping
     public ApiResponse<ProjectsResponse> getProjects(
             @CurrentUser Long userId,
