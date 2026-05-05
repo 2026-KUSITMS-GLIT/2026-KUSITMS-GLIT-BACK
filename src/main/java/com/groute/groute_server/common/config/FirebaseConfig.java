@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,5 +49,14 @@ public class FirebaseConfig {
             log.info("FirebaseApp 초기화 완료 (project={})", app.getOptions().getProjectId());
             return app;
         }
+    }
+
+    /**
+     * {@link FirebaseMessaging} 빈. 발송 측({@code common.notification.fcm.FcmPushClient})이 정적
+     * 호출({@code FirebaseMessaging.getInstance(app)}) 대신 명시적 의존으로 받아 단위 테스트에서 mock 주입을 가능케 한다.
+     */
+    @Bean
+    public FirebaseMessaging firebaseMessaging(FirebaseApp firebaseApp) {
+        return FirebaseMessaging.getInstance(firebaseApp);
     }
 }
