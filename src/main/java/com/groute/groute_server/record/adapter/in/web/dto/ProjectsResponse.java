@@ -2,9 +2,8 @@ package com.groute.groute_server.record.adapter.in.web.dto;
 
 import java.util.List;
 
-import org.springframework.data.domain.Page;
-
 import com.groute.groute_server.record.domain.Project;
+import com.groute.groute_server.record.domain.ProjectPage;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -15,12 +14,12 @@ public record ProjectsResponse(
         @Schema(description = "전체 페이지 수", example = "3") int totalPages,
         @Schema(description = "프로젝트 목록") List<ProjectSummary> projects) {
 
-    public static ProjectsResponse from(Page<Project> projectPage) {
+    public static ProjectsResponse from(ProjectPage projectPage) {
         return new ProjectsResponse(
-                projectPage.getNumber(),
-                projectPage.getSize(),
-                projectPage.getTotalPages(),
-                projectPage.getContent().stream().map(ProjectSummary::from).toList());
+                projectPage.page(),
+                projectPage.size(),
+                projectPage.totalPages(),
+                projectPage.content().stream().map(ProjectSummary::from).toList());
     }
 
     /** 목록 내 개별 프로젝트 항목. */

@@ -1,9 +1,10 @@
 package com.groute.groute_server.record.adapter.in.web;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -22,6 +23,7 @@ import com.groute.groute_server.record.adapter.in.web.dto.ProjectNameRequest;
 import com.groute.groute_server.record.adapter.in.web.dto.ProjectsResponse;
 import com.groute.groute_server.record.application.port.in.ProjectUseCase;
 import com.groute.groute_server.record.domain.Project;
+import com.groute.groute_server.record.domain.ProjectPage;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -30,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 
 /** 프로젝트 태그 CRUD 엔드포인트. */
 @Tag(name = "Project", description = "프로젝트 태그 API")
+@Validated
 @RestController
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor
@@ -64,9 +67,9 @@ public class ProjectController {
     @GetMapping
     public ApiResponse<ProjectsResponse> getProjects(
             @CurrentUser Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size) {
-        Page<Project> projects = projectUseCase.getProjects(userId, page, size);
+            @Min(0) @RequestParam(defaultValue = "0") int page,
+            @Min(1) @RequestParam(defaultValue = "5") int size) {
+        ProjectPage projects = projectUseCase.getProjects(userId, page, size);
         return ApiResponse.ok("프로젝트 태그 목록을 조회했습니다.", ProjectsResponse.from(projects));
     }
 

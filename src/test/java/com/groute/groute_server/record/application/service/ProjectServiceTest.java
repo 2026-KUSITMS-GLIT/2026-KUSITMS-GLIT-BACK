@@ -28,6 +28,7 @@ import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.application.port.out.ProjectPort;
 import com.groute.groute_server.record.application.port.out.UserPort;
 import com.groute.groute_server.record.domain.Project;
+import com.groute.groute_server.record.domain.ProjectPage;
 import com.groute.groute_server.user.entity.User;
 
 @ExtendWith(MockitoExtension.class)
@@ -105,9 +106,12 @@ class ProjectServiceTest {
             Page<Project> page = new PageImpl<>(List.of(project), PageRequest.of(0, 5), 1);
             given(projectPort.findAllByUserId(eq(USER_ID), any())).willReturn(page);
 
-            Page<Project> result = projectService.getProjects(USER_ID, 0, 5);
+            ProjectPage result = projectService.getProjects(USER_ID, 0, 5);
 
-            assertThat(result).isSameAs(page);
+            assertThat(result.content()).containsExactly(project);
+            assertThat(result.page()).isZero();
+            assertThat(result.size()).isEqualTo(5);
+            assertThat(result.totalPages()).isEqualTo(1);
         }
     }
 
