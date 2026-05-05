@@ -127,6 +127,12 @@ discord:
     enabled: false
     url: ${DISCORD_WEBHOOK_URL:}
 
+firebase:
+  # service account JSON 통째로 주입. project_id는 JSON 내부에서 SDK가 자동 추출.
+  # stg/prod는 SSM에서 FIREBASE_CREDENTIALS_JSON 주입 필수 — 누락 시 부팅 실패(fail-fast)로 설정 오류 즉시 노출.
+  # 로컬은 하단 local 프로파일에서 빈 문자열 fallback 허용 (FCM 발송 비활성).
+  credentials-json: ${FIREBASE_CREDENTIALS_JSON}
+
 ---
 # ===== 로컬 개발 환경 =====
 spring:
@@ -143,6 +149,9 @@ spring:
 app:
   user:
     default-profile-image-url: ${USER_DEFAULT_PROFILE_IMAGE_URL:}
+
+firebase:
+  credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
 
 logging:
   level:
