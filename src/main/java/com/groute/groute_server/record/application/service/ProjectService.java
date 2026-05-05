@@ -13,6 +13,7 @@ import com.groute.groute_server.record.application.port.in.ProjectUseCase;
 import com.groute.groute_server.record.application.port.out.ProjectPort;
 import com.groute.groute_server.record.application.port.out.UserPort;
 import com.groute.groute_server.record.domain.Project;
+import com.groute.groute_server.record.domain.ProjectPage;
 import com.groute.groute_server.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
@@ -38,9 +39,11 @@ public class ProjectService implements ProjectUseCase {
     }
 
     @Override
-    public Page<Project> getProjects(Long userId, int page, int size) {
+    public ProjectPage getProjects(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return projectPort.findAllByUserId(userId, pageable);
+        Page<Project> result = projectPort.findAllByUserId(userId, pageable);
+        return new ProjectPage(
+                result.getContent(), result.getNumber(), result.getSize(), result.getTotalPages());
     }
 
     @Transactional

@@ -63,3 +63,5 @@ application-secret.properties
 
 # OMC
 .omc/
+
+.claude
