@@ -53,6 +53,9 @@ public class ProjectService implements ProjectUseCase {
                 projectPort
                         .findByIdAndUserId(projectId, userId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
+        if (project.getName().equals(name)) {
+            return project;
+        }
         if (projectPort.existsByUserIdAndName(userId, name)) {
             throw new BusinessException(ErrorCode.PROJECT_NAME_DUPLICATE);
         }
