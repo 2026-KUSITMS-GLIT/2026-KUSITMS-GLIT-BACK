@@ -157,6 +157,8 @@ class ScrumSyncServiceTest {
             given(scrumQueryPort.findAllByIdInAndUserId(anyCollection(), anyLong()))
                     .willReturn(List.of());
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of());
+            given(userReferencePort.getReferenceById(USER_ID))
+                    .willReturn(User.createForSocialLogin());
             SyncDailyScrumCommand command = command(group(1L, item(null, "신규")));
 
             // when
@@ -334,6 +336,8 @@ class ScrumSyncServiceTest {
             given(scrumQueryPort.findAllByIdInAndUserId(anyCollection(), anyLong()))
                     .willReturn(List.of(a));
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(a, b));
+            given(userReferencePort.getReferenceById(USER_ID))
+                    .willReturn(User.createForSocialLogin());
             SyncDailyScrumCommand command =
                     command(
                             group(1L, item(100L, "A_new")),
