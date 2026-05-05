@@ -133,6 +133,13 @@ firebase:
   # 로컬은 하단 local 프로파일에서 빈 문자열 fallback 허용 (FCM 발송 비활성).
   credentials-json: ${FIREBASE_CREDENTIALS_JSON}
 
+notification:
+  # 카피 풀 JSON. SSM Parameter Store /groute/{env}/NOTIFICATION_COPY_JSON에서 주입.
+  # 형식: {"copies":[{"title":"...","body":"..."},...]}  (title/body에 {닉네임} 토큰 가능)
+  copy-json: ${NOTIFICATION_COPY_JSON}
+  # 알림 클릭 시 이동할 절대 URL (스킴+도메인+path 일체, REC-002 스크럼 작성 화면).
+  deep-link-url: ${NOTIFICATION_DEEP_LINK_URL}
+
 ---
 # ===== 로컬 개발 환경 =====
 spring:
@@ -152,6 +159,10 @@ app:
 
 firebase:
   credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
+
+notification:
+  copy-json: ${NOTIFICATION_COPY_JSON:}
+  deep-link-url: ${NOTIFICATION_DEEP_LINK_URL:}
 
 logging:
   level:
