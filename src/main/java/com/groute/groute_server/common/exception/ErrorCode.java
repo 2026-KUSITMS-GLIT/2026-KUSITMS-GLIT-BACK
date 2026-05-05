@@ -42,6 +42,7 @@ public enum ErrorCode {
     INVALID_USER_STATUS(HttpStatus.BAD_REQUEST, "USER_003", "지원하지 않는 사용자 상태입니다."),
     ONBOARDING_ALREADY_COMPLETED(HttpStatus.CONFLICT, "USER_004", "이미 온보딩이 완료된 사용자입니다."),
     ONBOARDING_NOT_COMPLETED(HttpStatus.FORBIDDEN, "USER_005", "온보딩을 먼저 완료해주세요."),
+    DUPLICATE_NOTIFICATION_SLOT(HttpStatus.BAD_REQUEST, "USER_006", "동일 요일 내 중복 시간은 설정할 수 없어요."),
 
     // Record
     TITLE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECORD_001", "스크럼 제목을 찾을 수 없습니다."),
