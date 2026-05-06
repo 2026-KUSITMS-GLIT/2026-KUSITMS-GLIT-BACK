@@ -183,9 +183,7 @@ class CalendarQueryServiceTest {
     // ============== helpers ==============
 
     private static ScrumTitle title(Long id, String projectName, String freeText) {
-        Project project = new Project();
-        ReflectionTestUtils.setField(project, "id", 1000L + id);
-        ReflectionTestUtils.setField(project, "name", projectName);
+        Project project = Project.builder().id(1000L + id).name(projectName).build();
         ScrumTitle title = new ScrumTitle();
         ReflectionTestUtils.setField(title, "id", id);
         ReflectionTestUtils.setField(title, "project", project);
