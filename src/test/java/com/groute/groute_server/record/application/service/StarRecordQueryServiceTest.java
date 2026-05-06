@@ -201,9 +201,7 @@ class StarRecordQueryServiceTest {
     }
 
     private static ScrumTitle title() {
-        Project project = new Project();
-        ReflectionTestUtils.setField(project, "id", 1L);
-        ReflectionTestUtils.setField(project, "name", "밋업 프로젝트");
+        Project project = Project.builder().id(1L).name("밋업 프로젝트").build();
         ScrumTitle title = new ScrumTitle();
         ReflectionTestUtils.setField(title, "id", 5L);
         ReflectionTestUtils.setField(title, "project", project);
