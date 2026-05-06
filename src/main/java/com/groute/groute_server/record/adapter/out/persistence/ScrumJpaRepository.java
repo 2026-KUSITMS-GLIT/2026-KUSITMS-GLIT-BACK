@@ -53,4 +53,18 @@ public interface ScrumJpaRepository extends JpaRepository<Scrum, Long> {
     @Modifying
     @Query("UPDATE Scrum s SET s.hasStar = false " + "WHERE s.id = :id AND s.isDeleted = false")
     int clearHasStarById(@Param("id") Long id);
+
+    /**
+     * 후보 user 중 KST 기준 해당 일자에 스크럼을 1개 이상 작성한 user_id 집합(MYP-004 알림 발송 시 작성자 제외 처리).
+     *
+     * <p>{@code scrum_date}는 사용자가 선택한 KST 기준 날짜라 DB UTC 변환과 무관하게 직접 비교 가능. {@code is_deleted =
+     * false}인 행만 카운트.
+     */
+    @Query(
+            "SELECT DISTINCT s.user.id FROM Scrum s "
+                    + "WHERE s.user.id IN :userIds "
+                    + "AND s.scrumDate = :date "
+                    + "AND s.isDeleted = false")
+    List<Long> findDistinctUserIdsByScrumDate(
+            @Param("userIds") Collection<Long> userIds, @Param("date") LocalDate date);
 }
