@@ -75,8 +75,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private String buildRedirectUrl(String callbackUrl, String accessToken, String refreshToken) {
+        // 콜백 URL이 이미 query를 포함하면 `&`로 이어 붙여 URL이 깨지지 않게 한다.
+        String separator = callbackUrl.contains("?") ? "&" : "?";
         StringBuilder sb = new StringBuilder(callbackUrl);
-        sb.append("?access=").append(URLEncoder.encode(accessToken, StandardCharsets.UTF_8));
+        sb.append(separator)
+                .append("access=")
+                .append(URLEncoder.encode(accessToken, StandardCharsets.UTF_8));
         if (refreshToken != null) {
             sb.append("&refresh=").append(URLEncoder.encode(refreshToken, StandardCharsets.UTF_8));
         }
