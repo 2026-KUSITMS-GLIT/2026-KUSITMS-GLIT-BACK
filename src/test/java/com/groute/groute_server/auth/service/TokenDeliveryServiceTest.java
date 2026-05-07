@@ -3,6 +3,7 @@ package com.groute.groute_server.auth.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,7 +26,8 @@ class TokenDeliveryServiceTest {
         AuthProperties authProperties =
                 new AuthProperties(
                         new AuthProperties.RefreshToken(enabled),
-                        "http://localhost:3000/auth/callback");
+                        Map.of("local", "http://localhost:3000/auth/callback"),
+                        "local");
         return new TokenDeliveryService(jwtProperties, authProperties);
     }
 

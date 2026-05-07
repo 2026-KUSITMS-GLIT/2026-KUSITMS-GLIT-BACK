@@ -40,7 +40,10 @@ class OAuth2LoginSuccessHandlerTest {
 
     private OAuth2LoginSuccessHandler newHandler(boolean cookieEnabled, String callbackUrl) {
         AuthProperties authProperties =
-                new AuthProperties(new AuthProperties.RefreshToken(cookieEnabled), callbackUrl);
+                new AuthProperties(
+                        new AuthProperties.RefreshToken(cookieEnabled),
+                        Map.of("default", callbackUrl),
+                        "default");
         return new OAuth2LoginSuccessHandler(
                 jwtTokenProvider, refreshTokenRepository, tokenDeliveryService, authProperties);
     }

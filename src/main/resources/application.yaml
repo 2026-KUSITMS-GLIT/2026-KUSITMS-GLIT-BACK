@@ -99,9 +99,13 @@ jwt:
 auth:
   refresh-token:
     cookie-enabled: false
-  # stg/prod는 SSM에서 AUTH_FRONT_CALLBACK_URL 주입 필수 — 누락 시 부팅 실패(fail-fast)로 설정 오류 즉시 노출.
-  # 로컬은 하단 local 프로파일에서 http://localhost:3000/auth/callback fallback 허용
-  front-callback-url: ${AUTH_FRONT_CALLBACK_URL}
+  # 프론트 콜백 URL은 env 키 → URL 맵으로 등록.
+  # 프론트가 OAuth2 시작 시 ?env=local|production 으로 어느 콜백을 쓸지 지정.
+  # 환경별 등록 키는 각 프로파일에서 채우며 stg/prod는 SSM 주입 필수(fail-fast).
+  callback: {}
+  # default-env는 프론트가 env를 보내지 않거나 등록되지 않은 값을 보냈을 때 fallback.
+  # stg/prod는 SSM AUTH_DEFAULT_ENV 주입 필수, 로컬은 하단 local 프로파일에서 'local' fallback.
+  default-env: ${AUTH_DEFAULT_ENV}
 
 springdoc:
   swagger-ui:
@@ -161,7 +165,9 @@ app:
     default-profile-image-url: ${USER_DEFAULT_PROFILE_IMAGE_URL:}
 
 auth:
-  front-callback-url: ${AUTH_FRONT_CALLBACK_URL:http://localhost:3000/auth/callback}
+  callback:
+    local: ${AUTH_CALLBACK_LOCAL:http://localhost:3000/auth/callback}
+  default-env: ${AUTH_DEFAULT_ENV:local}
 
 firebase:
   credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
@@ -193,6 +199,12 @@ app:
   swagger:
     server-url: https://stg-api.glit.today
     server-description: Staging
+
+# stg는 프론트 로컬·운영 둘 다 콜백을 허용한다. 프론트가 ?env=local|production 으로 선택.
+auth:
+  callback:
+    local: ${AUTH_CALLBACK_LOCAL}
+    production: ${AUTH_CALLBACK_PRODUCTION}
 
 discord:
   webhook:
@@ -231,6 +243,9 @@ app:
 auth:
   refresh-token:
     cookie-enabled: true
+  # prod는 운영 프론트 콜백 하나만 허용. local 키는 의도적으로 미등록.
+  callback:
+    production: ${AUTH_CALLBACK_PRODUCTION}
 
 discord:
   webhook:
