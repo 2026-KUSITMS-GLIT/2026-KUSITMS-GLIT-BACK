@@ -42,6 +42,26 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record AuthProperties(
         RefreshToken refreshToken, Map<String, String> callback, String defaultEnv) {
 
+    /**
+     * Compact ctor — 부팅 단계 fail-fast. callback이 비어 있거나 defaultEnv가 매핑되지 않은 설정은 환경별 yaml/SSM 주입
+     * 누락이므로 트래픽 들어오기 전에 즉시 노출시킨다. (런타임 첫 호출까지 늦추면 설정 사고가 배포 후에 드러남)
+     */
+    public AuthProperties {
+        if (callback == null || callback.isEmpty()) {
+            throw new IllegalStateException("auth.callback must not be empty");
+        }
+        if (defaultEnv == null || defaultEnv.isBlank()) {
+            throw new IllegalStateException("auth.default-env must not be blank");
+        }
+        if (!callback.containsKey(defaultEnv)) {
+            throw new IllegalStateException(
+                    "auth.default-env='"
+                            + defaultEnv
+                            + "' is not present in auth.callback keys "
+                            + callback.keySet());
+        }
+    }
+
     public record RefreshToken(boolean cookieEnabled) {}
 
     /** 등록된 env에 매핑된 콜백 URL. 미등록 env면 {@code null}. */
@@ -49,16 +69,8 @@ public record AuthProperties(
         return callback.get(env);
     }
 
-    /** {@link #defaultEnv}에 매핑된 콜백 URL. 설정 정합성이 깨졌으면(매핑 없음) 부팅 단계에서 노출되도록 즉시 예외. */
+    /** {@link #defaultEnv}에 매핑된 콜백 URL. ctor에서 매핑 존재가 보장되므로 단순 조회. */
     public String defaultCallbackUrl() {
-        String url = callback.get(defaultEnv);
-        if (url == null) {
-            throw new IllegalStateException(
-                    "auth.default-env='"
-                            + defaultEnv
-                            + "' is not present in auth.callback keys "
-                            + callback.keySet());
-        }
-        return url;
+        return callback.get(defaultEnv);
     }
 }
