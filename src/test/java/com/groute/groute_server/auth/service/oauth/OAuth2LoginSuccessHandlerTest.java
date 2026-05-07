@@ -9,7 +9,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,18 +38,11 @@ class OAuth2LoginSuccessHandlerTest {
     @Mock RefreshTokenRepository refreshTokenRepository;
     @Mock TokenDeliveryService tokenDeliveryService;
 
-    private OAuth2LoginSuccessHandler handler;
-
-    @BeforeEach
-    void setUp() {
+    private OAuth2LoginSuccessHandler newHandler(boolean cookieEnabled, String callbackUrl) {
         AuthProperties authProperties =
-                new AuthProperties(new AuthProperties.RefreshToken(false), CALLBACK_URL);
-        handler =
-                new OAuth2LoginSuccessHandler(
-                        jwtTokenProvider,
-                        refreshTokenRepository,
-                        tokenDeliveryService,
-                        authProperties);
+                new AuthProperties(new AuthProperties.RefreshToken(cookieEnabled), callbackUrl);
+        return new OAuth2LoginSuccessHandler(
+                jwtTokenProvider, refreshTokenRepository, tokenDeliveryService, authProperties);
     }
 
     @Nested
@@ -58,9 +50,10 @@ class OAuth2LoginSuccessHandlerTest {
     class HappyPath {
 
         @Test
-        @DisplayName("쿠키 모드(refresh=null)일 때 access만 query에 담아 콜백 URL로 redirect한다")
+        @DisplayName("쿠키 모드일 때 access만 query에 담아 콜백 URL로 redirect한다")
         void should_redirectWithAccessOnly_when_cookieMode() throws Exception {
-            // given
+            // given — cookieEnabled=true: refresh는 Set-Cookie로만 전달
+            OAuth2LoginSuccessHandler handler = newHandler(true, CALLBACK_URL);
             MockHttpServletResponse response = new MockHttpServletResponse();
             given(jwtTokenProvider.createAccessToken(USER_ID)).willReturn(ACCESS_TOKEN);
             given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn(REFRESH_TOKEN);
@@ -78,9 +71,10 @@ class OAuth2LoginSuccessHandlerTest {
         }
 
         @Test
-        @DisplayName("본문 모드(refresh!=null)일 때 access·refresh 모두 query에 담아 redirect한다")
+        @DisplayName("본문 모드일 때 access·refresh 모두 query에 담아 redirect한다")
         void should_redirectWithBothTokens_when_bodyMode() throws Exception {
-            // given
+            // given — cookieEnabled=false: refresh는 query로 전달
+            OAuth2LoginSuccessHandler handler = newHandler(false, CALLBACK_URL);
             MockHttpServletResponse response = new MockHttpServletResponse();
             given(jwtTokenProvider.createAccessToken(USER_ID)).willReturn(ACCESS_TOKEN);
             given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn(REFRESH_TOKEN);
@@ -106,17 +100,9 @@ class OAuth2LoginSuccessHandlerTest {
         @Test
         @DisplayName("콜백 URL이 이미 query를 포함하면 `&`로 이어 붙인다")
         void should_appendWithAmpersand_when_callbackHasExistingQuery() throws Exception {
-            // given
+            // given — 콜백 URL에 기존 query 포함, separator 분기 검증
             String callbackWithQuery = "http://localhost:3000/auth/callback?from=signup";
-            AuthProperties authProperties =
-                    new AuthProperties(new AuthProperties.RefreshToken(false), callbackWithQuery);
-            OAuth2LoginSuccessHandler localHandler =
-                    new OAuth2LoginSuccessHandler(
-                            jwtTokenProvider,
-                            refreshTokenRepository,
-                            tokenDeliveryService,
-                            authProperties);
-
+            OAuth2LoginSuccessHandler handler = newHandler(true, callbackWithQuery);
             MockHttpServletResponse response = new MockHttpServletResponse();
             given(jwtTokenProvider.createAccessToken(USER_ID)).willReturn(ACCESS_TOKEN);
             given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn(REFRESH_TOKEN);
@@ -124,7 +110,7 @@ class OAuth2LoginSuccessHandlerTest {
                     .willReturn(new TokenResponse(ACCESS_TOKEN, null));
 
             // when
-            localHandler.onAuthenticationSuccess(
+            handler.onAuthenticationSuccess(
                     new MockHttpServletRequest(), response, authFor(USER_ID, SocialProvider.KAKAO));
 
             // then
@@ -136,6 +122,7 @@ class OAuth2LoginSuccessHandlerTest {
         @DisplayName("redirect 호출 전에 활성 세션을 invalidate한다")
         void should_invalidateSession_before_redirect() throws Exception {
             // given
+            OAuth2LoginSuccessHandler handler = newHandler(true, CALLBACK_URL);
             MockHttpServletRequest request = new MockHttpServletRequest();
             request.getSession(true); // 활성 세션 생성
             MockHttpServletResponse response = new MockHttpServletResponse();
