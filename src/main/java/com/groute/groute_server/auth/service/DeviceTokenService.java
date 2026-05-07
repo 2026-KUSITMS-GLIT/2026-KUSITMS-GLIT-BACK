@@ -3,8 +3,8 @@ package com.groute.groute_server.auth.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.groute.groute_server.auth.dto.DeviceTokenRegisterRequest;
 import com.groute.groute_server.auth.entity.DeviceToken;
+import com.groute.groute_server.auth.enums.DevicePlatform;
 import com.groute.groute_server.auth.repository.DeviceTokenRepository;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
@@ -34,23 +34,22 @@ public class DeviceTokenService {
      * isActive=true)} 상태가 보장된다.
      */
     @Transactional
-    public void register(Long userId, DeviceTokenRegisterRequest request) {
+    public void register(Long userId, DevicePlatform platform, String pushToken) {
         User user =
                 userRepository
                         .findById(userId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         deviceTokenRepository
-                .findByPushToken(request.pushToken())
+                .findByPushToken(pushToken)
                 .ifPresentOrElse(
                         existing -> {
                             existing.changeOwner(user);
-                            existing.updatePlatform(request.platform());
+                            existing.updatePlatform(platform);
                             existing.activate();
                         },
                         () ->
                                 deviceTokenRepository.save(
-                                        DeviceToken.register(
-                                                user, request.platform(), request.pushToken())));
+                                        DeviceToken.register(user, platform, pushToken)));
     }
 }
