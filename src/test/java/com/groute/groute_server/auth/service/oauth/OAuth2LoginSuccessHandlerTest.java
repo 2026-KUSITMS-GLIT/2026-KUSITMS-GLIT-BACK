@@ -5,6 +5,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -14,13 +16,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.groute.groute_server.auth.config.AuthProperties;
 import com.groute.groute_server.auth.dto.TokenResponse;
 import com.groute.groute_server.auth.enums.SocialProvider;
 import com.groute.groute_server.auth.repository.RefreshTokenRepository;
@@ -30,61 +30,109 @@ import com.groute.groute_server.common.jwt.JwtTokenProvider;
 @ExtendWith(MockitoExtension.class)
 class OAuth2LoginSuccessHandlerTest {
 
+    private static final String CALLBACK_URL = "http://localhost:3000/auth/callback";
+    private static final Long USER_ID = 42L;
+    private static final String ACCESS_TOKEN = "acc.tok.en";
+    private static final String REFRESH_TOKEN = "ref.tok.en";
+
     @Mock JwtTokenProvider jwtTokenProvider;
     @Mock RefreshTokenRepository refreshTokenRepository;
     @Mock TokenDeliveryService tokenDeliveryService;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private OAuth2LoginSuccessHandler handler;
 
     @BeforeEach
     void setUp() {
+        AuthProperties authProperties =
+                new AuthProperties(new AuthProperties.RefreshToken(false), CALLBACK_URL);
         handler =
                 new OAuth2LoginSuccessHandler(
                         jwtTokenProvider,
                         refreshTokenRepository,
                         tokenDeliveryService,
-                        objectMapper);
+                        authProperties);
     }
 
     @Nested
-    @DisplayName("onAuthenticationSuccess")
-    class OnSuccess {
+    @DisplayName("onAuthenticationSuccess - HappyPath")
+    class HappyPath {
 
         @Test
-        @DisplayName("인증 성공일 때 토큰 쌍을 발급·저장하고 deliver 결과를 JSON 본문으로 기록한다")
-        void should_issueTokensAndWriteJson_when_authenticated() throws Exception {
+        @DisplayName("쿠키 모드(refresh=null)일 때 access만 query에 담아 콜백 URL로 redirect한다")
+        void should_redirectWithAccessOnly_when_cookieMode() throws Exception {
             // given
-            Long userId = 42L;
-            PrincipalUser principal = new PrincipalUser(userId, SocialProvider.KAKAO, Map.of());
-            Authentication authentication = mock(Authentication.class);
-            given(authentication.getPrincipal()).willReturn(principal);
-
-            String access = "access-token";
-            String refresh = "refresh-token";
-            given(jwtTokenProvider.createAccessToken(userId)).willReturn(access);
-            given(jwtTokenProvider.createRefreshToken(userId)).willReturn(refresh);
-
-            MockHttpServletRequest request = new MockHttpServletRequest();
             MockHttpServletResponse response = new MockHttpServletResponse();
-            given(tokenDeliveryService.deliver(response, access, refresh))
-                    .willReturn(new TokenResponse(access, null));
+            given(jwtTokenProvider.createAccessToken(USER_ID)).willReturn(ACCESS_TOKEN);
+            given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn(REFRESH_TOKEN);
+            given(tokenDeliveryService.deliver(response, ACCESS_TOKEN, REFRESH_TOKEN))
+                    .willReturn(new TokenResponse(ACCESS_TOKEN, null));
 
             // when
-            handler.onAuthenticationSuccess(request, response, authentication);
+            handler.onAuthenticationSuccess(
+                    new MockHttpServletRequest(), response, authFor(USER_ID, SocialProvider.KAKAO));
 
             // then
-            verify(refreshTokenRepository).save(userId, refresh);
-            verify(tokenDeliveryService).deliver(response, access, refresh);
-
-            assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-            assertThat(response.getContentType()).startsWith(MediaType.APPLICATION_JSON_VALUE);
-            assertThat(response.getCharacterEncoding()).isEqualToIgnoringCase("UTF-8");
-            assertThat(response.getContentAsString())
-                    .contains("\"success\":true")
-                    .contains("\"accessToken\":\"" + access + "\"")
-                    .doesNotContain("\"refreshToken\"");
+            verify(refreshTokenRepository).save(USER_ID, REFRESH_TOKEN);
+            assertThat(response.getRedirectedUrl())
+                    .isEqualTo(CALLBACK_URL + "?access=" + encode(ACCESS_TOKEN));
         }
+
+        @Test
+        @DisplayName("본문 모드(refresh!=null)일 때 access·refresh 모두 query에 담아 redirect한다")
+        void should_redirectWithBothTokens_when_bodyMode() throws Exception {
+            // given
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            given(jwtTokenProvider.createAccessToken(USER_ID)).willReturn(ACCESS_TOKEN);
+            given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn(REFRESH_TOKEN);
+            given(tokenDeliveryService.deliver(response, ACCESS_TOKEN, REFRESH_TOKEN))
+                    .willReturn(new TokenResponse(ACCESS_TOKEN, REFRESH_TOKEN));
+
+            // when
+            handler.onAuthenticationSuccess(
+                    new MockHttpServletRequest(),
+                    response,
+                    authFor(USER_ID, SocialProvider.GOOGLE));
+
+            // then
+            assertThat(response.getRedirectedUrl())
+                    .isEqualTo(
+                            CALLBACK_URL
+                                    + "?access="
+                                    + encode(ACCESS_TOKEN)
+                                    + "&refresh="
+                                    + encode(REFRESH_TOKEN));
+        }
+
+        @Test
+        @DisplayName("redirect 호출 전에 활성 세션을 invalidate한다")
+        void should_invalidateSession_before_redirect() throws Exception {
+            // given
+            MockHttpServletRequest request = new MockHttpServletRequest();
+            request.getSession(true); // 활성 세션 생성
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            given(jwtTokenProvider.createAccessToken(USER_ID)).willReturn(ACCESS_TOKEN);
+            given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn(REFRESH_TOKEN);
+            given(tokenDeliveryService.deliver(response, ACCESS_TOKEN, REFRESH_TOKEN))
+                    .willReturn(new TokenResponse(ACCESS_TOKEN, null));
+
+            // when
+            handler.onAuthenticationSuccess(
+                    request, response, authFor(USER_ID, SocialProvider.KAKAO));
+
+            // then
+            assertThat(request.getSession(false)).isNull();
+            assertThat(response.getRedirectedUrl()).startsWith(CALLBACK_URL + "?access=");
+        }
+    }
+
+    private static Authentication authFor(Long userId, SocialProvider provider) {
+        PrincipalUser principal = new PrincipalUser(userId, provider, Map.of());
+        Authentication authentication = mock(Authentication.class);
+        given(authentication.getPrincipal()).willReturn(principal);
+        return authentication;
+    }
+
+    private static String encode(String token) {
+        return URLEncoder.encode(token, StandardCharsets.UTF_8);
     }
 }

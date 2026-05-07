@@ -1,33 +1,39 @@
 package com.groute.groute_server.auth.service.oauth;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.groute.groute_server.auth.config.AuthProperties;
 import com.groute.groute_server.auth.dto.TokenResponse;
 import com.groute.groute_server.auth.repository.RefreshTokenRepository;
 import com.groute.groute_server.auth.service.TokenDeliveryService;
 import com.groute.groute_server.common.jwt.JwtTokenProvider;
-import com.groute.groute_server.common.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * OAuth2 로그인 성공 시 JWT를 발급하고 클라이언트에 전달.
+ * OAuth2 로그인 성공 시 JWT를 발급하고 프론트엔드 콜백 URL로 302 redirect.
  *
- * <p>access/refresh 발급 → refresh를 Redis에 저장 → {@link TokenDeliveryService}가 설정(쿠키/본문)에 맞게 응답 구성. 인가
- * 코드 교환 중 잠시 사용된 세션은 더 이상 필요 없으므로 명시적으로 invalidate하여 서버 상태를 JWT-only로 복귀시킨다.
+ * <p>access/refresh 발급 → refresh를 Redis에 저장 → {@link TokenDeliveryService}가 설정(쿠키/본문)에 맞게 응답을 구성.
+ * deliver가 반환한 {@link TokenResponse}의 refresh가 null이면 쿠키 모드(prod)로 이미 Set-Cookie 완료된 상태이므로 query에는
+ * refresh를 싣지 않는다. null이 아니면 본문 모드(local)로, refresh도 query에 추가해 프론트가 즉시 사용할 수 있게 한다.
+ *
+ * <p>인가 코드 교환 중 잠시 사용된 세션은 더 이상 필요 없으므로 redirect 직전에 invalidate하여 서버 상태를 JWT-only로 복귀시킨다.
+ *
+ * <p><b>Open redirect 안전성</b>: 콜백 URL은 {@link AuthProperties#frontCallbackUrl()}에서 고정값으로 주입되며 사용자
+ * 입력을 받지 않는다. redirect target은 외부에서 조작할 수 없다.
+ *
+ * <p><b>로깅 정책</b>: 토큰 값은 절대 로깅하지 않는다. userId·provider·callback URL(host+path)만 출력한다.
  */
 @Slf4j
 @Component
@@ -37,7 +43,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenDeliveryService tokenDeliveryService;
-    private final ObjectMapper objectMapper;
+    private final AuthProperties authProperties;
 
     @Override
     public void onAuthenticationSuccess(
@@ -51,17 +57,30 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         refreshTokenRepository.save(userId, refreshToken);
 
         TokenResponse body = tokenDeliveryService.deliver(response, accessToken, refreshToken);
+        if (body.accessToken() == null) {
+            // 정상 흐름에선 도달 불가. deliver 계약 위반에 대한 방어적 가드.
+            throw new IllegalStateException("accessToken must not be null after deliver");
+        }
 
-        writeJson(response, body);
+        String callbackUrl = authProperties.frontCallbackUrl();
+        String redirectUrl = buildRedirectUrl(callbackUrl, body.accessToken(), body.refreshToken());
+
         invalidateSession(request);
-        log.info("OAuth2 로그인 성공: userId={}, provider={}", userId, principal.getProvider());
+        log.info(
+                "OAuth2 로그인 성공: userId={}, provider={}, callback={}",
+                userId,
+                principal.getProvider(),
+                callbackUrl);
+        response.sendRedirect(redirectUrl);
     }
 
-    private void writeJson(HttpServletResponse response, TokenResponse body) throws IOException {
-        response.setStatus(HttpStatus.OK.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(response.getWriter(), ApiResponse.ok(body));
+    private String buildRedirectUrl(String callbackUrl, String accessToken, String refreshToken) {
+        StringBuilder sb = new StringBuilder(callbackUrl);
+        sb.append("?access=").append(URLEncoder.encode(accessToken, StandardCharsets.UTF_8));
+        if (refreshToken != null) {
+            sb.append("&refresh=").append(URLEncoder.encode(refreshToken, StandardCharsets.UTF_8));
+        }
+        return sb.toString();
     }
 
     private void invalidateSession(HttpServletRequest request) {
