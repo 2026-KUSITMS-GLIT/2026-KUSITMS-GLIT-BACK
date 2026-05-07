@@ -23,7 +23,9 @@ class TokenDeliveryServiceTest {
     private TokenDeliveryService serviceWithCookieEnabled(boolean enabled) {
         JwtProperties jwtProperties = new JwtProperties("secret", 900_000L, REFRESH_TTL_MILLIS);
         AuthProperties authProperties =
-                new AuthProperties(new AuthProperties.RefreshToken(enabled));
+                new AuthProperties(
+                        new AuthProperties.RefreshToken(enabled),
+                        "http://localhost:3000/auth/callback");
         return new TokenDeliveryService(jwtProperties, authProperties);
     }
 
