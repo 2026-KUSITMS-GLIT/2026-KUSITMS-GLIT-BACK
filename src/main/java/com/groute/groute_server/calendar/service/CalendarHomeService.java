@@ -81,7 +81,7 @@ public class CalendarHomeService {
 
         List<Long> scrumIds = scrums.stream().map(Scrum::getId).toList();
         Map<Long, List<ScrumStarTagRow>> tagsByScrumId =
-                calendarHomeRepository.findCompletedStarTagsByScrumIds(scrumIds).stream()
+                calendarHomeRepository.findCompletedStarTagsByScrumIds(userId, scrumIds).stream()
                         .collect(Collectors.groupingBy(ScrumStarTagRow::scrumId));
 
         List<CalendarDailyPreviewView.ScrumItem> items = new ArrayList<>();

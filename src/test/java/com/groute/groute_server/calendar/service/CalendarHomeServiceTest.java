@@ -165,7 +165,7 @@ class CalendarHomeServiceTest {
             Scrum scrum = scrum(7L, "어드민 페이지 기능명세서 작성", true, 50L, "밋업프로젝트", "기획 작업");
             given(calendarHomeRepository.findScrumsByUserAndDate(USER_ID, DATE))
                     .willReturn(List.of(scrum));
-            given(calendarHomeRepository.findCompletedStarTagsByScrumIds(List.of(7L)))
+            given(calendarHomeRepository.findCompletedStarTagsByScrumIds(USER_ID, List.of(7L)))
                     .willReturn(
                             List.of(
                                     new ScrumStarTagRow(
@@ -196,7 +196,7 @@ class CalendarHomeServiceTest {
             Scrum scrum = scrum(7L, "본문", false, 50L, "밋업프로젝트", "기획 작업");
             given(calendarHomeRepository.findScrumsByUserAndDate(USER_ID, DATE))
                     .willReturn(List.of(scrum));
-            given(calendarHomeRepository.findCompletedStarTagsByScrumIds(List.of(7L)))
+            given(calendarHomeRepository.findCompletedStarTagsByScrumIds(USER_ID, List.of(7L)))
                     .willReturn(List.of());
 
             // when
