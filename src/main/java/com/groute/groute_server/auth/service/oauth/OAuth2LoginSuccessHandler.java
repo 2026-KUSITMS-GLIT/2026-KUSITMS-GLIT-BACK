@@ -25,8 +25,9 @@ import lombok.extern.slf4j.Slf4j;
  * OAuth2 로그인 성공 시 JWT를 발급하고 프론트엔드 콜백 URL로 302 redirect.
  *
  * <p>access/refresh 발급 → refresh를 Redis에 저장 → {@link TokenDeliveryService}가 설정(쿠키/본문)에 맞게 응답을 구성.
- * deliver가 반환한 {@link TokenResponse}의 refresh가 null이면 쿠키 모드(prod)로 이미 Set-Cookie 완료된 상태이므로 query에는
- * refresh를 싣지 않는다. null이 아니면 본문 모드(local)로, refresh도 query에 추가해 프론트가 즉시 사용할 수 있게 한다.
+ * 이후 query 구성은 {@link AuthProperties.RefreshToken#cookieEnabled()} 플래그를 단일 진실로 분기한다. 쿠키 모드(prod)에서는
+ * deliver가 이미 Set-Cookie로 refresh를 전달했으므로 query에는 access만 싣는다. 본문 모드(local)에서는 refresh도 query에 함께
+ * 실어 프론트가 즉시 사용할 수 있게 한다.
  *
  * <p>인가 코드 교환 중 잠시 사용된 세션은 더 이상 필요 없으므로 redirect 직전에 invalidate하여 서버 상태를 JWT-only로 복귀시킨다.
  *
@@ -63,7 +64,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         String callbackUrl = authProperties.frontCallbackUrl();
-        String redirectUrl = buildRedirectUrl(callbackUrl, body.accessToken(), body.refreshToken());
+        // 쿠키 모드(prod)면 deliver가 이미 Set-Cookie로 refresh를 전달했으므로 query에는 싣지 않는다.
+        String refreshForQuery =
+                authProperties.refreshToken().cookieEnabled() ? null : refreshToken;
+        String redirectUrl = buildRedirectUrl(callbackUrl, body.accessToken(), refreshForQuery);
 
         invalidateSession(request);
         log.info(
