@@ -18,7 +18,7 @@ public record NotificationCopy(List<Item> copies) {
     /**
      * 카피 항목.
      *
-     * <p>딥링크는 모든 카피에 동일하므로 항목 단위로 두지 않고 외부 상수({@link NotificationCopyProperties#deepLinkPath()})로
+     * <p>딥링크는 모든 카피에 동일하므로 항목 단위로 두지 않고 외부 상수({@link NotificationCopyProperties#deepLinkUrl()})로
      * 분리한다.
      *
      * @param title 알림 제목 ({@code &#123;닉네임&#125;} 치환 토큰 포함 가능)
