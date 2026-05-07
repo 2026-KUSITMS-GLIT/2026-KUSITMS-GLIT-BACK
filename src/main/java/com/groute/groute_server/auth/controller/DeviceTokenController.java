@@ -52,7 +52,7 @@ public class DeviceTokenController {
     @PostMapping
     public ApiResponse<Void> register(
             @CurrentUser Long userId, @Valid @RequestBody DeviceTokenRegisterRequest request) {
-        deviceTokenService.register(userId, request);
+        deviceTokenService.register(userId, request.platform(), request.pushToken());
         return ApiResponse.ok("디바이스 토큰 등록 성공");
     }
 }

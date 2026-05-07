@@ -44,7 +44,10 @@ public class NotificationSettingController {
     })
     @GetMapping
     public ApiResponse<NotificationSettingsResponse> getMySettings(@CurrentUser Long userId) {
-        return ApiResponse.ok("알림 설정 조회 성공", notificationSettingService.getMySettings(userId));
+        return ApiResponse.ok(
+                "알림 설정 조회 성공",
+                NotificationSettingsResponse.from(
+                        notificationSettingService.getMySettings(userId)));
     }
 
     @Operation(
@@ -68,7 +71,11 @@ public class NotificationSettingController {
     public ApiResponse<Void> updateMySettings(
             @CurrentUser Long userId,
             @Valid @RequestBody NotificationSettingsUpdateRequest request) {
-        notificationSettingService.replaceMySettings(userId, request);
+        notificationSettingService.replaceMySettings(
+                userId,
+                Boolean.TRUE.equals(request.isActive()),
+                request.daysOfWeek(),
+                request.notifyTime());
         return ApiResponse.ok("알림 설정 저장 성공");
     }
 }
