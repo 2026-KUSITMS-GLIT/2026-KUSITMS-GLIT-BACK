@@ -7,6 +7,8 @@ import jakarta.persistence.EntityManager;
 
 import org.springframework.stereotype.Repository;
 
+import com.groute.groute_server.record.domain.Scrum;
+
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -63,6 +65,48 @@ public class CalendarHomeRepository {
                 .setParameter("userId", userId)
                 .setParameter("start", start)
                 .setParameter("end", end)
+                .getResultList();
+    }
+
+    /** 지정 일자의 사용자 스크럼 목록. ScrumTitle·Project를 fetch join 하여 추가 쿼리를 피한다. */
+    public List<Scrum> findScrumsByUserAndDate(Long userId, LocalDate date) {
+        return em.createQuery(
+                        """
+                        SELECT s
+                        FROM Scrum s
+                        JOIN FETCH s.title t
+                        JOIN FETCH t.project
+                        WHERE s.user.id = :userId
+                          AND s.scrumDate = :date
+                        ORDER BY s.id
+                        """,
+                        Scrum.class)
+                .setParameter("userId", userId)
+                .setParameter("date", date)
+                .getResultList();
+    }
+
+    /**
+     * 지정 scrumId 집합 중 STAR가 완료된 record의 StarTag row 목록.
+     *
+     * <p>한 StarRecord(=Scrum 1:1)에 1~3개의 row가 반환된다. 정렬은 {@code st.id ASC}로 안정적.
+     */
+    public List<ScrumStarTagRow> findCompletedStarTagsByScrumIds(List<Long> scrumIds) {
+        if (scrumIds.isEmpty()) {
+            return List.of();
+        }
+        return em.createQuery(
+                        """
+                        SELECT new com.groute.groute_server.calendar.repository.ScrumStarTagRow(
+                            sr.scrum.id, st.primaryCategory, st.detailTag)
+                        FROM StarTag st
+                        JOIN st.starRecord sr
+                        WHERE sr.scrum.id IN :scrumIds
+                          AND sr.isCompleted = true
+                        ORDER BY st.id
+                        """,
+                        ScrumStarTagRow.class)
+                .setParameter("scrumIds", scrumIds)
                 .getResultList();
     }
 }
