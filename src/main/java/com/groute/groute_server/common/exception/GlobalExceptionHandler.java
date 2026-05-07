@@ -12,6 +12,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.groute.groute_server.common.response.ErrorResponse;
 import com.groute.groute_server.common.webhook.ErrorWebhookNotifier;
@@ -92,6 +93,24 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException e) {
         log.warn("HttpMessageNotReadableException: {}", e.getMessage());
         return ResponseEntity.badRequest().body(ErrorResponse.of(ErrorCode.INVALID_REQUEST_BODY));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    protected ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException e) {
+        log.warn(
+                "MethodArgumentTypeMismatchException: name={}, value={}",
+                e.getName(),
+                e.getValue());
+        String requiredType =
+                e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "?";
+        ErrorResponse.FieldError fieldError =
+                ErrorResponse.FieldError.of(
+                        e.getName(),
+                        e.getValue() == null ? "" : e.getValue().toString(),
+                        "타입 변환 실패: " + requiredType + " 형식이어야 합니다.");
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(ErrorCode.INVALID_INPUT, List.of(fieldError)));
     }
 
     @ExceptionHandler(Exception.class)
