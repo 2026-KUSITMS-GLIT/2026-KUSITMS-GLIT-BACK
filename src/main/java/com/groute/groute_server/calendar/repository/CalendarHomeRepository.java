@@ -20,6 +20,11 @@ import lombok.RequiredArgsConstructor;
  * <p>scrum_date는 {@code LocalDate}로 저장되어 별도 timezone 변환이 필요 없다. STAR 완료된 day의 대표 역량은 같은
  * starRecord에서 1~3개의 StarTag row가 나오므로, 호출 측에서 starRecordId 기준 distinct 처리 후 가장 최근 완료 record의
  * primaryCategory를 사용한다.
+ *
+ * <p><b>Soft-delete 처리</b>: {@link com.groute.groute_server.common.entity.SoftDeleteEntity}는
+ * {@code @Where} 자동 필터를 걸지 않으므로, 모든 JPQL에 명시적으로 {@code AND s.isDeleted = false} 조건을 추가한다(record 도메인
+ * 쿼리와 동일 컨벤션). StarTag는 BaseTimeEntity를 상속하여 자체 soft-delete 필드가 없으며, 부모 StarRecord의 {@code
+ * isDeleted=false}로 보호된다.
  */
 @Repository
 @RequiredArgsConstructor
@@ -27,7 +32,7 @@ public class CalendarHomeRepository {
 
     private final EntityManager em;
 
-    /** 사용자가 해당 기간에 스크럼을 작성한 날짜 set. */
+    /** 사용자가 해당 기간에 스크럼을 작성한 날짜 set. soft-delete된 scrum은 제외. */
     public List<LocalDate> findScrumDatesInRange(Long userId, LocalDate start, LocalDate end) {
         return em.createQuery(
                         """
@@ -35,6 +40,8 @@ public class CalendarHomeRepository {
                         FROM Scrum s
                         WHERE s.user.id = :userId
                           AND s.scrumDate BETWEEN :start AND :end
+                          AND s.isDeleted = false
+                        ORDER BY s.scrumDate
                         """,
                         LocalDate.class)
                 .setParameter("userId", userId)
@@ -47,7 +54,7 @@ public class CalendarHomeRepository {
      * 해당 기간에 완료된 STAR 기록의 day-level row.
      *
      * <p>StarTag join으로 starRecord 1개당 1~3 row가 나온다. 호출 측에서 starRecordId 기준 distinct로 카운트하고, 동일
-     * record의 primaryCategory는 모든 row가 같은 값을 가진다.
+     * record의 primaryCategory는 모든 row가 같은 값을 가진다. soft-delete된 starRecord는 제외.
      */
     public List<StarDailyRow> findCompletedStarRowsInRange(
             Long userId, LocalDate start, LocalDate end) {
@@ -59,7 +66,9 @@ public class CalendarHomeRepository {
                         JOIN st.starRecord sr
                         WHERE sr.user.id = :userId
                           AND sr.isCompleted = true
+                          AND sr.isDeleted = false
                           AND sr.scrum.scrumDate BETWEEN :start AND :end
+                        ORDER BY sr.scrum.scrumDate, sr.completedAt
                         """,
                         StarDailyRow.class)
                 .setParameter("userId", userId)
@@ -68,7 +77,12 @@ public class CalendarHomeRepository {
                 .getResultList();
     }
 
-    /** 지정 일자의 사용자 스크럼 목록. ScrumTitle·Project를 fetch join 하여 추가 쿼리를 피한다. */
+    /**
+     * 지정 일자의 사용자 스크럼 목록. ScrumTitle·Project를 fetch join 하여 추가 쿼리를 피한다.
+     *
+     * <p>soft-delete된 scrum은 제외. (title/project는 부모 scrum이 살아있으면 동시 살아있다고 가정하는 record 도메인 컨벤션을 따라
+     * 추가 필터하지 않는다.)
+     */
     public List<Scrum> findScrumsByUserAndDate(Long userId, LocalDate date) {
         return em.createQuery(
                         """
@@ -78,6 +92,7 @@ public class CalendarHomeRepository {
                         JOIN FETCH t.project
                         WHERE s.user.id = :userId
                           AND s.scrumDate = :date
+                          AND s.isDeleted = false
                         ORDER BY s.id
                         """,
                         Scrum.class)
@@ -89,7 +104,8 @@ public class CalendarHomeRepository {
     /**
      * 지정 scrumId 집합 중 STAR가 완료된 record의 StarTag row 목록.
      *
-     * <p>한 StarRecord(=Scrum 1:1)에 1~3개의 row가 반환된다. 정렬은 {@code st.id ASC}로 안정적.
+     * <p>한 StarRecord(=Scrum 1:1)에 1~3개의 row가 반환된다. 정렬은 {@code st.id ASC}로 안정적. soft-delete된
+     * starRecord는 제외.
      */
     public List<ScrumStarTagRow> findCompletedStarTagsByScrumIds(List<Long> scrumIds) {
         if (scrumIds.isEmpty()) {
@@ -103,6 +119,7 @@ public class CalendarHomeRepository {
                         JOIN st.starRecord sr
                         WHERE sr.scrum.id IN :scrumIds
                           AND sr.isCompleted = true
+                          AND sr.isDeleted = false
                         ORDER BY st.id
                         """,
                         ScrumStarTagRow.class)
