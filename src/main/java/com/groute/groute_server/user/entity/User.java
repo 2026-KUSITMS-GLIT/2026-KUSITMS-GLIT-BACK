@@ -101,12 +101,20 @@ public class User extends SoftDeleteEntity {
      * <p>스케줄러가 발송을 마친 직후 호출한다. {@code (currentIndex + 1) % total}로 다음 카피를 가리키며, 풀 크기({@code
      * total})가 줄어 인덱스가 범위를 벗어나도 mod 연산으로 안전하게 정규화된다.
      *
-     * @param total 카피 풀 크기. 1 이상이어야 한다.
+     * <p>{@code total}은 컬럼 타입({@code SMALLINT})의 양의 범위 안이어야 한다. 풀 크기가 그보다 크면 {@code short} 캐스트 시 음수
+     * 인덱스로 오염될 수 있어 사전 거부한다.
+     *
+     * @param total 카피 풀 크기. 1 이상 {@code Short.MAX_VALUE + 1} 이하.
      */
     public void advanceCopyIndex(int total) {
         if (total <= 0) {
             throw new IllegalArgumentException("total must be > 0, got " + total);
         }
-        this.notificationCopyIndex = (short) (((this.notificationCopyIndex + 1) % total));
+        if (total > Short.MAX_VALUE + 1) {
+            throw new IllegalArgumentException(
+                    "total must be <= " + (Short.MAX_VALUE + 1) + ", got " + total);
+        }
+        int next = Math.floorMod(this.notificationCopyIndex + 1, total);
+        this.notificationCopyIndex = (short) next;
     }
 }
