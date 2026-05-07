@@ -23,9 +23,15 @@ import lombok.extern.slf4j.Slf4j;
  * <p>{@link FirebaseMessaging} 빈이 등록돼 있지 않으면(로컬 개발 환경에서 자격증명 미설정) 발송을 건너뛰고 {@code success=false,
  * tokenInvalid=false}를 반환해 호출자가 토큰을 비활성화하지 않도록 한다.
  *
- * <p>FCM 응답의 {@link MessagingErrorCode} 중 {@code UNREGISTERED}/{@code INVALID_ARGUMENT}/{@code
- * SENDER_ID_MISMATCH}는 토큰이 영구 무효임을 의미하므로 {@code tokenInvalid=true}로 분류한다. 그 외 일시 오류(쿼터/네트워크 등)는 토큰을
- * 보존한다.
+ * <p>토큰 무효 분류 규칙:
+ *
+ * <ul>
+ *   <li>{@code UNREGISTERED} / {@code SENDER_ID_MISMATCH} — 항상 {@code tokenInvalid=true}.
+ *   <li>{@code INVALID_ARGUMENT} — 토큰 필드 오류와 페이로드 필드 오류 모두 같은 코드로 떨어지므로, 응답 BadRequest의 {@code
+ *       message.token} fieldViolation을 확인했을 때만 {@code tokenInvalid=true}로 분류. 페이로드 오류로 인한 잘못된 비활성화를
+ *       방지.
+ *   <li>그 외 일시 오류(쿼터/네트워크 등) — 토큰 보존 ({@code tokenInvalid=false}).
+ * </ul>
  */
 @Slf4j
 @Component
@@ -59,7 +65,7 @@ public class FcmPushClient {
             firebaseMessaging.get().send(message);
             return new SendResult(true, false);
         } catch (FirebaseMessagingException e) {
-            boolean tokenInvalid = isTokenInvalid(e.getMessagingErrorCode());
+            boolean tokenInvalid = isTokenInvalid(e);
             log.warn(
                     "FCM 발송 실패 (errorCode={}, tokenInvalid={}, token={})",
                     e.getMessagingErrorCode(),
@@ -99,18 +105,49 @@ public class FcmPushClient {
     }
 
     /**
-     * FCM 에러 코드가 토큰 영구 무효(앱 삭제/기기 초기화 등)에 해당하는지 판정한다.
+     * FCM 예외가 토큰 영구 무효(앱 삭제/기기 초기화/잘못된 토큰 형식 등)에 해당하는지 판정한다.
      *
-     * @param code FCM 응답 에러 코드. {@code null} 가능 (네트워크 등 비-FCM 오류)
+     * <p>{@code UNREGISTERED}와 {@code SENDER_ID_MISMATCH}는 토큰 자체가 더 이상 유효하지 않다는 명확한 신호다. {@code
+     * INVALID_ARGUMENT}는 토큰 필드 오류와 페이로드 필드 오류 모두에서 발생하므로, 응답 본문의 BadRequest fieldViolation이 {@code
+     * message.token}을 가리킬 때만 토큰 무효로 분류한다 — 페이로드 오류에 따른 잘못된 토큰 비활성화 방지.
+     *
+     * @param e FCM 발송 예외
      * @return 토큰을 비활성화 대상으로 분류해야 하면 {@code true}
      */
-    private boolean isTokenInvalid(MessagingErrorCode code) {
+    private boolean isTokenInvalid(FirebaseMessagingException e) {
+        MessagingErrorCode code = e.getMessagingErrorCode();
         if (code == null) {
             return false;
         }
-        return code == MessagingErrorCode.UNREGISTERED
-                || code == MessagingErrorCode.INVALID_ARGUMENT
-                || code == MessagingErrorCode.SENDER_ID_MISMATCH;
+        if (code == MessagingErrorCode.UNREGISTERED
+                || code == MessagingErrorCode.SENDER_ID_MISMATCH) {
+            return true;
+        }
+        if (code == MessagingErrorCode.INVALID_ARGUMENT) {
+            return mentionsTokenField(e);
+        }
+        return false;
+    }
+
+    /**
+     * {@code INVALID_ARGUMENT} 응답이 토큰 필드 오류인지 판정한다. HTTP 응답 본문의 BadRequest fieldViolation에 {@code
+     * message.token}이 포함됐는지를 단순 문자열 매칭으로 확인한다 — 무거운 JSON 파싱 회피.
+     */
+    private boolean mentionsTokenField(FirebaseMessagingException e) {
+        if (e.getHttpResponse() != null) {
+            String content = e.getHttpResponse().getContent();
+            if (content != null && content.contains("message.token")) {
+                return true;
+            }
+        }
+        String message = e.getMessage();
+        if (message == null) {
+            return false;
+        }
+        String lower = message.toLowerCase();
+        return lower.contains("registration token")
+                || lower.contains("invalid token")
+                || lower.contains("message.token");
     }
 
     /** 로그에 토큰 전체를 노출하지 않기 위해 앞 6 + 뒤 4만 남기고 가운데를 마스킹한다. */
