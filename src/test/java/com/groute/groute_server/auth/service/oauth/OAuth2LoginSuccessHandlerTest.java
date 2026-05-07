@@ -53,7 +53,11 @@ class OAuth2LoginSuccessHandlerTest {
                 new AuthProperties(
                         new AuthProperties.RefreshToken(cookieEnabled), callback, defaultEnv);
         return new OAuth2LoginSuccessHandler(
-                jwtTokenProvider, refreshTokenRepository, tokenDeliveryService, authProperties);
+                jwtTokenProvider,
+                refreshTokenRepository,
+                tokenDeliveryService,
+                authProperties,
+                new OAuthCallbackUrlResolver(authProperties));
     }
 
     @Nested
