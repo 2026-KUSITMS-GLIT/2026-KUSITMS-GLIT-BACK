@@ -105,9 +105,10 @@ public class CalendarHomeRepository {
      * 지정 scrumId 집합 중 STAR가 완료된 record의 StarTag row 목록.
      *
      * <p>한 StarRecord(=Scrum 1:1)에 1~3개의 row가 반환된다. 정렬은 {@code st.id ASC}로 안정적. soft-delete된
-     * starRecord는 제외.
+     * starRecord는 제외. 호출부가 본인 scrumIds만 전달한다고 신뢰하지 않고 저장소 단에서도 {@code userId}로 한 번 더
+     * 강제(defense-in-depth).
      */
-    public List<ScrumStarTagRow> findCompletedStarTagsByScrumIds(List<Long> scrumIds) {
+    public List<ScrumStarTagRow> findCompletedStarTagsByScrumIds(Long userId, List<Long> scrumIds) {
         if (scrumIds.isEmpty()) {
             return List.of();
         }
@@ -118,11 +119,13 @@ public class CalendarHomeRepository {
                         FROM StarTag st
                         JOIN st.starRecord sr
                         WHERE sr.scrum.id IN :scrumIds
+                          AND sr.user.id = :userId
                           AND sr.isCompleted = true
                           AND sr.isDeleted = false
                         ORDER BY st.id
                         """,
                         ScrumStarTagRow.class)
+                .setParameter("userId", userId)
                 .setParameter("scrumIds", scrumIds)
                 .getResultList();
     }
