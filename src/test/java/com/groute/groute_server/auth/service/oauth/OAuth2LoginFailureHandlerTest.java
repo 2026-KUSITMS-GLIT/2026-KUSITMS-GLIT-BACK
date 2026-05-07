@@ -1,33 +1,43 @@
 package com.groute.groute_server.auth.service.oauth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 
+@ExtendWith(MockitoExtension.class)
 class OAuth2LoginFailureHandlerTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final OAuth2LoginFailureHandler handler = new OAuth2LoginFailureHandler(objectMapper);
+    private static final String CALLBACK_URL = "http://localhost:3000/auth/callback";
+
+    @Mock OAuthCallbackUrlResolver oAuthCallbackUrlResolver;
+
+    @InjectMocks OAuth2LoginFailureHandler handler;
 
     @Nested
-    @DisplayName("onAuthenticationFailure")
-    class OnFailure {
+    @DisplayName("onAuthenticationFailure - HappyPath")
+    class HappyPath {
 
         @Test
-        @DisplayName("원인 체인에 BusinessException이 있을 때 해당 ErrorCode로 응답하고 상세 메시지는 마스킹한다")
-        void should_respondWithMaskedErrorResponse_when_businessExceptionInCauseChain()
+        @DisplayName("원인 체인에 BusinessException이 있을 때 해당 ErrorCode를 error query로 redirect한다")
+        void should_redirectWithBusinessErrorCode_when_businessExceptionInCauseChain()
                 throws Exception {
             // given
             BusinessException businessException =
@@ -41,38 +51,62 @@ class OAuth2LoginFailureHandlerTest {
                             businessException);
             MockHttpServletRequest request = new MockHttpServletRequest();
             MockHttpServletResponse response = new MockHttpServletResponse();
+            given(oAuthCallbackUrlResolver.resolveAndExpire(request, response))
+                    .willReturn(CALLBACK_URL);
 
             // when
             handler.onAuthenticationFailure(request, response, exception);
 
             // then
-            assertThat(response.getStatus())
-                    .isEqualTo(ErrorCode.INVALID_OAUTH_RESPONSE.getHttpStatus().value());
-            assertThat(response.getContentType()).startsWith(MediaType.APPLICATION_JSON_VALUE);
-            assertThat(response.getContentAsString())
-                    .contains("\"code\":\"" + ErrorCode.INVALID_OAUTH_RESPONSE.getCode() + "\"")
-                    .contains(
-                            "\"message\":\"" + ErrorCode.INVALID_OAUTH_RESPONSE.getMessage() + "\"")
-                    .doesNotContain("providerUid");
+            assertThat(response.getRedirectedUrl())
+                    .isEqualTo(
+                            CALLBACK_URL
+                                    + "?error="
+                                    + encode(ErrorCode.INVALID_OAUTH_RESPONSE.getCode()));
         }
 
         @Test
-        @DisplayName("원인 체인에 BusinessException이 없을 때 UNAUTHORIZED 기본 응답을 반환한다")
-        void should_respondWithUnauthorized_when_noBusinessExceptionCause() throws Exception {
+        @DisplayName("원인 체인에 BusinessException이 없을 때 UNAUTHORIZED를 error query로 redirect한다")
+        void should_redirectWithUnauthorized_when_noBusinessExceptionCause() throws Exception {
             // given
             BadCredentialsException exception = new BadCredentialsException("자격 증명 실패");
             MockHttpServletRequest request = new MockHttpServletRequest();
             MockHttpServletResponse response = new MockHttpServletResponse();
+            given(oAuthCallbackUrlResolver.resolveAndExpire(request, response))
+                    .willReturn(CALLBACK_URL);
 
             // when
             handler.onAuthenticationFailure(request, response, exception);
 
             // then
-            assertThat(response.getStatus())
-                    .isEqualTo(ErrorCode.UNAUTHORIZED.getHttpStatus().value());
-            assertThat(response.getContentAsString())
-                    .contains("\"code\":\"" + ErrorCode.UNAUTHORIZED.getCode() + "\"")
-                    .contains("\"message\":\"" + ErrorCode.UNAUTHORIZED.getMessage() + "\"");
+            assertThat(response.getRedirectedUrl())
+                    .isEqualTo(CALLBACK_URL + "?error=" + encode(ErrorCode.UNAUTHORIZED.getCode()));
         }
+
+        @Test
+        @DisplayName("콜백 URL이 이미 query를 포함하면 `&error=...`로 이어 붙인다")
+        void should_appendWithAmpersand_when_callbackHasExistingQuery() throws Exception {
+            // given
+            String callbackWithQuery = "http://localhost:3000/auth/callback?from=signup";
+            BadCredentialsException exception = new BadCredentialsException("자격 증명 실패");
+            MockHttpServletRequest request = new MockHttpServletRequest();
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            given(oAuthCallbackUrlResolver.resolveAndExpire(request, response))
+                    .willReturn(callbackWithQuery);
+
+            // when
+            handler.onAuthenticationFailure(request, response, exception);
+
+            // then
+            assertThat(response.getRedirectedUrl())
+                    .isEqualTo(
+                            callbackWithQuery
+                                    + "&error="
+                                    + encode(ErrorCode.UNAUTHORIZED.getCode()));
+        }
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }
