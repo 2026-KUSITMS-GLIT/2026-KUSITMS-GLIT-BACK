@@ -23,8 +23,7 @@ import lombok.RequiredArgsConstructor;
  * 알림 설정 조회/저장 엔드포인트(MYP-004).
  *
  * <p>GET·PATCH 모두 본인 리소스만 다루므로 {@link CurrentUser}로 userId를 주입받는다. PATCH는 전체 교체 방식이며 검증·중복 거부는
- * {@link NotificationSettingService}가 담당한다. 저장 후 응답에는 변경된 최종 상태를 함께 반환해 클라가 별도 GET 없이도 화면을 동기화할 수
- * 있다.
+ * {@link NotificationSettingService}가 담당한다.
  */
 @Tag(name = "Notification", description = "알림 설정 조회·저장")
 @RestController
