@@ -1,4 +1,4 @@
-package com.groute.groute_server.common.notification.scheduler;
+package com.groute.groute_server.notification.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;

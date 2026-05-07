@@ -1,4 +1,4 @@
-package com.groute.groute_server.common.notification.scheduler;
+package com.groute.groute_server.notification.scheduler;
 
 import java.time.Clock;
 import java.time.LocalDate;
