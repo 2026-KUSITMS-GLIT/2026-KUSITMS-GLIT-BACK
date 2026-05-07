@@ -6,6 +6,7 @@ import com.groute.groute_server.auth.enums.DevicePlatform;
 import com.groute.groute_server.common.entity.BaseTimeEntity;
 import com.groute.groute_server.user.entity.User;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -15,7 +16,7 @@ import lombok.NoArgsConstructor;
  * <p>알림 발송 시 user_id로 활성 토큰을 조회한다(MYP003).
  */
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "device_tokens")
 public class DeviceToken extends BaseTimeEntity {

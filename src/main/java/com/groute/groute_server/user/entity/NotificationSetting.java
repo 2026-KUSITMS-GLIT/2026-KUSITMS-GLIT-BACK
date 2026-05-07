@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import com.groute.groute_server.common.entity.BaseTimeEntity;
 import com.groute.groute_server.user.enums.DayOfWeek;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -17,7 +18,7 @@ import lombok.NoArgsConstructor;
  * (day_of_week, notify_time) 기준으로 발송 대상 유저를 역조회한다.
  */
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "notification_settings")
 public class NotificationSetting extends BaseTimeEntity {
