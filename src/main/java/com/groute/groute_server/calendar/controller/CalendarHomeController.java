@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>월별 잔디(스크럼/STAR 작성 + 대표 역량) 데이터와 날짜 클릭 시 노출되는 프리뷰 목록을 반환한다. 인증된 사용자(JWT) 본인 데이터만 조회.
  */
-@Tag(name = "Calendar", description = "일자별 스크럼 조회")
+@Tag(name = "Calendar", description = "캘린더 조회 (메인 홈 월/일 프리뷰 + 일자별 스크럼)")
 @RestController
 @RequestMapping("/api/calendar")
 @RequiredArgsConstructor
