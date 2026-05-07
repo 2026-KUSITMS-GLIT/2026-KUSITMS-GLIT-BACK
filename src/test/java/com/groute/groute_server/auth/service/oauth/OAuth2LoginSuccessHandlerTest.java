@@ -104,6 +104,35 @@ class OAuth2LoginSuccessHandlerTest {
         }
 
         @Test
+        @DisplayName("콜백 URL이 이미 query를 포함하면 `&`로 이어 붙인다")
+        void should_appendWithAmpersand_when_callbackHasExistingQuery() throws Exception {
+            // given
+            String callbackWithQuery = "http://localhost:3000/auth/callback?from=signup";
+            AuthProperties authProperties =
+                    new AuthProperties(new AuthProperties.RefreshToken(false), callbackWithQuery);
+            OAuth2LoginSuccessHandler localHandler =
+                    new OAuth2LoginSuccessHandler(
+                            jwtTokenProvider,
+                            refreshTokenRepository,
+                            tokenDeliveryService,
+                            authProperties);
+
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            given(jwtTokenProvider.createAccessToken(USER_ID)).willReturn(ACCESS_TOKEN);
+            given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn(REFRESH_TOKEN);
+            given(tokenDeliveryService.deliver(response, ACCESS_TOKEN, REFRESH_TOKEN))
+                    .willReturn(new TokenResponse(ACCESS_TOKEN, null));
+
+            // when
+            localHandler.onAuthenticationSuccess(
+                    new MockHttpServletRequest(), response, authFor(USER_ID, SocialProvider.KAKAO));
+
+            // then
+            assertThat(response.getRedirectedUrl())
+                    .isEqualTo(callbackWithQuery + "&access=" + encode(ACCESS_TOKEN));
+        }
+
+        @Test
         @DisplayName("redirect 호출 전에 활성 세션을 invalidate한다")
         void should_invalidateSession_before_redirect() throws Exception {
             // given
