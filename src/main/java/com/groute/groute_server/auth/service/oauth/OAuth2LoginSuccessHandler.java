@@ -31,8 +31,8 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>인가 코드 교환 중 잠시 사용된 세션은 더 이상 필요 없으므로 redirect 직전에 invalidate하여 서버 상태를 JWT-only로 복귀시킨다.
  *
- * <p><b>Open redirect 안전성</b>: 콜백 URL은 {@link AuthProperties#frontCallbackUrl()}에서 고정값으로 주입되며 사용자
- * 입력을 받지 않는다. redirect target은 외부에서 조작할 수 없다.
+ * <p><b>Open redirect 안전성</b>: 콜백 URL은 {@link AuthProperties#callback()} 맵의 값에서만 선택되며 사용자 입력 URL을
+ * 그대로 사용하지 않는다. redirect target은 properties로 등록된 URL 집합 외부로는 나갈 수 없다.
  *
  * <p><b>로깅 정책</b>: 토큰 값은 절대 로깅하지 않는다. userId·provider·callback URL(host+path)만 출력한다.
  */
@@ -63,7 +63,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             throw new IllegalStateException("accessToken must not be null after deliver");
         }
 
-        String callbackUrl = authProperties.frontCallbackUrl();
+        // env별 분기는 후속 작업(B/C)에서 도입. 현재는 default env 콜백으로만 redirect.
+        String callbackUrl = authProperties.defaultCallbackUrl();
         // 쿠키 모드(prod)면 deliver가 이미 Set-Cookie로 refresh를 전달했으므로 query에는 싣지 않는다.
         String refreshForQuery =
                 authProperties.refreshToken().cookieEnabled() ? null : refreshToken;

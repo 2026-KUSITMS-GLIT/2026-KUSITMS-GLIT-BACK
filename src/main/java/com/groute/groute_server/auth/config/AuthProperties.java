@@ -1,5 +1,7 @@
 package com.groute.groute_server.auth.config;
 
+import java.util.Map;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -15,16 +17,48 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * <p>Secure 쿠키는 HTTPS 연결에서만 전송되므로, 로컬 HTTP 환경에서 쿠키 방식을 켜면 refresh가 전혀 흐르지 않는다. 이 분기는 그 실수를 피하기 위한
  * 것.
  *
- * <p>{@code frontCallbackUrl}은 OAuth2 로그인 완료 후 리다이렉트할 프론트엔드 콜백 URL이다. 환경별로 다음 값을 사용하며, stg/prod는
- * SSM에서 {@code AUTH_FRONT_CALLBACK_URL} 키로 주입한다(누락 시 부팅 실패로 설정 오류 즉시 노출).
+ * <p>{@code callback}은 OAuth2 로그인 완료 후 redirect할 프론트엔드 콜백 URL을 환경(env) 키 → URL로 매핑한다. key는 프론트가
+ * OAuth2 시작 시 보내는 {@code ?env=...} 값과 일치해야 한다(예: {@code local}, {@code production}). 환경별로 등록되는 key는
+ * 다음과 같다.
  *
  * <ul>
- *   <li>로컬: {@code http://localhost:3000/auth/callback}
- *   <li>운영: {@code https://glit.today/auth/callback}
+ *   <li>local 프로파일: {@code local} (개발자 PC 프론트)
+ *   <li>stg 프로파일: {@code local}, {@code production} (둘 다 허용)
+ *   <li>prod 프로파일: {@code production} (운영 프론트만 허용)
+ * </ul>
+ *
+ * <p>{@code defaultEnv}는 프론트가 env를 전달하지 않거나 등록되지 않은 값을 보냈을 때 fallback으로 사용할 env key. stg/prod는 SSM
+ * {@code AUTH_DEFAULT_ENV}로 주입(누락 시 부팅 실패).
+ *
+ * <p>SSM 키 (stg/prod):
+ *
+ * <ul>
+ *   <li>{@code AUTH_CALLBACK_LOCAL} — local env URL (stg에만)
+ *   <li>{@code AUTH_CALLBACK_PRODUCTION} — production env URL
+ *   <li>{@code AUTH_DEFAULT_ENV} — fallback env key
  * </ul>
  */
 @ConfigurationProperties(prefix = "auth")
-public record AuthProperties(RefreshToken refreshToken, String frontCallbackUrl) {
+public record AuthProperties(
+        RefreshToken refreshToken, Map<String, String> callback, String defaultEnv) {
 
     public record RefreshToken(boolean cookieEnabled) {}
+
+    /** 등록된 env에 매핑된 콜백 URL. 미등록 env면 {@code null}. */
+    public String callbackUrlFor(String env) {
+        return callback.get(env);
+    }
+
+    /** {@link #defaultEnv}에 매핑된 콜백 URL. 설정 정합성이 깨졌으면(매핑 없음) 부팅 단계에서 노출되도록 즉시 예외. */
+    public String defaultCallbackUrl() {
+        String url = callback.get(defaultEnv);
+        if (url == null) {
+            throw new IllegalStateException(
+                    "auth.default-env='"
+                            + defaultEnv
+                            + "' is not present in auth.callback keys "
+                            + callback.keySet());
+        }
+        return url;
+    }
 }
