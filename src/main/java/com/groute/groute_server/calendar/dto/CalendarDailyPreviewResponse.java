@@ -2,6 +2,7 @@ package com.groute.groute_server.calendar.dto;
 
 import java.util.List;
 
+import com.groute.groute_server.calendar.service.CalendarDailyPreviewView;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,6 +17,23 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record CalendarDailyPreviewResponse(
         @Schema(description = "조회한 날짜 (yyyy-MM-dd)", example = "2026-04-02") String date,
         @Schema(description = "스크럼 목록 (없으면 빈 배열)") List<ScrumPreview> scrums) {
+
+    public static CalendarDailyPreviewResponse from(CalendarDailyPreviewView view) {
+        List<ScrumPreview> previews =
+                view.scrums().stream()
+                        .map(
+                                s ->
+                                        new ScrumPreview(
+                                                s.scrumId(),
+                                                s.projectName(),
+                                                s.freeText(),
+                                                s.content(),
+                                                s.primaryCategory(),
+                                                s.detailTags(),
+                                                s.hasStar()))
+                        .toList();
+        return new CalendarDailyPreviewResponse(view.date().toString(), previews);
+    }
 
     @Schema(description = "스크럼 프리뷰 항목")
     public record ScrumPreview(

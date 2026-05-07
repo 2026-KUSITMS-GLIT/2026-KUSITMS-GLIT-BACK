@@ -2,6 +2,7 @@ package com.groute.groute_server.calendar.dto;
 
 import java.util.List;
 
+import com.groute.groute_server.calendar.service.CalendarMonthlyView;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,6 +17,21 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record CalendarMonthlyResponse(
         @Schema(description = "조회한 연월 (yyyy-MM)", example = "2026-04") String month,
         @Schema(description = "일별 캘린더 데이터 목록 (해당 월 1일~말일 모두 포함)") List<DayInfo> days) {
+
+    public static CalendarMonthlyResponse from(CalendarMonthlyView view) {
+        List<DayInfo> dayInfos =
+                view.days().stream()
+                        .map(
+                                d ->
+                                        new DayInfo(
+                                                d.date().toString(),
+                                                d.hasScrums(),
+                                                d.hasStar(),
+                                                d.primaryCategory(),
+                                                d.starCount()))
+                        .toList();
+        return new CalendarMonthlyResponse(view.month().toString(), dayInfos);
+    }
 
     @Schema(description = "일별 캘린더 데이터")
     public record DayInfo(
