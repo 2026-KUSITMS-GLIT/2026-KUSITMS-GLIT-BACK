@@ -9,12 +9,15 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+import jakarta.servlet.http.Cookie;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
@@ -30,6 +33,8 @@ import com.groute.groute_server.common.jwt.JwtTokenProvider;
 class OAuth2LoginSuccessHandlerTest {
 
     private static final String CALLBACK_URL = "http://localhost:3000/auth/callback";
+    private static final String LOCAL_URL = "http://localhost:3000/auth/callback";
+    private static final String PROD_URL = "https://glit.today/auth/callback";
     private static final Long USER_ID = 42L;
     private static final String ACCESS_TOKEN = "acc.tok.en";
     private static final String REFRESH_TOKEN = "ref.tok.en";
@@ -39,11 +44,14 @@ class OAuth2LoginSuccessHandlerTest {
     @Mock TokenDeliveryService tokenDeliveryService;
 
     private OAuth2LoginSuccessHandler newHandler(boolean cookieEnabled, String callbackUrl) {
+        return newHandler(cookieEnabled, Map.of("default", callbackUrl), "default");
+    }
+
+    private OAuth2LoginSuccessHandler newHandler(
+            boolean cookieEnabled, Map<String, String> callback, String defaultEnv) {
         AuthProperties authProperties =
                 new AuthProperties(
-                        new AuthProperties.RefreshToken(cookieEnabled),
-                        Map.of("default", callbackUrl),
-                        "default");
+                        new AuthProperties.RefreshToken(cookieEnabled), callback, defaultEnv);
         return new OAuth2LoginSuccessHandler(
                 jwtTokenProvider, refreshTokenRepository, tokenDeliveryService, authProperties);
     }
@@ -141,6 +149,109 @@ class OAuth2LoginSuccessHandlerTest {
             // then
             assertThat(request.getSession(false)).isNull();
             assertThat(response.getRedirectedUrl()).startsWith(CALLBACK_URL + "?access=");
+        }
+    }
+
+    @Nested
+    @DisplayName("onAuthenticationSuccess - EnvCookie")
+    class EnvCookie {
+
+        @Test
+        @DisplayName("oauth_env 쿠키가 production이면 production 콜백 URL로 redirect한다")
+        void should_redirectToProductionCallback_when_envCookieIsProduction() throws Exception {
+            // given
+            OAuth2LoginSuccessHandler handler =
+                    newHandler(true, Map.of("local", LOCAL_URL, "production", PROD_URL), "local");
+            MockHttpServletRequest request = new MockHttpServletRequest();
+            request.setCookies(new Cookie("oauth_env", "production"));
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            stubTokens(response);
+
+            // when
+            handler.onAuthenticationSuccess(
+                    request, response, authFor(USER_ID, SocialProvider.KAKAO));
+
+            // then
+            assertThat(response.getRedirectedUrl())
+                    .isEqualTo(PROD_URL + "?access=" + encode(ACCESS_TOKEN));
+            assertExpiredEnvCookie(response);
+        }
+
+        @Test
+        @DisplayName("oauth_env 쿠키가 local이면 local 콜백 URL로 redirect한다")
+        void should_redirectToLocalCallback_when_envCookieIsLocal() throws Exception {
+            // given
+            OAuth2LoginSuccessHandler handler =
+                    newHandler(
+                            true, Map.of("local", LOCAL_URL, "production", PROD_URL), "production");
+            MockHttpServletRequest request = new MockHttpServletRequest();
+            request.setCookies(new Cookie("oauth_env", "local"));
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            stubTokens(response);
+
+            // when
+            handler.onAuthenticationSuccess(
+                    request, response, authFor(USER_ID, SocialProvider.KAKAO));
+
+            // then
+            assertThat(response.getRedirectedUrl())
+                    .isEqualTo(LOCAL_URL + "?access=" + encode(ACCESS_TOKEN));
+            assertExpiredEnvCookie(response);
+        }
+
+        @Test
+        @DisplayName("oauth_env 쿠키가 없으면 default env 콜백 URL로 redirect한다")
+        void should_redirectToDefaultCallback_when_envCookieMissing() throws Exception {
+            // given — defaultEnv=production
+            OAuth2LoginSuccessHandler handler =
+                    newHandler(
+                            true, Map.of("local", LOCAL_URL, "production", PROD_URL), "production");
+            MockHttpServletRequest request = new MockHttpServletRequest(); // 쿠키 없음
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            stubTokens(response);
+
+            // when
+            handler.onAuthenticationSuccess(
+                    request, response, authFor(USER_ID, SocialProvider.KAKAO));
+
+            // then
+            assertThat(response.getRedirectedUrl())
+                    .isEqualTo(PROD_URL + "?access=" + encode(ACCESS_TOKEN));
+            assertExpiredEnvCookie(response);
+        }
+
+        @Test
+        @DisplayName("oauth_env 쿠키가 등록되지 않은 env이면 default env로 fallback한다")
+        void should_fallbackToDefault_when_envCookieIsUnregistered() throws Exception {
+            // given — env=staging은 매핑에 없음, defaultEnv=production
+            OAuth2LoginSuccessHandler handler =
+                    newHandler(
+                            true, Map.of("local", LOCAL_URL, "production", PROD_URL), "production");
+            MockHttpServletRequest request = new MockHttpServletRequest();
+            request.setCookies(new Cookie("oauth_env", "staging"));
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            stubTokens(response);
+
+            // when
+            handler.onAuthenticationSuccess(
+                    request, response, authFor(USER_ID, SocialProvider.KAKAO));
+
+            // then
+            assertThat(response.getRedirectedUrl())
+                    .isEqualTo(PROD_URL + "?access=" + encode(ACCESS_TOKEN));
+            assertExpiredEnvCookie(response);
+        }
+
+        private void stubTokens(MockHttpServletResponse response) {
+            given(jwtTokenProvider.createAccessToken(USER_ID)).willReturn(ACCESS_TOKEN);
+            given(jwtTokenProvider.createRefreshToken(USER_ID)).willReturn(REFRESH_TOKEN);
+            given(tokenDeliveryService.deliver(response, ACCESS_TOKEN, REFRESH_TOKEN))
+                    .willReturn(new TokenResponse(ACCESS_TOKEN, null));
+        }
+
+        private void assertExpiredEnvCookie(MockHttpServletResponse response) {
+            assertThat(response.getHeaders(HttpHeaders.SET_COOKIE))
+                    .anyMatch(c -> c.startsWith("oauth_env=") && c.contains("Max-Age=0"));
         }
     }
 
