@@ -33,7 +33,8 @@ public class HomeCompetencyStatsService {
      * 사용자의 월별 STAR 완료 건수를 일자별로 집계한다.
      *
      * <p>결과는 STAR 완료 1건 이상인 일자만 키로 갖는 sparse map. 0건 일자는 키 자체가 누락되며 컨트롤러 단에서 응답 변환 시 NO_DATA로 채운다.
-     * 동일 일자 중복 키는 repository GROUP BY로 이미 제거되어 발생하지 않는다.
+     * 동일 일자 중복 키는 repository GROUP BY로 이미 제거되어 발생하지 않으나, 향후 쿼리 변경에 대비해 첫 항목을 유지하는 merge 함수를 두어
+     * {@code IllegalStateException} 회귀를 방어한다.
      *
      * @param userId 조회 대상 사용자 ID
      * @param month 조회 월(KST)
@@ -45,6 +46,10 @@ public class HomeCompetencyStatsService {
         return competencyStatsQueryRepository
                 .findCompletedStarCountsByUserAndDateRange(userId, startInclusive, endExclusive)
                 .stream()
-                .collect(Collectors.toMap(DateCountRow::getDate, DateCountRow::getCount));
+                .collect(
+                        Collectors.toMap(
+                                DateCountRow::getDate,
+                                DateCountRow::getCount,
+                                (existing, ignored) -> existing));
     }
 }
