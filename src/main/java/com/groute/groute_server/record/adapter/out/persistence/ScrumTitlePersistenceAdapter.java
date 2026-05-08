@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.adapter.out.persistence;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -20,6 +21,14 @@ import lombok.RequiredArgsConstructor;
 class ScrumTitlePersistenceAdapter implements ScrumTitleRepositoryPort {
 
     private final ScrumTitleJpaRepository jpaRepository;
+
+    @Override
+    public List<ScrumTitle> saveAll(Collection<ScrumTitle> titles) {
+        if (titles.isEmpty()) {
+            return List.of();
+        }
+        return new ArrayList<>(jpaRepository.saveAll(titles));
+    }
 
     @Override
     public List<ScrumTitle> findAllByIdInAndUserId(Collection<Long> ids, Long userId) {

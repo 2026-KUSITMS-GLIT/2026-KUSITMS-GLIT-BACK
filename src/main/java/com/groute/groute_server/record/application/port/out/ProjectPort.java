@@ -17,4 +17,7 @@ public interface ProjectPort {
     Page<Project> findAllByUserId(Long userId, Pageable pageable);
 
     boolean existsByUserIdAndName(Long userId, String name);
+
+    /** 비정규화 카운터(title_count) 증감. increment는 음수 가능. */
+    void applyTitleCountIncrement(Long projectId, int increment);
 }
