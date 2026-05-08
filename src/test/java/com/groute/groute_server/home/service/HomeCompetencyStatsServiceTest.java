@@ -86,6 +86,13 @@ class HomeCompetencyStatsServiceTest {
         void should_returnEmptyMap_when_repoReturnsNoRows() {
             // given
             YearMonth month = YearMonth.of(2026, 4);
+            given(
+                            competencyStatsQueryRepository
+                                    .findCompletedStarCountsByUserAndDateRange(
+                                            USER_ID,
+                                            LocalDate.of(2026, 4, 1),
+                                            LocalDate.of(2026, 5, 1)))
+                    .willReturn(List.of());
 
             // when
             Map<LocalDate, Long> result =
