@@ -1,5 +1,7 @@
 package com.groute.groute_server.user.entity;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -113,6 +115,30 @@ public class User extends SoftDeleteEntity {
     public void updateProfile(JobRole jobRole, UserStatus userStatus) {
         this.jobRole = Objects.requireNonNull(jobRole, "jobRole");
         this.userStatus = Objects.requireNonNull(userStatus, "userStatus");
+    }
+
+    /**
+     * 회원 탈퇴 처리(MYP-005). 즉시 soft delete하고, 일정 기간 뒤 물리 삭제될 시각을 {@link #hardDeleteAt}에 예약한다. 실제 물리
+     * 삭제는 후속 배치 잡이 처리한다.
+     *
+     * <p>이미 탈퇴한 사용자가 다시 호출해도 {@code hardDeleteAt}을 덮어쓰지 않는다. 두 번째 호출이 시각을 갱신해버리면 grace 기간이 사실상 연장되어
+     * 복구 윈도우가 늦춰지기 때문 — 첫 요청 시각으로 못 박는 게 사용자 입장에서 안전하다.
+     *
+     * <p>{@code clock}은 호출하는 서비스가 주입한다. 테스트에서 "지금"을 고정해 {@code hardDeleteAt = 기대값}을 검증할 수 있게 하기 위함.
+     * 부모 클래스의 {@code softDelete()}는 시스템 시계({@code OffsetDateTime.now()})를 직접 쓰므로 {@code deletedAt}이
+     * 인자 {@code clock}과 미세하게 다를 수 있지만, 배치는 {@code hardDeleteAt} 컬럼만 보고 움직이니 영향이 없다.
+     *
+     * @param clock 현재 시각 소스. 보통 Spring bean으로 주입된 {@code Clock}.
+     * @param grace 탈퇴 요청부터 물리 삭제까지의 기간 (예: 30일). null 금지.
+     */
+    public void scheduleHardDelete(Clock clock, Duration grace) {
+        Objects.requireNonNull(clock, "clock");
+        Objects.requireNonNull(grace, "grace");
+        if (isDeleted()) {
+            return;
+        }
+        softDelete();
+        this.hardDeleteAt = OffsetDateTime.now(clock).plus(grace);
     }
 
     /**
