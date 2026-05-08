@@ -36,7 +36,8 @@ public class ScrumController {
 
     @Operation(
             summary = "스크럼 일괄 저장",
-            description = "심화 기록 플로우 진입 전 스크럼을 PENDING 상태로 일괄 저장한다. 응답으로 반환된 scrumId는 역량 선택 및 STAR 기록에 사용된다.")
+            description =
+                    "심화 기록 플로우 진입 전 스크럼을 PENDING 상태로 일괄 저장한다. 응답으로 반환된 scrumId는 역량 선택 및 STAR 기록에 사용된다.")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",

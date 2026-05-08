@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
  * <p>프로젝트 태그(FK) + 자유작성 텍스트(최대 20자)로 구성된다(REC002). 날짜와 무관하게 재사용 가능하며, 제목 선택 드롭다운 UI에 노출된다.
  */
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 @Entity
