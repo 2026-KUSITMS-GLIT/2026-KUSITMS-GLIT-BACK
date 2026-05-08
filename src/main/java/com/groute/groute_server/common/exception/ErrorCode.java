@@ -54,6 +54,7 @@ public enum ErrorCode {
     SCRUM_DATE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "RECORD_005", "하루에 작성할 수 있는 스크럼은 최대 5개입니다."),
     STAR_NOT_FOUND(HttpStatus.NOT_FOUND, "RECORD_006", "심화기록을 찾을 수 없습니다."),
     STAR_FORBIDDEN(HttpStatus.FORBIDDEN, "RECORD_007", "본인의 심화기록만 접근할 수 있습니다."),
+    SCRUM_COMPETENCY_UPDATE_LOCKED(HttpStatus.CONFLICT, "RECORD_008", "심화기록이 작성된 스크럼의 역량은 수정할 수 없어요."),
 
     // Record - StarRecord
     STAR_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "REC_001", "STAR 기록을 찾을 수 없습니다."),

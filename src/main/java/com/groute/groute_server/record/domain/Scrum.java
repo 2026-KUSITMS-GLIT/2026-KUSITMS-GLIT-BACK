@@ -66,4 +66,9 @@ public class Scrum extends SoftDeleteEntity {
         scrum.scrumDate = Objects.requireNonNull(scrumDate, "scrumDate");
         return scrum;
     }
+
+    /** STAR 심화 기록 시작 전 5대 역량 선택. */
+    public void updateCompetency(CompetencyCategory competency) {
+        this.selectedCompetency = Objects.requireNonNull(competency, "competency");
+    }
 }
