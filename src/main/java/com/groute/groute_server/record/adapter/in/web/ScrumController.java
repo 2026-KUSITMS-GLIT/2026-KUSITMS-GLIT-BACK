@@ -1,9 +1,11 @@
 package com.groute.groute_server.record.adapter.in.web;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import jakarta.validation.Valid;
 
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,7 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.groute.groute_server.common.annotation.CurrentUser;
 import com.groute.groute_server.common.response.ApiResponse;
+import com.groute.groute_server.record.adapter.in.web.dto.ScrumBulkWriteRequest;
+import com.groute.groute_server.record.adapter.in.web.dto.ScrumBulkWriteResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.SyncDailyScrumRequest;
+import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumUseCase;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,11 +25,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 일자별 스크럼 일괄 sync(CAL-002) 엔드포인트.
- *
- * <p>요청 payload만 살아남는 sync 시맨틱. 추가/수정/삭제를 한 번의 호출로 atomic 처리하며, 응답 본문은 비운다.
- */
 @Tag(name = "Scrum", description = "스크럼 sync")
 @RestController
 @RequestMapping("/api/scrums")
@@ -32,6 +32,35 @@ import lombok.RequiredArgsConstructor;
 public class ScrumController {
 
     private final SyncDailyScrumUseCase syncDailyScrumUseCase;
+    private final BulkWriteScrumUseCase bulkWriteScrumUseCase;
+
+    @Operation(
+            summary = "스크럼 일괄 저장",
+            description = "심화 기록 플로우 진입 전 스크럼을 PENDING 상태로 일괄 저장한다. 응답으로 반환된 scrumId는 역량 선택 및 STAR 기록에 사용된다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "저장 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "필드 검증 실패 또는 날짜 형식 오류 또는 스크럼 5개 초과"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증 또는 만료된 액세스 토큰"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "projectId가 본인 소유가 아님")
+    })
+    @PostMapping("/write")
+    public ApiResponse<List<ScrumBulkWriteResponse>> bulkWrite(
+            @CurrentUser Long userId, @Valid @RequestBody ScrumBulkWriteRequest request) {
+        LocalDate date = DateParam.parseIso(request.date());
+        List<ScrumBulkWriteResponse> response =
+                bulkWriteScrumUseCase.bulkWrite(request.toCommand(userId, date)).groups().stream()
+                        .map(ScrumBulkWriteResponse::from)
+                        .toList();
+        return ApiResponse.ok("스크럼 저장 성공", response);
+    }
 
     @Operation(
             summary = "일자별 스크럼 일괄 sync",

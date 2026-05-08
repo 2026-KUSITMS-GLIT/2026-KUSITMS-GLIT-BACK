@@ -37,4 +37,12 @@ public class ProjectPersistenceAdapter implements ProjectPort {
     public boolean existsByUserIdAndName(Long userId, String name) {
         return projectJpaRepository.existsByUserIdAndNameAndIsDeletedFalse(userId, name);
     }
+
+    @Override
+    public void applyTitleCountIncrement(Long projectId, int increment) {
+        if (increment == 0) {
+            return;
+        }
+        projectJpaRepository.applyTitleCountIncrement(projectId, increment);
+    }
 }
