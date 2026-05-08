@@ -21,6 +21,7 @@ interface ProjectJpaRepository extends JpaRepository<Project, Long> {
 
     /** 비정규화 카운터(title_count) 증감. increment는 음수 가능. */
     @Modifying
-    @Query("UPDATE Project p SET p.titleCount = p.titleCount + :increment WHERE p.id = :id AND p.isDeleted = false")
+    @Query(
+            "UPDATE Project p SET p.titleCount = p.titleCount + :increment WHERE p.id = :id AND p.isDeleted = false")
     int applyTitleCountIncrement(@Param("id") Long id, @Param("increment") int increment);
 }
