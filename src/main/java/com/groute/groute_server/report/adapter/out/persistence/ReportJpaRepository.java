@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -35,4 +36,15 @@ public interface ReportJpaRepository extends JpaRepository<Report, Long> {
                     + "ORDER BY r.createdAt DESC "
                     + "LIMIT 1")
     Optional<Report> findLatestByUserId(@Param("userId") Long userId);
+
+    /**
+     * 해당 사용자가 발행한 모든 Report 물리 삭제(MYP-005 hard delete 배치).
+     *
+     * <p>Report는 다른 도메인에서 참조하지 않는 leaf 테이블이라 호출 순서 제약 없음. 복구 불가.
+     *
+     * @return 삭제된 row 수 (로깅용)
+     */
+    @Modifying
+    @Query("DELETE FROM Report r WHERE r.user.id = :userId")
+    int hardDeleteAllByUserId(@Param("userId") Long userId);
 }
