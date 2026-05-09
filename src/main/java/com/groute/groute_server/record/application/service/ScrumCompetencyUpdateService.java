@@ -36,6 +36,10 @@ public class ScrumCompetencyUpdateService implements UpdateScrumCompetencyUseCas
             throw new BusinessException(ErrorCode.SCRUM_NOT_FOUND);
         }
 
+        if (owned.stream().anyMatch(Scrum::isHasStar)) {
+            throw new BusinessException(ErrorCode.SCRUM_COMPETENCY_UPDATE_LOCKED);
+        }
+
         command.items()
                 .forEach(
                         item -> scrumWritePort.updateCompetency(item.scrumId(), item.competency()));
