@@ -42,7 +42,7 @@ public class HomeCompetencyStatsService {
      */
     public Map<LocalDate, Long> getCompletedStarCountsByMonth(Long userId, YearMonth month) {
         LocalDate startInclusive = month.atDay(1);
-        LocalDate endExclusive = month.atEndOfMonth().plusDays(1);
+        LocalDate endExclusive = month.plusMonths(1).atDay(1);
         return competencyStatsQueryRepository
                 .findCompletedStarCountsByUserAndDateRange(userId, startInclusive, endExclusive)
                 .stream()
