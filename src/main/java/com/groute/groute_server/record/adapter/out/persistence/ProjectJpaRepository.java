@@ -24,4 +24,15 @@ interface ProjectJpaRepository extends JpaRepository<Project, Long> {
     @Query(
             "UPDATE Project p SET p.titleCount = p.titleCount + :increment WHERE p.id = :id AND p.isDeleted = false")
     int applyTitleCountIncrement(@Param("id") Long id, @Param("increment") int increment);
+
+    /**
+     * 해당 사용자가 소유한 모든 Project 물리 삭제(MYP-005 hard delete 배치).
+     *
+     * <p>자식(ScrumTitle) 정리 후 호출되어야 FK 위반을 피한다. soft-delete 여부와 무관하게 모든 row 삭제. 복구 불가.
+     *
+     * @return 삭제된 row 수 (로깅용)
+     */
+    @Modifying
+    @Query("DELETE FROM Project p WHERE p.user.id = :userId")
+    int hardDeleteAllByUserId(@Param("userId") Long userId);
 }

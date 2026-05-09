@@ -111,4 +111,16 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
                     + "AND sr.isDeleted = false "
                     + "AND (:after IS NULL OR sr.completedAt > :after)")
     int countCompletedAfter(@Param("userId") Long userId, @Param("after") OffsetDateTime after);
+
+    /**
+     * 해당 사용자가 소유한 모든 StarRecord 물리 삭제(MYP-005 hard delete 배치).
+     *
+     * <p>자식 테이블(StarTag/StarImage/AiTaggingJob)이 먼저 정리되어야 FK 위반을 피한다. soft-delete 여부와 무관하게 모든 row
+     * 삭제. 복구 불가.
+     *
+     * @return 삭제된 row 수 (로깅용)
+     */
+    @Modifying
+    @Query("DELETE FROM StarRecord sr WHERE sr.user.id = :userId")
+    int hardDeleteAllByUserId(@Param("userId") Long userId);
 }
