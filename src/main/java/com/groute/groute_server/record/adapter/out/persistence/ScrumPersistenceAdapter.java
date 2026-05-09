@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.domain.Scrum;
+import com.groute.groute_server.record.domain.enums.CompetencyCategory;
+
 
 import lombok.RequiredArgsConstructor;
 
@@ -60,5 +62,10 @@ class ScrumPersistenceAdapter implements ScrumQueryPort, ScrumWritePort {
     @Override
     public void clearHasStar(Long scrumId) {
         jpaRepository.clearHasStarById(scrumId);
+    }
+
+    @Override
+    public void updateCompetency(Long scrumId, CompetencyCategory competency) {
+        jpaRepository.updateCompetency(scrumId, competency);
     }
 }
