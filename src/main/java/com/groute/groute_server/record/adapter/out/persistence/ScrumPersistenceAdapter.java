@@ -11,7 +11,6 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 
-
 import lombok.RequiredArgsConstructor;
 
 /**

@@ -33,7 +33,8 @@ public class ScrumCompetencyUpdateService implements UpdateScrumCompetencyUseCas
             throw new BusinessException(ErrorCode.SCRUM_NOT_FOUND);
         }
 
-        command.items().forEach(item ->
-                scrumWritePort.updateCompetency(item.scrumId(), item.competency()));
+        command.items()
+                .forEach(
+                        item -> scrumWritePort.updateCompetency(item.scrumId(), item.competency()));
     }
 }

@@ -74,6 +74,5 @@ public interface ScrumJpaRepository extends JpaRepository<Scrum, Long> {
     @Query(
             "UPDATE Scrum s SET s.selectedCompetency = :competency "
                     + "WHERE s.id = :id AND s.isDeleted = false")
-    int updateCompetency(
-            @Param("id") Long id, @Param("competency") CompetencyCategory competency);
+    int updateCompetency(@Param("id") Long id, @Param("competency") CompetencyCategory competency);
 }
