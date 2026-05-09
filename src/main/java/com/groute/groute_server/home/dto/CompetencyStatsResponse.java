@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -35,6 +36,8 @@ public record CompetencyStatsResponse(
      */
     public static CompetencyStatsResponse from(
             YearMonth month, Map<LocalDate, Long> completedCountsByDate) {
+        Objects.requireNonNull(month, "month");
+        Objects.requireNonNull(completedCountsByDate, "completedCountsByDate");
         List<DayItem> days =
                 month.atDay(1)
                         .datesUntil(month.atEndOfMonth().plusDays(1))
