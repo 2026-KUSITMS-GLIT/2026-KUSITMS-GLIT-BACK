@@ -82,6 +82,33 @@ class HomeCompetencyStatsServiceTest {
         }
 
         @Test
+        @DisplayName("동일 일자 중복 행은 첫 값을 유지한다 (defensive merge 회귀 방지)")
+        void should_keepFirstValue_when_repoReturnsDuplicateDates() {
+            // given
+            // 정상 흐름에선 repository GROUP BY로 중복 키가 발생하지 않으나,
+            // 향후 쿼리 변경 시 IllegalStateException 회귀를 방어하는 toMap merge 함수를 검증한다.
+            YearMonth month = YearMonth.of(2026, 4);
+            List<DateCountRow> rows =
+                    List.of(
+                            mockRow(LocalDate.of(2026, 4, 3), 1L),
+                            mockRow(LocalDate.of(2026, 4, 3), 9L));
+            given(
+                            competencyStatsQueryRepository
+                                    .findCompletedStarCountsByUserAndDateRange(
+                                            USER_ID,
+                                            LocalDate.of(2026, 4, 1),
+                                            LocalDate.of(2026, 5, 1)))
+                    .willReturn(rows);
+
+            // when
+            Map<LocalDate, Long> result =
+                    homeCompetencyStatsService.getCompletedStarCountsByMonth(USER_ID, month);
+
+            // then
+            assertThat(result).containsOnly(Map.entry(LocalDate.of(2026, 4, 3), 1L));
+        }
+
+        @Test
         @DisplayName("repository 결과가 비어 있으면 빈 맵을 반환한다 (NO_DATA 채움은 컨트롤러 책임)")
         void should_returnEmptyMap_when_repoReturnsNoRows() {
             // given
