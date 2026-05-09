@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 
 import com.groute.groute_server.record.domain.Scrum;
+import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 
 /** Scrum 쓰기 포트. */
 public interface ScrumWritePort {
@@ -19,4 +20,7 @@ public interface ScrumWritePort {
 
     /** STAR 단독 삭제 시 Scrum.hasStar 플래그를 false로 동기화. */
     void clearHasStar(Long scrumId);
+
+    /** STAR 시작 전 5대 역량 선택. */
+    void updateCompetency(Long scrumId, CompetencyCategory competency);
 }

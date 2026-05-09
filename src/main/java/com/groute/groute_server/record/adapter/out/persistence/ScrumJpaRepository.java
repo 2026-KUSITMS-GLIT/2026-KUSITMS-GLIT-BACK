@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.groute.groute_server.record.domain.Scrum;
+import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 
 /**
  * 데일리 스크럼(Scrum) JPA 레포지토리.
@@ -67,4 +68,12 @@ public interface ScrumJpaRepository extends JpaRepository<Scrum, Long> {
                     + "AND s.isDeleted = false")
     List<Long> findDistinctUserIdsByScrumDate(
             @Param("userIds") Collection<Long> userIds, @Param("date") LocalDate date);
+
+    /** STAR 시작 전 5대 역량 선택. */
+    @Modifying
+    @Query(
+            "UPDATE Scrum s SET s.selectedCompetency = :competency "
+                    + "WHERE s.id = :id AND s.isDeleted = false")
+    int updateCompetency(
+            @Param("id") Long id, @Param("competency") CompetencyCategory competency);
 }

@@ -5,6 +5,7 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,9 +17,11 @@ import com.groute.groute_server.common.annotation.CurrentUser;
 import com.groute.groute_server.common.response.ApiResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.ScrumBulkWriteRequest;
 import com.groute.groute_server.record.adapter.in.web.dto.ScrumBulkWriteResponse;
+import com.groute.groute_server.record.adapter.in.web.dto.ScrumCompetencyUpdateRequest;
 import com.groute.groute_server.record.adapter.in.web.dto.SyncDailyScrumRequest;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumUseCase;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumUseCase;
+import com.groute.groute_server.record.application.port.in.scrum.UpdateScrumCompetencyUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -33,6 +36,7 @@ public class ScrumController {
 
     private final SyncDailyScrumUseCase syncDailyScrumUseCase;
     private final BulkWriteScrumUseCase bulkWriteScrumUseCase;
+    private final UpdateScrumCompetencyUseCase updateScrumCompetencyUseCase;
 
     @Operation(
             summary = "스크럼 일괄 저장",
@@ -61,6 +65,31 @@ public class ScrumController {
                         .map(ScrumBulkWriteResponse::from)
                         .toList();
         return ApiResponse.ok("스크럼 저장 성공", response);
+    }
+
+    @Operation(
+            summary = "스크럼 역량 선택",
+            description = "STAR 기록 시작 전 스크럼에 역량을 지정한다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "역량 선택 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "필드 검증 실패"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증 또는 만료된 액세스 토큰"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "scrumId가 본인 소유가 아님")
+    })
+    @PatchMapping("/competencies")
+    public ApiResponse<Void> updateCompetency(
+            @CurrentUser Long userId,
+            @Valid @RequestBody ScrumCompetencyUpdateRequest request) {
+        updateScrumCompetencyUseCase.updateCompetency(request.toCommand(userId));
+        return ApiResponse.ok("역량 선택 성공");
     }
 
     @Operation(
