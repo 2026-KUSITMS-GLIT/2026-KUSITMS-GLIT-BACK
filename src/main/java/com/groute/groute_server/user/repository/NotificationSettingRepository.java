@@ -37,4 +37,16 @@ public interface NotificationSettingRepository extends JpaRepository<Notificatio
     /** 스케줄러 발송 대상 조회. 현재 KST의 (요일, 시각)에 매칭되며 활성 상태인 슬롯. */
     List<NotificationSetting> findAllByDayOfWeekAndNotifyTimeAndIsActiveTrue(
             DayOfWeek dayOfWeek, LocalTime notifyTime);
+
+    /**
+     * 회원 탈퇴 hard delete 배치(MYP-005) 진입.
+     *
+     * <p>{@link #deleteAllByUser_Id(Long)}와 동일 쿼리지만, 호출 의도(PATCH 전체 교체 vs 회원 탈퇴 hard delete)와 로깅
+     * 시그니처(int 반환)를 분리하기 위해 별도 메서드로 노출한다.
+     *
+     * @return 삭제된 row 수 (로깅용)
+     */
+    @Modifying
+    @Query("DELETE FROM NotificationSetting n WHERE n.user.id = :userId")
+    int hardDeleteAllByUserId(@Param("userId") Long userId);
 }

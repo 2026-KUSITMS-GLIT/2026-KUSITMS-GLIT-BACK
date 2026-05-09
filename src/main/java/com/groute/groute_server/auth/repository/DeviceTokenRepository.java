@@ -53,4 +53,15 @@ public interface DeviceTokenRepository extends JpaRepository<DeviceToken, Long> 
     @Modifying
     @Query("UPDATE DeviceToken t SET t.isActive = false WHERE t.pushToken = :pushToken")
     void deactivateByPushToken(@Param("pushToken") String pushToken);
+
+    /**
+     * 회원 탈퇴 hard delete 배치(MYP-005) 진입. 해당 사용자의 모든 디바이스 토큰 row 물리 삭제.
+     *
+     * <p>발송 비활성(is_active=false)과 무관하게 모두 삭제한다. 복구 불가.
+     *
+     * @return 삭제된 row 수 (로깅용)
+     */
+    @Modifying
+    @Query("DELETE FROM DeviceToken t WHERE t.user.id = :userId")
+    int hardDeleteAllByUserId(@Param("userId") Long userId);
 }
