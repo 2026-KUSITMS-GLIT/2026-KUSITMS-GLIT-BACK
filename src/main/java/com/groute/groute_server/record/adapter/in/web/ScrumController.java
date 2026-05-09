@@ -67,9 +67,7 @@ public class ScrumController {
         return ApiResponse.ok("스크럼 저장 성공", response);
     }
 
-    @Operation(
-            summary = "스크럼 역량 선택",
-            description = "STAR 기록 시작 전 스크럼에 역량을 지정한다.")
+    @Operation(summary = "스크럼 역량 선택", description = "STAR 기록 시작 전 스크럼에 역량을 지정한다.")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
@@ -86,8 +84,7 @@ public class ScrumController {
     })
     @PatchMapping("/competencies")
     public ApiResponse<Void> updateCompetency(
-            @CurrentUser Long userId,
-            @Valid @RequestBody ScrumCompetencyUpdateRequest request) {
+            @CurrentUser Long userId, @Valid @RequestBody ScrumCompetencyUpdateRequest request) {
         updateScrumCompetencyUseCase.updateCompetency(request.toCommand(userId));
         return ApiResponse.ok("역량 선택 성공");
     }
