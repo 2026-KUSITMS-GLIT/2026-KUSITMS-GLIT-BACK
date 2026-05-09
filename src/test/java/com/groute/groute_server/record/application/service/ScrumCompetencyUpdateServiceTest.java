@@ -64,6 +64,22 @@ class ScrumCompetencyUpdateServiceTest {
         }
 
         @Test
+        @DisplayName("중복 scrumId가 포함되면 INVALID_INPUT을 던진다")
+        void should_throwInvalidInput_when_duplicateScrumId() {
+            assertThatThrownBy(
+                            () ->
+                                    service.updateCompetency(
+                                            command(
+                                                    item(10L, CompetencyCategory.COLLABORATION),
+                                                    item(10L, CompetencyCategory.PROBLEM_SOLVING))))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INVALID_INPUT);
+
+            verify(scrumWritePort, never()).updateCompetency(10L, CompetencyCategory.COLLABORATION);
+        }
+
+        @Test
         @DisplayName("요청한 scrumId 중 일부만 본인 소유이면 SCRUM_NOT_FOUND를 던진다")
         void should_throwScrumNotFound_when_partiallyOwned() {
             given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L, 20L), USER_ID))

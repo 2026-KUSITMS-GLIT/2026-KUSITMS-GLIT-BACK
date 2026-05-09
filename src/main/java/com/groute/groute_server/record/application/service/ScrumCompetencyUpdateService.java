@@ -27,6 +27,9 @@ public class ScrumCompetencyUpdateService implements UpdateScrumCompetencyUseCas
     @Override
     public void updateCompetency(UpdateScrumCompetencyCommand command) {
         List<Long> scrumIds = command.items().stream().map(ScrumCompetency::scrumId).toList();
+        if (scrumIds.size() != scrumIds.stream().distinct().count()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
         List<Scrum> owned = scrumQueryPort.findAllByIdInAndUserId(scrumIds, command.userId());
 
         if (owned.size() != scrumIds.size()) {
