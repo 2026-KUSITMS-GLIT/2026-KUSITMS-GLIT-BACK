@@ -43,6 +43,27 @@ class ScrumCompetencyUpdateServiceTest {
     class Validation {
 
         @Test
+        @DisplayName("hasStar=true인 스크럼이 포함되면 SCRUM_COMPETENCY_UPDATE_LOCKED를 던진다")
+        void should_throwLocked_when_anyHasStarIsTrue() {
+            Scrum starredScrum = scrum(10L);
+            ReflectionTestUtils.setField(starredScrum, "hasStar", true);
+            given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L, 20L), USER_ID))
+                    .willReturn(List.of(starredScrum, scrum(20L)));
+
+            assertThatThrownBy(
+                            () ->
+                                    service.updateCompetency(
+                                            command(
+                                                    item(10L, CompetencyCategory.COLLABORATION),
+                                                    item(20L, CompetencyCategory.PROBLEM_SOLVING))))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SCRUM_COMPETENCY_UPDATE_LOCKED);
+
+            verify(scrumWritePort, never()).updateCompetency(10L, CompetencyCategory.COLLABORATION);
+        }
+
+        @Test
         @DisplayName("요청한 scrumId가 모두 본인 소유가 아니면 SCRUM_NOT_FOUND를 던진다")
         void should_throwScrumNotFound_when_noneOwned() {
             given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L, 20L), USER_ID))

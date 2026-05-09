@@ -69,10 +69,10 @@ public interface ScrumJpaRepository extends JpaRepository<Scrum, Long> {
     List<Long> findDistinctUserIdsByScrumDate(
             @Param("userIds") Collection<Long> userIds, @Param("date") LocalDate date);
 
-    /** STAR 시작 전 5대 역량 선택. */
+    /** STAR 시작 전 5대 역량 선택. hasStar=false인 스크럼만 업데이트 가능. */
     @Modifying
     @Query(
             "UPDATE Scrum s SET s.selectedCompetency = :competency "
-                    + "WHERE s.id = :id AND s.isDeleted = false")
+                    + "WHERE s.id = :id AND s.isDeleted = false AND s.hasStar = false")
     int updateCompetency(@Param("id") Long id, @Param("competency") CompetencyCategory competency);
 }
