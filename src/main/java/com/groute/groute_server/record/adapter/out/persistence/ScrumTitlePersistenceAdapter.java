@@ -23,7 +23,7 @@ class ScrumTitlePersistenceAdapter implements ScrumTitleRepositoryPort {
     private final ScrumTitleJpaRepository jpaRepository;
 
     @Override
-    public List<ScrumTitle> saveAll(Collection<ScrumTitle> titles) {
+    public List<ScrumTitle> saveAll(List<ScrumTitle> titles) {
         if (titles.isEmpty()) {
             return List.of();
         }
