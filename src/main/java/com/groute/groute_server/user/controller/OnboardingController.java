@@ -12,6 +12,7 @@ import com.groute.groute_server.common.response.ApiResponse;
 import com.groute.groute_server.user.config.UserProperties;
 import com.groute.groute_server.user.dto.OnboardCompleteRequest;
 import com.groute.groute_server.user.dto.ProfileResponse;
+import com.groute.groute_server.user.entity.RecordStreakSnapshot;
 import com.groute.groute_server.user.entity.User;
 import com.groute.groute_server.user.service.UserService;
 
@@ -58,6 +59,9 @@ public class OnboardingController {
                         userId, request.nickname(), request.jobRole(), request.userStatus());
         return ApiResponse.ok(
                 "온보딩이 완료되었습니다.",
-                ProfileResponse.from(user, userProperties.defaultProfileImageUrl()));
+                ProfileResponse.from(
+                        user,
+                        userProperties.defaultProfileImageUrl(),
+                        new RecordStreakSnapshot(0, false)));
     }
 }
