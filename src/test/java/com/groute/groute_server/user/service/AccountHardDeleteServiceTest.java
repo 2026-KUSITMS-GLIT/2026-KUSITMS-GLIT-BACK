@@ -27,7 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.groute.groute_server.auth.repository.RefreshTokenRepository;
-import com.groute.groute_server.record.application.port.out.star.StarImageStoragePort;
+import com.groute.groute_server.record.application.port.in.RecordAccountHardDeleteUseCase;
 import com.groute.groute_server.user.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,7 +37,7 @@ class AccountHardDeleteServiceTest {
     private static final Instant FIXED_INSTANT = Instant.parse("2026-05-09T03:00:00Z");
 
     @Mock UserRepository userRepository;
-    @Mock StarImageStoragePort starImageStoragePort;
+    @Mock RecordAccountHardDeleteUseCase recordAccountHardDelete;
     @Mock RefreshTokenRepository refreshTokenRepository;
     @Mock AccountHardDeleteDbCleaner dbCleaner;
     @Mock Clock clock;
@@ -120,8 +120,8 @@ class AccountHardDeleteServiceTest {
             accountHardDeleteService.hardDelete(USER_ID);
 
             // then
-            InOrder inOrder = inOrder(starImageStoragePort, refreshTokenRepository, dbCleaner);
-            inOrder.verify(starImageStoragePort).deleteAllByUserId(USER_ID);
+            InOrder inOrder = inOrder(recordAccountHardDelete, refreshTokenRepository, dbCleaner);
+            inOrder.verify(recordAccountHardDelete).purgeExternalStorage(USER_ID);
             inOrder.verify(refreshTokenRepository).deleteByUserId(USER_ID);
             inOrder.verify(dbCleaner).cascadeDelete(USER_ID);
         }
@@ -136,8 +136,8 @@ class AccountHardDeleteServiceTest {
         void should_propagateAndStop_when_storageFails() {
             // given
             willThrow(new RuntimeException("S3 down"))
-                    .given(starImageStoragePort)
-                    .deleteAllByUserId(USER_ID);
+                    .given(recordAccountHardDelete)
+                    .purgeExternalStorage(USER_ID);
 
             // when & then
             assertThatThrownBy(() -> accountHardDeleteService.hardDelete(USER_ID))
@@ -159,7 +159,7 @@ class AccountHardDeleteServiceTest {
             assertThatThrownBy(() -> accountHardDeleteService.hardDelete(USER_ID))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage("redis down");
-            verify(starImageStoragePort).deleteAllByUserId(USER_ID);
+            verify(recordAccountHardDelete).purgeExternalStorage(USER_ID);
             verify(dbCleaner, never()).cascadeDelete(USER_ID);
         }
 
@@ -173,7 +173,7 @@ class AccountHardDeleteServiceTest {
             assertThatThrownBy(() -> accountHardDeleteService.hardDelete(USER_ID))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage("db down");
-            verify(starImageStoragePort).deleteAllByUserId(USER_ID);
+            verify(recordAccountHardDelete).purgeExternalStorage(USER_ID);
             verify(refreshTokenRepository).deleteByUserId(USER_ID);
         }
     }

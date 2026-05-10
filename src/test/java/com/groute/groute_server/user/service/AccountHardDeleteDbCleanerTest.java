@@ -18,8 +18,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.groute.groute_server.auth.repository.DeviceTokenRepository;
 import com.groute.groute_server.auth.repository.SocialAccountRepository;
 import com.groute.groute_server.auth.repository.UserTermAgreementRepository;
-import com.groute.groute_server.record.application.port.out.RecordHardDeletePort;
-import com.groute.groute_server.report.application.port.out.ReportHardDeletePort;
+import com.groute.groute_server.record.application.port.in.RecordAccountHardDeleteUseCase;
+import com.groute.groute_server.report.application.port.in.ReportAccountHardDeleteUseCase;
 import com.groute.groute_server.user.repository.CoachmarkHistoryRepository;
 import com.groute.groute_server.user.repository.NotificationSettingRepository;
 import com.groute.groute_server.user.repository.UserRepository;
@@ -29,8 +29,8 @@ class AccountHardDeleteDbCleanerTest {
 
     private static final Long USER_ID = 1L;
 
-    @Mock RecordHardDeletePort recordHardDeletePort;
-    @Mock ReportHardDeletePort reportHardDeletePort;
+    @Mock RecordAccountHardDeleteUseCase recordAccountHardDelete;
+    @Mock ReportAccountHardDeleteUseCase reportAccountHardDelete;
     @Mock NotificationSettingRepository notificationSettingRepository;
     @Mock CoachmarkHistoryRepository coachmarkHistoryRepository;
     @Mock DeviceTokenRepository deviceTokenRepository;
@@ -55,16 +55,16 @@ class AccountHardDeleteDbCleanerTest {
             // then — InOrder로 호출 순서 정확히 검증
             InOrder inOrder =
                     inOrder(
-                            recordHardDeletePort,
-                            reportHardDeletePort,
+                            recordAccountHardDelete,
+                            reportAccountHardDelete,
                             notificationSettingRepository,
                             coachmarkHistoryRepository,
                             deviceTokenRepository,
                             socialAccountRepository,
                             userTermAgreementRepository,
                             userRepository);
-            inOrder.verify(recordHardDeletePort).hardDeleteAllByUserId(USER_ID);
-            inOrder.verify(reportHardDeletePort).hardDeleteAllByUserId(USER_ID);
+            inOrder.verify(recordAccountHardDelete).purgeDb(USER_ID);
+            inOrder.verify(reportAccountHardDelete).purgeDb(USER_ID);
             inOrder.verify(notificationSettingRepository).hardDeleteAllByUserId(USER_ID);
             inOrder.verify(coachmarkHistoryRepository).hardDeleteAllByUserId(USER_ID);
             inOrder.verify(deviceTokenRepository).hardDeleteAllByUserId(USER_ID);
@@ -96,14 +96,14 @@ class AccountHardDeleteDbCleanerTest {
         void should_stopAndPropagate_when_firstStepFails() {
             // given
             willThrow(new RuntimeException("record fail"))
-                    .given(recordHardDeletePort)
-                    .hardDeleteAllByUserId(USER_ID);
+                    .given(recordAccountHardDelete)
+                    .purgeDb(USER_ID);
 
             // when & then
             assertThatThrownBy(() -> cleaner.cascadeDelete(USER_ID))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage("record fail");
-            verify(reportHardDeletePort, never()).hardDeleteAllByUserId(USER_ID);
+            verify(reportAccountHardDelete, never()).purgeDb(USER_ID);
             verify(notificationSettingRepository, never()).hardDeleteAllByUserId(USER_ID);
             verify(coachmarkHistoryRepository, never()).hardDeleteAllByUserId(USER_ID);
             verify(deviceTokenRepository, never()).hardDeleteAllByUserId(USER_ID);
@@ -125,8 +125,8 @@ class AccountHardDeleteDbCleanerTest {
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage("device fail");
             // 이전 단계는 모두 호출됐어야 함
-            verify(recordHardDeletePort).hardDeleteAllByUserId(USER_ID);
-            verify(reportHardDeletePort).hardDeleteAllByUserId(USER_ID);
+            verify(recordAccountHardDelete).purgeDb(USER_ID);
+            verify(reportAccountHardDelete).purgeDb(USER_ID);
             verify(notificationSettingRepository).hardDeleteAllByUserId(USER_ID);
             verify(coachmarkHistoryRepository).hardDeleteAllByUserId(USER_ID);
             // 이후 단계는 모두 미호출
@@ -147,8 +147,8 @@ class AccountHardDeleteDbCleanerTest {
             assertThatThrownBy(() -> cleaner.cascadeDelete(USER_ID))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage("user delete fail");
-            verify(recordHardDeletePort).hardDeleteAllByUserId(USER_ID);
-            verify(reportHardDeletePort).hardDeleteAllByUserId(USER_ID);
+            verify(recordAccountHardDelete).purgeDb(USER_ID);
+            verify(reportAccountHardDelete).purgeDb(USER_ID);
             verify(notificationSettingRepository).hardDeleteAllByUserId(USER_ID);
             verify(coachmarkHistoryRepository).hardDeleteAllByUserId(USER_ID);
             verify(deviceTokenRepository).hardDeleteAllByUserId(USER_ID);

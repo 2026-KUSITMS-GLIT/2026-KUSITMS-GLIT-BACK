@@ -7,7 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.groute.groute_server.auth.repository.RefreshTokenRepository;
-import com.groute.groute_server.record.application.port.out.star.StarImageStoragePort;
+import com.groute.groute_server.record.application.port.in.RecordAccountHardDeleteUseCase;
 import com.groute.groute_server.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AccountHardDeleteService {
 
     private final UserRepository userRepository;
-    private final StarImageStoragePort starImageStoragePort;
+    private final RecordAccountHardDeleteUseCase recordAccountHardDelete;
     private final RefreshTokenRepository refreshTokenRepository;
     private final AccountHardDeleteDbCleaner dbCleaner;
     private final Clock clock;
@@ -66,7 +66,7 @@ public class AccountHardDeleteService {
      * @param userId 탈퇴 처리할 사용자 ID
      */
     public void hardDelete(Long userId) {
-        starImageStoragePort.deleteAllByUserId(userId);
+        recordAccountHardDelete.purgeExternalStorage(userId);
         refreshTokenRepository.deleteByUserId(userId);
         dbCleaner.cascadeDelete(userId);
         log.info("회원 hard delete 완료 (userId={})", userId);
