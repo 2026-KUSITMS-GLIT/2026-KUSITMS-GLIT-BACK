@@ -7,8 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.groute.groute_server.auth.repository.DeviceTokenRepository;
 import com.groute.groute_server.auth.repository.SocialAccountRepository;
 import com.groute.groute_server.auth.repository.UserTermAgreementRepository;
-import com.groute.groute_server.record.application.port.out.RecordHardDeletePort;
-import com.groute.groute_server.report.application.port.out.ReportHardDeletePort;
+import com.groute.groute_server.record.application.port.in.RecordAccountHardDeleteUseCase;
+import com.groute.groute_server.report.application.port.in.ReportAccountHardDeleteUseCase;
 import com.groute.groute_server.user.repository.CoachmarkHistoryRepository;
 import com.groute.groute_server.user.repository.NotificationSettingRepository;
 import com.groute.groute_server.user.repository.UserRepository;
@@ -28,8 +28,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 class AccountHardDeleteDbCleaner {
 
-    private final RecordHardDeletePort recordHardDeletePort;
-    private final ReportHardDeletePort reportHardDeletePort;
+    private final RecordAccountHardDeleteUseCase recordAccountHardDelete;
+    private final ReportAccountHardDeleteUseCase reportAccountHardDelete;
     private final NotificationSettingRepository notificationSettingRepository;
     private final CoachmarkHistoryRepository coachmarkHistoryRepository;
     private final DeviceTokenRepository deviceTokenRepository;
@@ -47,8 +47,8 @@ class AccountHardDeleteDbCleaner {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void cascadeDelete(Long userId) {
-        recordHardDeletePort.hardDeleteAllByUserId(userId);
-        reportHardDeletePort.hardDeleteAllByUserId(userId);
+        recordAccountHardDelete.purgeDb(userId);
+        reportAccountHardDelete.purgeDb(userId);
         notificationSettingRepository.hardDeleteAllByUserId(userId);
         coachmarkHistoryRepository.hardDeleteAllByUserId(userId);
         deviceTokenRepository.hardDeleteAllByUserId(userId);
