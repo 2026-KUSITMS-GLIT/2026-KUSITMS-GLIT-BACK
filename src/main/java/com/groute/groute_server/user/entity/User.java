@@ -1,6 +1,8 @@
 package com.groute.groute_server.user.entity;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 import jakarta.persistence.*;
@@ -75,6 +77,24 @@ public class User extends SoftDeleteEntity {
     @Column(name = "notification_copy_index", nullable = false)
     private short notificationCopyIndex = 0;
 
+    /**
+     * 끊기지 않은 KST 일자 기준 연속 기록 일수(REC-001).
+     *
+     * <p>가입 시 0. 첫 기록 시 1로 시작, {@code gap == 1} 갱신 시 +1, {@code gap >= 2} 갱신 시 1로 리셋. 갱신 책임은 {@link
+     * #recordOnDate(LocalDate)}, 산정 결과 노출은 {@link #streakSnapshotAsOf(LocalDate)}.
+     */
+    @Column(name = "current_streak", nullable = false)
+    private short currentStreak = 0;
+
+    /**
+     * KST 기준 마지막 기록 일자(REC-001).
+     *
+     * <p>가입 직후 NULL — {@link #streakSnapshotAsOf(LocalDate)}는 NULL 입력 시 streak/glaring 모두 false(기본
+     * 캐릭터)로 산정한다.
+     */
+    @Column(name = "last_record_date")
+    private LocalDate lastRecordDate;
+
     /** 소셜 로그인 신규 가입 시 호출. 온보딩 전이므로 프로필 필드는 모두 NULL로 둔다. */
     public static User createForSocialLogin() {
         return new User();
@@ -116,5 +136,75 @@ public class User extends SoftDeleteEntity {
         }
         int next = Math.floorMod(this.notificationCopyIndex + 1, total);
         this.notificationCopyIndex = (short) next;
+    }
+
+    /**
+     * 스크럼 작성 시 호출 — KST 일자 기준으로 연속 기록 일수와 마지막 기록일을 갱신한다(REC-001).
+     *
+     * <p>분기:
+     *
+     * <ul>
+     *   <li>{@code lastRecordDate}가 NULL → 첫 기록. {@code currentStreak = 1}, {@code lastRecordDate =
+     *       kstDate}.
+     *   <li>{@code kstDate}가 {@code lastRecordDate}와 같거나 이전 → noop(같은 날 멱등 + 백데이트 무시).
+     *   <li>{@code gap == 1} → {@code currentStreak += 1}({@link Short#MAX_VALUE} 도달 시 cap).
+     *   <li>{@code gap >= 2} → {@code currentStreak = 1}로 리셋.
+     * </ul>
+     *
+     * <p>시간대 변환 책임은 호출 측 — KST 기준 {@link LocalDate}를 그대로 받는다. 같은 트랜잭션 내 dirty checking으로 영속화되도록 호출
+     * use case가 설계한다.
+     *
+     * @param kstDate KST 기준 기록 일자.
+     */
+    public void recordOnDate(LocalDate kstDate) {
+        Objects.requireNonNull(kstDate, "kstDate");
+        if (this.lastRecordDate == null) {
+            this.currentStreak = 1;
+            this.lastRecordDate = kstDate;
+            return;
+        }
+        if (!kstDate.isAfter(this.lastRecordDate)) {
+            return;
+        }
+        long gap = ChronoUnit.DAYS.between(this.lastRecordDate, kstDate);
+        if (gap == 1) {
+            if (this.currentStreak < Short.MAX_VALUE) {
+                this.currentStreak = (short) (this.currentStreak + 1);
+            }
+        } else {
+            this.currentStreak = 1;
+        }
+        this.lastRecordDate = kstDate;
+    }
+
+    /**
+     * KST 기준 오늘 시점의 연속 기록 일수와 째려보는 캐릭터 노출 여부 산정(REC-001).
+     *
+     * <p>분기:
+     *
+     * <ul>
+     *   <li>{@code lastRecordDate}가 NULL → {@code (0, false)}(가입 직후 = 기본 캐릭터).
+     *   <li>{@code gap <= 1}(오늘 또는 어제 기록) → {@code (currentStreak, false)} — streak 유지/노출.
+     *   <li>{@code gap == 2}(2일 미기록) → {@code (0, false)} — 기획상 "0~2일 미기록 = 기본 캐릭터".
+     *   <li>{@code gap >= 3}(3일 이상 미기록) → {@code (0, true)} — 째려보는 캐릭터.
+     * </ul>
+     *
+     * <p>시간대 변환 책임은 호출 측 — KST 기준 {@link LocalDate}를 그대로 받는다.
+     *
+     * @param kstToday KST 기준 오늘 날짜.
+     */
+    public RecordStreakSnapshot streakSnapshotAsOf(LocalDate kstToday) {
+        Objects.requireNonNull(kstToday, "kstToday");
+        if (this.lastRecordDate == null) {
+            return new RecordStreakSnapshot(0, false);
+        }
+        long gap = ChronoUnit.DAYS.between(this.lastRecordDate, kstToday);
+        if (gap <= 1) {
+            return new RecordStreakSnapshot(this.currentStreak, false);
+        }
+        if (gap == 2) {
+            return new RecordStreakSnapshot(0, false);
+        }
+        return new RecordStreakSnapshot(0, true);
     }
 }
