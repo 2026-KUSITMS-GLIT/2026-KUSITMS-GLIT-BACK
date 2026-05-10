@@ -127,6 +127,8 @@ class ScrumCompetencyUpdateServiceTest {
         void should_updateCompetency_when_singleItem() {
             given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L), USER_ID))
                     .willReturn(List.of(scrum(10L)));
+            given(scrumWritePort.updateCompetency(10L, CompetencyCategory.COLLABORATION))
+                    .willReturn(true);
 
             service.updateCompetency(command(item(10L, CompetencyCategory.COLLABORATION)));
 
@@ -138,6 +140,10 @@ class ScrumCompetencyUpdateServiceTest {
         void should_updateEachCompetency_when_multipleItems() {
             given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L, 20L), USER_ID))
                     .willReturn(List.of(scrum(10L), scrum(20L)));
+            given(scrumWritePort.updateCompetency(10L, CompetencyCategory.COLLABORATION))
+                    .willReturn(true);
+            given(scrumWritePort.updateCompetency(20L, CompetencyCategory.PROBLEM_SOLVING))
+                    .willReturn(true);
 
             service.updateCompetency(
                     command(
@@ -146,6 +152,23 @@ class ScrumCompetencyUpdateServiceTest {
 
             verify(scrumWritePort).updateCompetency(10L, CompetencyCategory.COLLABORATION);
             verify(scrumWritePort).updateCompetency(20L, CompetencyCategory.PROBLEM_SOLVING);
+        }
+
+        @Test
+        @DisplayName("업데이트된 행이 0이면 SCRUM_COMPETENCY_UPDATE_LOCKED를 던진다")
+        void should_throwLocked_when_updateAffectsZeroRows() {
+            given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L), USER_ID))
+                    .willReturn(List.of(scrum(10L)));
+            given(scrumWritePort.updateCompetency(10L, CompetencyCategory.COLLABORATION))
+                    .willReturn(false);
+
+            assertThatThrownBy(
+                            () ->
+                                    service.updateCompetency(
+                                            command(item(10L, CompetencyCategory.COLLABORATION))))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SCRUM_COMPETENCY_UPDATE_LOCKED);
         }
     }
 
