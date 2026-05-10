@@ -13,6 +13,7 @@ import com.groute.groute_server.common.response.ApiResponse;
 import com.groute.groute_server.user.config.UserProperties;
 import com.groute.groute_server.user.dto.ProfileResponse;
 import com.groute.groute_server.user.dto.ProfileUpdateRequest;
+import com.groute.groute_server.user.entity.RecordStreakSnapshot;
 import com.groute.groute_server.user.entity.User;
 import com.groute.groute_server.user.service.UserService;
 
@@ -51,7 +52,11 @@ public class UserController {
     @GetMapping("/me")
     public ApiResponse<ProfileResponse> getMyProfile(@CurrentUser Long userId) {
         User user = userService.getMyProfile(userId);
-        return ApiResponse.ok(ProfileResponse.from(user, userProperties.defaultProfileImageUrl()));
+        return ApiResponse.ok(
+                ProfileResponse.from(
+                        user,
+                        userProperties.defaultProfileImageUrl(),
+                        new RecordStreakSnapshot(0, false)));
     }
 
     @Operation(summary = "프로필 수정", description = "직군·상태를 덮어쓴다. 변경 사항이 없어도 두 필드 모두 한글 라벨로 포함해 요청한다.")
@@ -73,6 +78,10 @@ public class UserController {
     public ApiResponse<ProfileResponse> updateMyProfile(
             @CurrentUser Long userId, @Valid @RequestBody ProfileUpdateRequest request) {
         User user = userService.updateMyProfile(userId, request.jobRole(), request.userStatus());
-        return ApiResponse.ok(ProfileResponse.from(user, userProperties.defaultProfileImageUrl()));
+        return ApiResponse.ok(
+                ProfileResponse.from(
+                        user,
+                        userProperties.defaultProfileImageUrl(),
+                        new RecordStreakSnapshot(0, false)));
     }
 }
