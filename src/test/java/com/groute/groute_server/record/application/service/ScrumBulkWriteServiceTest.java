@@ -27,6 +27,7 @@ import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumResult;
 import com.groute.groute_server.record.application.port.out.ProjectPort;
+import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
@@ -42,6 +43,7 @@ class ScrumBulkWriteServiceTest {
     private static final LocalDate DATE = LocalDate.of(2026, 5, 9);
 
     @Mock ProjectPort projectPort;
+    @Mock ScrumQueryPort scrumQueryPort;
     @Mock ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     @Mock ScrumWritePort scrumWritePort;
     @Mock UserReferencePort userReferencePort;
@@ -51,6 +53,20 @@ class ScrumBulkWriteServiceTest {
     @Nested
     @DisplayName("validation")
     class Validation {
+
+        @Test
+        @DisplayName("같은 날짜에 이미 스크럼이 존재하면 SCRUM_DATE_ALREADY_WRITTEN을 던진다")
+        void should_throwDateAlreadyWritten_when_scrumExistsOnDate() {
+            given(scrumQueryPort.existsByUserAndDate(USER_ID, DATE)).willReturn(true);
+
+            assertThatThrownBy(() -> service.bulkWrite(command(group(100L, "제목", "스크럼1"))))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SCRUM_DATE_ALREADY_WRITTEN);
+
+            verify(scrumTitleRepositoryPort, never()).saveAll(anyCollection());
+            verify(scrumWritePort, never()).saveAll(anyCollection());
+        }
 
         @Test
         @DisplayName("스크럼 합계가 6개면 SCRUM_DATE_LIMIT_EXCEEDED를 던진다")

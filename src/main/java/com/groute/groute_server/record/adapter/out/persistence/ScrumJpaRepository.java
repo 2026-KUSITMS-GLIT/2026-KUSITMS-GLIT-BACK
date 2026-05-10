@@ -38,6 +38,8 @@ public interface ScrumJpaRepository extends JpaRepository<Scrum, Long> {
     List<Scrum> findAllByIdInAndUserId(
             @Param("ids") Collection<Long> ids, @Param("userId") Long userId);
 
+    boolean existsByUserIdAndScrumDateAndIsDeletedFalse(Long userId, LocalDate scrumDate);
+
     /** 본문 변경. 호출자가 14일·hasStar 검증 선행. */
     @Modifying
     @Query("UPDATE Scrum s SET s.content = :content " + "WHERE s.id = :id AND s.isDeleted = false")

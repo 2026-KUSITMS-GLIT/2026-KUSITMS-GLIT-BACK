@@ -14,6 +14,7 @@ import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumC
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumResult;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumUseCase;
 import com.groute.groute_server.record.application.port.out.ProjectPort;
+import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
@@ -37,13 +38,19 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
     private static final int MAX_SCRUMS_PER_DATE = 5;
 
     private final ProjectPort projectPort;
+    private final ScrumQueryPort scrumQueryPort;
     private final ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     private final ScrumWritePort scrumWritePort;
     private final UserReferencePort userReferencePort;
 
     @Override
     public BulkWriteScrumResult bulkWrite(BulkWriteScrumCommand command) {
-        // 1. 총 스크럼 수 ≤ 5
+        // 1. 해당 날짜 중복 작성 차단
+        if (scrumQueryPort.existsByUserAndDate(command.userId(), command.date())) {
+            throw new BusinessException(ErrorCode.SCRUM_DATE_ALREADY_WRITTEN);
+        }
+
+        // 2. 총 스크럼 수 ≤ 5
         if (command.totalScrumCount() > MAX_SCRUMS_PER_DATE) {
             throw new BusinessException(ErrorCode.SCRUM_DATE_LIMIT_EXCEEDED);
         }
