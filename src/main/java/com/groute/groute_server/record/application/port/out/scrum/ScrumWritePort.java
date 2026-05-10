@@ -21,6 +21,6 @@ public interface ScrumWritePort {
     /** STAR 단독 삭제 시 Scrum.hasStar 플래그를 false로 동기화. */
     void clearHasStar(Long scrumId);
 
-    /** STAR 시작 전 5대 역량 선택. */
-    void updateCompetency(Long scrumId, CompetencyCategory competency);
+    /** STAR 시작 전 5대 역량 선택. hasStar=false인 경우에만 업데이트되며 성공 여부 반환. */
+    boolean updateCompetency(Long scrumId, CompetencyCategory competency);
 }

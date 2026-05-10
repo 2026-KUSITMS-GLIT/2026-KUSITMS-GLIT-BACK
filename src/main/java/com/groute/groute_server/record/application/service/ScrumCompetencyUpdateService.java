@@ -42,6 +42,12 @@ public class ScrumCompetencyUpdateService implements UpdateScrumCompetencyUseCas
 
         command.items()
                 .forEach(
-                        item -> scrumWritePort.updateCompetency(item.scrumId(), item.competency()));
+                        item -> {
+                            if (!scrumWritePort.updateCompetency(
+                                    item.scrumId(), item.competency())) {
+                                throw new BusinessException(
+                                        ErrorCode.SCRUM_COMPETENCY_UPDATE_LOCKED);
+                            }
+                        });
     }
 }
