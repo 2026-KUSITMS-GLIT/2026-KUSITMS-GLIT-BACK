@@ -1,7 +1,6 @@
 package com.groute.groute_server.user.controller;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 import jakarta.validation.Valid;
 
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.groute.groute_server.common.annotation.CurrentUser;
 import com.groute.groute_server.common.response.ApiResponse;
+import com.groute.groute_server.common.util.DateTimeFormatters;
 import com.groute.groute_server.user.config.UserProperties;
 import com.groute.groute_server.user.dto.OnboardCompleteRequest;
 import com.groute.groute_server.user.dto.ProfileResponse;
@@ -59,7 +59,7 @@ public class OnboardingController {
         User user =
                 userService.completeOnboarding(
                         userId, request.nickname(), request.jobRole(), request.userStatus());
-        LocalDate kstToday = LocalDate.now(ZoneId.systemDefault());
+        LocalDate kstToday = LocalDate.now(DateTimeFormatters.ZONE_KST);
         return ApiResponse.ok(
                 "온보딩이 완료되었습니다.",
                 ProfileResponse.from(
