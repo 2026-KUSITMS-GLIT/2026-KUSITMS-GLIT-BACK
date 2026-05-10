@@ -15,8 +15,7 @@ public record ProfileResponse(
         @Schema(description = "유저 직군", example = "개발자") String jobRole,
         @Schema(description = "유저 상태", example = "재학 중") String userStatus,
         @Schema(
-                        description =
-                                "연속 기록 일수. 끊기지 않은 KST 일자 기준. 0~2일 미기록 시 직전 streak 유지, 3일 이상 미기록·기록 0건은 0(REC-001).",
+                        description = "연속 기록 일수 — 오늘 또는 어제 기록 시 유지, 2일 이상 미기록·기록 0건은 0(REC-001).",
                         example = "8")
                 int consecutiveRecordDays,
         @Schema(

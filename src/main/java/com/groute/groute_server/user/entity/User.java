@@ -185,7 +185,8 @@ public class User extends SoftDeleteEntity {
      * <ul>
      *   <li>{@code lastRecordDate}가 NULL → {@code (0, false)}(가입 직후 = 기본 캐릭터).
      *   <li>{@code gap <= 1}(오늘 또는 어제 기록) → {@code (currentStreak, false)} — streak 유지/노출.
-     *   <li>{@code gap == 2}(2일 미기록) → {@code (0, false)} — 기획상 "0~2일 미기록 = 기본 캐릭터".
+     *   <li>{@code gap == 2}(2일 미기록) → {@code (0, false)} — streak는 끊겨 0이지만 캐릭터는 아직
+     *       기본(glaring=false). 기획상 "3일 이상 미기록"부터 째려보는으로 전환되는 분기.
      *   <li>{@code gap >= 3}(3일 이상 미기록) → {@code (0, true)} — 째려보는 캐릭터.
      * </ul>
      *
