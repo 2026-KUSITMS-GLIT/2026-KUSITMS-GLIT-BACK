@@ -1,6 +1,7 @@
 package com.groute.groute_server.record.domain;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 import jakarta.persistence.*;
 
@@ -60,6 +61,42 @@ public class StarRecord extends SoftDeleteEntity {
     /** 완료 시각. 리포트 임계치(10회 단위) 카운트 기준(RPT001). */
     @Column(name = "completed_at")
     private OffsetDateTime completedAt;
+
+    /** 신규 StarRecord 팩토리. currentStep=ST, isCompleted=false로 초기화된다. */
+    public static StarRecord create(User user, Scrum scrum) {
+        StarRecord record = new StarRecord();
+        record.user = Objects.requireNonNull(user, "user");
+        record.scrum = Objects.requireNonNull(scrum, "scrum");
+        return record;
+    }
+
+    /**
+     * 단계별 내용을 저장하고 currentStep을 다음 단계로 진행한다.
+     *
+     * <p>ST 저장 시 A 단계로, A 저장 시 R 단계로 전진. R 저장 후 완료 처리는 {@link #complete}로 별도 호출.
+     */
+    public void saveStep(StarStep step, String answer) {
+        Objects.requireNonNull(answer, "answer");
+        switch (step) {
+            case ST -> {
+                this.situationTask = answer;
+                this.currentStep = StarStep.A;
+            }
+            case A -> {
+                this.action = answer;
+                this.currentStep = StarStep.R;
+            }
+            case R -> this.result = answer;
+            default -> throw new IllegalArgumentException("저장할 수 없는 단계: " + step);
+        }
+    }
+
+    /** R 단계 최종 완료 처리. isCompleted=true, currentStep=DONE, completedAt 설정. */
+    public void complete(OffsetDateTime completedAt) {
+        this.isCompleted = true;
+        this.currentStep = StarStep.DONE;
+        this.completedAt = Objects.requireNonNull(completedAt, "completedAt");
+    }
 
     /**
      * 이 StarRecord가 특정 유저의 소유인지 확인한다.

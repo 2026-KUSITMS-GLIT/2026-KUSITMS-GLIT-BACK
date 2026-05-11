@@ -16,4 +16,7 @@ public interface ScrumTitleRepositoryPort {
 
     /** 비정규화 카운터 동기화. increment는 음수 가능 (Scrum 신규 +1, 삭제 -1). */
     void applyScrumCountIncrement(Long titleId, int increment);
+
+    /** 지정 title 전체를 PENDING → COMMITTED 로 전환. 모든 STAR 완료 시 호출. */
+    int commitAllByIds(Collection<Long> titleIds);
 }

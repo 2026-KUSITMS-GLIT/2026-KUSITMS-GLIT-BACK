@@ -45,4 +45,12 @@ class ScrumTitlePersistenceAdapter implements ScrumTitleRepositoryPort {
         }
         jpaRepository.applyScrumCountIncrement(titleId, increment);
     }
+
+    @Override
+    public int commitAllByIds(Collection<Long> titleIds) {
+        if (titleIds.isEmpty()) {
+            return 0;
+        }
+        return jpaRepository.commitAllByIds(titleIds);
+    }
 }
