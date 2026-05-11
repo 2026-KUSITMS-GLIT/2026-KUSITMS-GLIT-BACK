@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.adapter.out.persistence;
 
+import java.time.OffsetDateTime;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Optional;
@@ -65,4 +66,17 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
             @Param("userId") Long userId,
             @Param("date") LocalDate date,
             @Param("tagged") StarRecordStatus tagged);
+
+    /**
+     * 특정 시점 이후 완료된 심화기록 수를 카운트한다.
+     *
+     * <p>after가 null이면 전체 완료된 심화기록 수를 반환한다 (신규 유저 케이스).
+     */
+    @Query(
+            "SELECT COUNT(sr) FROM StarRecord sr "
+                    + "WHERE sr.user.id = :userId "
+                    + "AND sr.isCompleted = true "
+                    + "AND sr.isDeleted = false "
+                    + "AND (:after IS NULL OR sr.completedAt > :after)")
+    int countCompletedAfter(@Param("userId") Long userId, @Param("after") OffsetDateTime after);
 }
