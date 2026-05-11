@@ -53,4 +53,12 @@ class ScrumTitlePersistenceAdapter implements ScrumTitleRepositoryPort {
         }
         return jpaRepository.commitAllByIds(titleIds);
     }
+
+    @Override
+    public int softDeleteAllByIds(List<Long> ids) {
+        if (ids.isEmpty()) {
+            return 0;
+        }
+        return jpaRepository.softDeleteAllByIds(ids);
+    }
 }

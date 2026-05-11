@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.application.port.out.star;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.groute.groute_server.record.domain.StarRecord;
@@ -20,4 +21,7 @@ public interface StarRecordRepositoryPort {
 
     /** 단건 soft-delete. cascade(Scrum.hasStar=false 등)는 호출자가 별도 처리. */
     void softDeleteById(Long id);
+
+    /** PENDING 세션 취소 시 해당 스크럼들에 연결된 StarRecord 일괄 soft-delete. */
+    int softDeleteByScrumIds(List<Long> scrumIds);
 }

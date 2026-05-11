@@ -19,4 +19,7 @@ public interface ScrumTitleRepositoryPort {
 
     /** 지정 title 전체를 PENDING → COMMITTED 로 전환. 모든 STAR 완료 시 호출. */
     int commitAllByIds(Collection<Long> titleIds);
+
+    /** PENDING 세션 취소 시 ScrumTitle 일괄 soft-delete. */
+    int softDeleteAllByIds(List<Long> ids);
 }

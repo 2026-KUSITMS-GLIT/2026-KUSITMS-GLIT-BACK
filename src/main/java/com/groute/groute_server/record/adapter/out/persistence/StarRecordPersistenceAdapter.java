@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.adapter.out.persistence;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
@@ -34,6 +35,14 @@ class StarRecordPersistenceAdapter implements StarRecordRepositoryPort, StarReco
     @Override
     public void softDeleteById(Long id) {
         jpaRepository.softDeleteById(id);
+    }
+
+    @Override
+    public int softDeleteByScrumIds(List<Long> scrumIds) {
+        if (scrumIds.isEmpty()) {
+            return 0;
+        }
+        return jpaRepository.deleteAllByScrumIdIn(scrumIds);
     }
 
     @Override
