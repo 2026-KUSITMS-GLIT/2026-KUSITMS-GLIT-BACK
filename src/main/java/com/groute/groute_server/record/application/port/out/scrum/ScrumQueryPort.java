@@ -14,7 +14,4 @@ public interface ScrumQueryPort {
 
     /** 요청 scrumId 중 본인 소유인 것만 반환. 결과 크기로 미존재/타인 소유 판별. */
     List<Scrum> findAllByIdInAndUserId(Collection<Long> ids, Long userId);
-
-    /** 해당 날짜에 사용자 스크럼이 이미 존재하는지 확인. */
-    boolean existsByUserAndDate(Long userId, LocalDate date);
 }

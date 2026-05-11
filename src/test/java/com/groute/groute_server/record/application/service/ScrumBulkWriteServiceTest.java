@@ -31,10 +31,12 @@ import com.groute.groute_server.record.application.port.out.ProjectPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
+import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
 import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
+import com.groute.groute_server.record.domain.enums.ScrumTitleStatus;
 import com.groute.groute_server.user.entity.User;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,6 +49,7 @@ class ScrumBulkWriteServiceTest {
     @Mock ScrumQueryPort scrumQueryPort;
     @Mock ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     @Mock ScrumWritePort scrumWritePort;
+    @Mock StarRecordRepositoryPort starRecordRepositoryPort;
     @Mock UserReferencePort userReferencePort;
 
     @InjectMocks ScrumBulkWriteService service;
@@ -56,9 +59,11 @@ class ScrumBulkWriteServiceTest {
     class Validation {
 
         @Test
-        @DisplayName("같은 날짜에 이미 스크럼이 존재하면 SCRUM_DATE_ALREADY_WRITTEN을 던진다")
-        void should_throwDateAlreadyWritten_when_scrumExistsOnDate() {
-            given(scrumQueryPort.existsByUserAndDate(USER_ID, DATE)).willReturn(true);
+        @DisplayName("COMMITTED ScrumTitle이 있는 날짜에 다시 쓰면 SCRUM_DATE_ALREADY_WRITTEN을 던진다")
+        void should_throwDateAlreadyWritten_when_committedScrumExists() {
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
+                    .willReturn(
+                            List.of(scrumWithTitle(50L, 10L, ScrumTitleStatus.COMMITTED, 100L)));
 
             assertThatThrownBy(() -> service.bulkWrite(command(group(100L, "제목", "스크럼1"))))
                     .isInstanceOf(BusinessException.class)
@@ -67,6 +72,27 @@ class ScrumBulkWriteServiceTest {
 
             verify(scrumTitleRepositoryPort, never()).saveAll(anyList());
             verify(scrumWritePort, never()).saveAll(anyCollection());
+        }
+
+        @Test
+        @DisplayName("PENDING ScrumTitle이 있으면 기존 세션을 삭제하고 새로 저장한다")
+        void should_cleanupAndWrite_when_pendingSessionExists() {
+            Scrum existing = scrumWithTitle(50L, 10L, ScrumTitleStatus.PENDING, 100L);
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(existing));
+            given(projectPort.findByIdAndUserId(100L, USER_ID))
+                    .willReturn(Optional.of(project(100L, "프로젝트A")));
+            given(userReferencePort.getReferenceById(USER_ID))
+                    .willReturn(User.createForSocialLogin());
+            stubSaveTitles();
+            stubSaveScrums();
+
+            service.bulkWrite(command(group(100L, "제목", "스크럼1")));
+
+            verify(starRecordRepositoryPort).softDeleteByScrumIds(List.of(50L));
+            verify(scrumWritePort).softDeleteAllByIdIn(List.of(50L));
+            verify(scrumTitleRepositoryPort).softDeleteAllByIds(List.of(10L));
+            verify(projectPort).applyTitleCountIncrement(100L, -1);
+            verify(scrumTitleRepositoryPort).saveAll(anyList());
         }
 
         @Test
@@ -220,6 +246,19 @@ class ScrumBulkWriteServiceTest {
     private static BulkWriteScrumCommand.GroupCommand group(
             Long projectId, String freeText, String... contents) {
         return new BulkWriteScrumCommand.GroupCommand(projectId, freeText, List.of(contents));
+    }
+
+    private static Scrum scrumWithTitle(
+            Long scrumId, Long titleId, ScrumTitleStatus status, Long projectId) {
+        Project project = project(projectId, "프로젝트");
+        ScrumTitle title = new ScrumTitle();
+        ReflectionTestUtils.setField(title, "id", titleId);
+        ReflectionTestUtils.setField(title, "status", status);
+        ReflectionTestUtils.setField(title, "project", project);
+        Scrum scrum = new Scrum();
+        ReflectionTestUtils.setField(scrum, "id", scrumId);
+        ReflectionTestUtils.setField(scrum, "title", title);
+        return scrum;
     }
 
     private static Project project(Long id, String name) {
