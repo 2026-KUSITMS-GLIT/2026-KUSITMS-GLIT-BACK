@@ -1,6 +1,6 @@
 package com.groute.groute_server.report.application.port.in;
 
-import com.groute.groute_server.report.adapter.in.web.dto.ReportListResponse;
+import com.groute.groute_server.report.application.port.in.dto.ReportListView;
 
 /**
  * RPT-001: 리포트 목록 조회 유스케이스.
@@ -13,5 +13,5 @@ public interface GetReportListUseCase {
      * @param userId 현재 로그인한 유저 ID
      * @return 리포트 목록 (생성일 내림차순)
      */
-    ReportListResponse getList(Long userId);
+    ReportListView getList(Long userId);
 }

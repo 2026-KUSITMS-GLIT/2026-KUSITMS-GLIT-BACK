@@ -1,6 +1,6 @@
 package com.groute.groute_server.report.application.port.in;
 
-import com.groute.groute_server.report.adapter.in.web.dto.ReportGaugeResponse;
+import com.groute.groute_server.report.application.port.in.dto.ReportGaugeView;
 
 /**
  * RPT-001: 리포트 게이지 조회 유스케이스.
@@ -13,5 +13,5 @@ public interface GetReportGaugeUseCase {
      * @param userId 현재 로그인한 유저 ID
      * @return 게이지 정보 (currentCount, nextThreshold, progressRate, isGeneratable)
      */
-    ReportGaugeResponse getGauge(Long userId);
+    ReportGaugeView getGauge(Long userId);
 }

@@ -2,18 +2,19 @@ package com.groute.groute_server.report.application.service;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
-import com.groute.groute_server.report.adapter.in.web.dto.ReportDetailResponse;
-import com.groute.groute_server.report.adapter.in.web.dto.ReportGaugeResponse;
-import com.groute.groute_server.report.adapter.in.web.dto.ReportListResponse;
 import com.groute.groute_server.report.application.port.in.GetReportDetailUseCase;
 import com.groute.groute_server.report.application.port.in.GetReportGaugeUseCase;
 import com.groute.groute_server.report.application.port.in.GetReportListUseCase;
+import com.groute.groute_server.report.application.port.in.dto.ReportDetailView;
+import com.groute.groute_server.report.application.port.in.dto.ReportGaugeView;
+import com.groute.groute_server.report.application.port.in.dto.ReportListView;
 import com.groute.groute_server.report.application.port.out.ReportQueryPort;
 import com.groute.groute_server.report.application.port.out.StarRecordCountQueryPort;
 import com.groute.groute_server.report.domain.Report;
@@ -44,18 +45,16 @@ public class ReportQueryService
      * 한다.
      */
     @Override
-    public ReportGaugeResponse getGauge(Long userId) {
-        // 1. 마지막 성공한 리포트 조회 → 기준 시점 추출
+    public ReportGaugeView getGauge(Long userId) {
         OffsetDateTime after =
                 reportQueryPort
                         .findLatestSuccessByUserId(userId)
                         .map(Report::getCreatedAt)
                         .orElse(null);
 
-        // 2. 기준 시점 이후 완료된 심화기록 수 조회 (10 초과 시에도 계속 누적)
         int currentCount = starRecordCountQueryPort.countCompletedAfter(userId, after);
 
-        return ReportGaugeResponse.of(currentCount, NEXT_THRESHOLD);
+        return ReportGaugeView.of(currentCount, NEXT_THRESHOLD);
     }
 
     /**
@@ -64,9 +63,9 @@ public class ReportQueryService
      * <p>생성일 기준 내림차순 정렬. 이력 없으면 빈 배열 반환.
      */
     @Override
-    public ReportListResponse getList(Long userId) {
+    public ReportListView getList(Long userId) {
         List<Report> reports = reportQueryPort.findAllByUserIdOrderByCreatedAtDesc(userId);
-        return ReportListResponse.from(reports);
+        return ReportListView.from(reports);
     }
 
     /**
@@ -75,23 +74,20 @@ public class ReportQueryService
      * <p>소유자 검증 후 MINI/CAREER 타입별 content를 반환한다.
      */
     @Override
-    public ReportDetailResponse getDetail(Long reportId, Long userId) {
-        // 1. 리포트 조회
+    public ReportDetailView getDetail(Long reportId, Long userId) {
         Report report =
                 reportQueryPort
                         .findById(reportId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
 
-        // 2. 소유자 검증
-        if (!report.getUser().getId().equals(userId)) {
+        if (!Objects.equals(report.getUser().getId(), userId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        // 3. 생성 완료된 리포트만 조회 가능
         if (report.getStatus() != ReportStatus.SUCCESS) {
             throw new BusinessException(ErrorCode.REPORT_NOT_COMPLETED);
         }
 
-        return ReportDetailResponse.from(report);
+        return ReportDetailView.from(report);
     }
 }
