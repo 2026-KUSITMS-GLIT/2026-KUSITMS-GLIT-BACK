@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import com.groute.groute_server.common.config.S3Properties;
 
 import lombok.RequiredArgsConstructor;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
@@ -24,6 +26,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 public class S3PresignedUrlAdapter implements PresignedUrlGeneratorPort {
 
     private final S3Presigner s3Presigner;
+    private final S3Client s3Client;
     private final S3Properties properties;
 
     @Override
@@ -49,5 +52,11 @@ public class S3PresignedUrlAdapter implements PresignedUrlGeneratorPort {
 
         String imageUrl = properties.cdnBaseUrl() + "/" + imageKey;
         return new PresignedUrlResult(presignedUrl, imageUrl);
+    }
+
+    @Override
+    public void deleteObject(String imageKey) {
+        s3Client.deleteObject(
+                DeleteObjectRequest.builder().bucket(properties.bucket()).key(imageKey).build());
     }
 }

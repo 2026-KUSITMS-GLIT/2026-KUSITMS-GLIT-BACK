@@ -2,6 +2,7 @@ package com.groute.groute_server.record.adapter.in.web;
 
 import jakarta.validation.Valid;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,6 +13,7 @@ import com.groute.groute_server.common.annotation.CurrentUser;
 import com.groute.groute_server.common.response.ApiResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.UploadStarImageRequest;
 import com.groute.groute_server.record.adapter.in.web.dto.UploadStarImageResponse;
+import com.groute.groute_server.record.application.port.in.star.DeleteStarImageUseCase;
 import com.groute.groute_server.record.application.port.in.star.UploadStarImageUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,13 +21,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
-@Tag(name = "StarImage", description = "STAR 이미지 업로드")
+@Tag(name = "StarImage", description = "STAR 이미지 업로드·삭제")
 @RestController
 @RequestMapping("/api/star-records")
 @RequiredArgsConstructor
 public class StarImageController {
 
     private final UploadStarImageUseCase uploadStarImageUseCase;
+    private final DeleteStarImageUseCase deleteStarImageUseCase;
 
     @Operation(
             summary = "이미지 업로드 Presigned URL 발급",
@@ -61,5 +64,31 @@ public class StarImageController {
                 "이미지 업로드 URL 발급 성공",
                 UploadStarImageResponse.from(
                         uploadStarImageUseCase.upload(request.toCommand(userId, starRecordId))));
+    }
+
+    @Operation(
+            summary = "이미지 삭제",
+            description = "STAR 이미지를 S3와 DB에서 함께 삭제한다. 완료된 심화기록의 이미지는 삭제할 수 없다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "삭제 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "403",
+                description = "본인 소유가 아님 / 이미 완료된 심화기록"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "이미지를 찾을 수 없음")
+    })
+    @DeleteMapping("/{starRecordId}/images/{imageId}")
+    public ApiResponse<Void> deleteImage(
+            @CurrentUser Long userId,
+            @PathVariable Long starRecordId,
+            @PathVariable Long imageId) {
+        deleteStarImageUseCase.delete(userId, imageId);
+        return ApiResponse.ok("이미지 삭제 성공", null);
     }
 }

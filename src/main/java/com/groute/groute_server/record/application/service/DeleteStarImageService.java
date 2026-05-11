@@ -1,0 +1,44 @@
+package com.groute.groute_server.record.application.service;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.groute.groute_server.common.exception.BusinessException;
+import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
+import com.groute.groute_server.record.application.port.in.star.DeleteStarImageUseCase;
+import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
+import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
+import com.groute.groute_server.record.domain.StarImage;
+import com.groute.groute_server.record.domain.StarRecord;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class DeleteStarImageService implements DeleteStarImageUseCase {
+
+    private final StarImageQueryPort starImageQueryPort;
+    private final StarImageWritePort starImageWritePort;
+    private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
+
+    @Override
+    public void delete(Long userId, Long imageId) {
+        StarImage image =
+                starImageQueryPort
+                        .findById(imageId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.STAR_IMAGE_NOT_FOUND));
+
+        StarRecord starRecord = image.getStarRecord();
+        if (!starRecord.isOwnedBy(userId)) {
+            throw new BusinessException(ErrorCode.STAR_FORBIDDEN);
+        }
+        if (starRecord.isWriteLocked()) {
+            throw new BusinessException(ErrorCode.STAR_WRITE_LOCKED);
+        }
+
+        presignedUrlGeneratorPort.deleteObject(image.getImageKey());
+        starImageWritePort.deleteById(imageId);
+    }
+}

@@ -15,15 +15,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumUseCase;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
+import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
+import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordCascadePort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
+import com.groute.groute_server.record.domain.StarImage;
 import com.groute.groute_server.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
@@ -46,6 +50,9 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
     private final ScrumQueryPort scrumQueryPort;
     private final ScrumWritePort scrumWritePort;
     private final StarRecordCascadePort starRecordCascadePort;
+    private final StarImageQueryPort starImageQueryPort;
+    private final StarImageWritePort starImageWritePort;
+    private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
     private final UserReferencePort userReferencePort;
 
     /**
@@ -149,6 +156,9 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
         }
         if (!toDelete.isEmpty()) {
             Set<Long> deleteIds = toDelete.stream().map(Scrum::getId).collect(Collectors.toSet());
+            List<StarImage> images = starImageQueryPort.findAllByScrumIdIn(deleteIds);
+            images.forEach(img -> presignedUrlGeneratorPort.deleteObject(img.getImageKey()));
+            starImageWritePort.deleteAll(images);
             scrumWritePort.softDeleteAllByIdIn(deleteIds);
             starRecordCascadePort.cascadeDeleteByScrumIdIn(deleteIds);
         }
