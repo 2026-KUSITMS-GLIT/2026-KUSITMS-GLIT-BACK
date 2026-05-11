@@ -20,7 +20,8 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
 
     @Override
     public void requestTagging(AiTaggingJob job) {
-        // TODO: FastAPI 서버 구현 완료 후 실제 HTTP 호출 코드 추가
+        // TODO: FastAPI 구현 완료 후 HTTP 호출 추가. 완료 콜백 수신 시 CompleteAiTaggingUseCase.completeTagging()
+        // 호출.
         log.info(
                 "[AI Tagging Stub] jobId={}, starRecordId={} 태깅 요청 (미구현)",
                 job.getId(),
