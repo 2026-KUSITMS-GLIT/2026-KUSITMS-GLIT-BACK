@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.adapter.out.persistence;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.groute.groute_server.record.domain.StarRecord;
+import com.groute.groute_server.record.domain.enums.StarRecordStatus;
 
 /**
  * 심화 STAR 기록(StarRecord) JPA 레포지토리.
@@ -50,4 +52,17 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
                     + "SET sr.isDeleted = true, sr.deletedAt = CURRENT_TIMESTAMP "
                     + "WHERE sr.id = :id AND sr.isDeleted = false")
     int softDeleteById(@Param("id") Long id);
+
+    /** 해당 날짜에 TAGGED 미완료 StarRecord가 존재하는지 확인. */
+    @Query(
+            "SELECT (COUNT(sr) > 0) FROM StarRecord sr "
+                    + "JOIN sr.scrum s "
+                    + "WHERE sr.user.id = :userId "
+                    + "AND s.scrumDate = :date "
+                    + "AND sr.status <> :tagged "
+                    + "AND sr.isDeleted = false")
+    boolean existsUntaggedByUserAndDate(
+            @Param("userId") Long userId,
+            @Param("date") LocalDate date,
+            @Param("tagged") StarRecordStatus tagged);
 }

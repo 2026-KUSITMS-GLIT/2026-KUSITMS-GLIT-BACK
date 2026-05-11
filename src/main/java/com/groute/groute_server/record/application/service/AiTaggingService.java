@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.application.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -9,13 +10,17 @@ import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingResultResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingStatusResponse;
+import com.groute.groute_server.record.application.port.in.CompleteAiTaggingUseCase;
 import com.groute.groute_server.record.application.port.in.GetAiTaggingResultUseCase;
 import com.groute.groute_server.record.application.port.in.GetAiTaggingStatusUseCase;
 import com.groute.groute_server.record.application.port.in.TriggerAiTaggingUseCase;
 import com.groute.groute_server.record.application.port.out.AiTaggingJobPort;
+import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
+import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
 import com.groute.groute_server.record.domain.AiTaggingJob;
+import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.record.domain.StarTag;
 import com.groute.groute_server.record.domain.enums.JobStatus;
@@ -33,11 +38,16 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AiTaggingService
-        implements TriggerAiTaggingUseCase, GetAiTaggingStatusUseCase, GetAiTaggingResultUseCase {
+        implements TriggerAiTaggingUseCase,
+                GetAiTaggingStatusUseCase,
+                GetAiTaggingResultUseCase,
+                CompleteAiTaggingUseCase {
 
     private final StarRecordRepositoryPort starRecordPort;
     private final AiTaggingJobPort aiTaggingJobPort;
     private final StarTagQueryPort starTagPort;
+    private final ScrumQueryPort scrumQueryPort;
+    private final ScrumTitleRepositoryPort scrumTitleRepositoryPort;
 
     /**
      * REC-005: AI 태깅 트리거.
@@ -149,5 +159,34 @@ public class AiTaggingService
         // 5. star_tags 조회 후 응답 반환
         List<StarTag> tags = starTagPort.findAllByStarRecordId(starRecordId);
         return AiTaggingResultResponse.from(tags);
+    }
+
+    /**
+     * FastAPI 태깅 완료 시 호출. StarRecord를 TAGGED로 전환하고, 세션 내 전체 완료 시 ScrumTitle을 COMMITTED로 전환한다.
+     *
+     * <p>FastAPI 연동 구현 후 {@code AiTaggingClientAdapter}에서 이 메서드를 호출하도록 연결한다.
+     */
+    @Override
+    @Transactional
+    public void completeTagging(Long starRecordId) {
+        StarRecord record =
+                starRecordPort
+                        .findByIdWithScrum(starRecordId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
+
+        record.tag();
+
+        Long userId = record.getUser().getId();
+        LocalDate date = record.getScrum().getScrumDate();
+
+        if (!starRecordPort.existsUntaggedByUserAndDate(userId, date)) {
+            List<Long> titleIds =
+                    scrumQueryPort.findAllByUserAndDate(userId, date).stream()
+                            .map(Scrum::getTitle)
+                            .map(t -> t.getId())
+                            .distinct()
+                            .toList();
+            scrumTitleRepositoryPort.commitAllByIds(titleIds);
+        }
     }
 }
