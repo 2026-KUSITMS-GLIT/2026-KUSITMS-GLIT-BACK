@@ -78,6 +78,10 @@ public enum ErrorCode {
     PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "PROJECT_001", "프로젝트 태그를 찾을 수 없습니다."),
     PROJECT_NAME_DUPLICATE(HttpStatus.CONFLICT, "PROJECT_002", "이미 존재하는 프로젝트 태그 이름입니다."),
     PROJECT_HAS_RECORDS(HttpStatus.CONFLICT, "PROJECT_003", "연결된 기록이 있어 삭제할 수 없습니다."),
+
+    // Report
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT_001", "리포트를 찾을 수 없습니다."),
+    REPORT_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "REPORT_002", "아직 생성 완료되지 않은 리포트입니다."),
     ;
 
     private final HttpStatus httpStatus;
