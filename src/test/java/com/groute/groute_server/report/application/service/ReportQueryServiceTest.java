@@ -19,9 +19,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
-import com.groute.groute_server.report.adapter.in.web.dto.ReportDetailResponse;
-import com.groute.groute_server.report.adapter.in.web.dto.ReportGaugeResponse;
-import com.groute.groute_server.report.adapter.in.web.dto.ReportListResponse;
+import com.groute.groute_server.report.application.port.in.dto.ReportDetailView;
+import com.groute.groute_server.report.application.port.in.dto.ReportGaugeView;
+import com.groute.groute_server.report.application.port.in.dto.ReportListView;
 import com.groute.groute_server.report.application.port.out.ReportQueryPort;
 import com.groute.groute_server.report.application.port.out.StarRecordCountQueryPort;
 import com.groute.groute_server.report.domain.Report;
@@ -51,24 +51,20 @@ class ReportQueryServiceTest {
         @Test
         @DisplayName("신규 유저: 리포트 없으면 전체 완료 심화기록 수를 currentCount로 반환한다")
         void should_returnTotalCount_when_noReport() {
-            // given
             given(reportQueryPort.findLatestSuccessByUserId(USER_ID)).willReturn(Optional.empty());
             given(starRecordCountQueryPort.countCompletedAfter(USER_ID, null)).willReturn(7);
 
-            // when
-            ReportGaugeResponse response = service.getGauge(USER_ID);
+            ReportGaugeView view = service.getGauge(USER_ID);
 
-            // then
-            assertThat(response.currentCount()).isEqualTo(7);
-            assertThat(response.nextThreshold()).isEqualTo(10);
-            assertThat(response.progressRate()).isEqualTo(0.7);
-            assertThat(response.isGeneratable()).isFalse();
+            assertThat(view.currentCount()).isEqualTo(7);
+            assertThat(view.nextThreshold()).isEqualTo(10);
+            assertThat(view.progressRate()).isEqualTo(0.7);
+            assertThat(view.isGeneratable()).isFalse();
         }
 
         @Test
         @DisplayName("리포트 있음: 마지막 리포트 이후 완료 심화기록 수를 currentCount로 반환한다")
         void should_returnCountAfterLastReport_when_reportExists() {
-            // given
             OffsetDateTime lastReportAt = OffsetDateTime.now().minusDays(5);
             Report lastReport =
                     report(REPORT_ID, USER_ID, ReportType.MINI, ReportStatus.SUCCESS, lastReportAt);
@@ -77,19 +73,16 @@ class ReportQueryServiceTest {
             given(starRecordCountQueryPort.countCompletedAfter(USER_ID, lastReportAt))
                     .willReturn(4);
 
-            // when
-            ReportGaugeResponse response = service.getGauge(USER_ID);
+            ReportGaugeView view = service.getGauge(USER_ID);
 
-            // then
-            assertThat(response.currentCount()).isEqualTo(4);
-            assertThat(response.nextThreshold()).isEqualTo(10);
-            assertThat(response.isGeneratable()).isFalse();
+            assertThat(view.currentCount()).isEqualTo(4);
+            assertThat(view.nextThreshold()).isEqualTo(10);
+            assertThat(view.isGeneratable()).isFalse();
         }
 
         @Test
         @DisplayName("currentCount >= 10이면 isGeneratable=true를 반환한다")
         void should_returnGeneratable_when_currentCountReachesThreshold() {
-            // given
             OffsetDateTime lastReportAt = OffsetDateTime.now().minusDays(10);
             Report lastReport =
                     report(REPORT_ID, USER_ID, ReportType.MINI, ReportStatus.SUCCESS, lastReportAt);
@@ -98,28 +91,23 @@ class ReportQueryServiceTest {
             given(starRecordCountQueryPort.countCompletedAfter(USER_ID, lastReportAt))
                     .willReturn(10);
 
-            // when
-            ReportGaugeResponse response = service.getGauge(USER_ID);
+            ReportGaugeView view = service.getGauge(USER_ID);
 
-            // then
-            assertThat(response.isGeneratable()).isTrue();
-            assertThat(response.progressRate()).isEqualTo(1.0);
+            assertThat(view.isGeneratable()).isTrue();
+            assertThat(view.progressRate()).isEqualTo(1.0);
         }
 
         @Test
         @DisplayName("currentCount > 10이면 progressRate가 1.0을 초과한다")
         void should_returnProgressRateOverOne_when_currentCountExceedsThreshold() {
-            // given
             given(reportQueryPort.findLatestSuccessByUserId(USER_ID)).willReturn(Optional.empty());
             given(starRecordCountQueryPort.countCompletedAfter(USER_ID, null)).willReturn(12);
 
-            // when
-            ReportGaugeResponse response = service.getGauge(USER_ID);
+            ReportGaugeView view = service.getGauge(USER_ID);
 
-            // then
-            assertThat(response.currentCount()).isEqualTo(12);
-            assertThat(response.progressRate()).isEqualTo(1.2);
-            assertThat(response.isGeneratable()).isTrue();
+            assertThat(view.currentCount()).isEqualTo(12);
+            assertThat(view.progressRate()).isEqualTo(1.2);
+            assertThat(view.isGeneratable()).isTrue();
         }
     }
 
@@ -133,7 +121,6 @@ class ReportQueryServiceTest {
         @Test
         @DisplayName("리포트 목록을 반환한다")
         void should_returnReportList() {
-            // given
             Report mini =
                     report(
                             1L,
@@ -151,27 +138,22 @@ class ReportQueryServiceTest {
             given(reportQueryPort.findAllByUserIdOrderByCreatedAtDesc(USER_ID))
                     .willReturn(List.of(career, mini));
 
-            // when
-            ReportListResponse response = service.getList(USER_ID);
+            ReportListView view = service.getList(USER_ID);
 
-            // then
-            assertThat(response.reports()).hasSize(2);
-            assertThat(response.reports().get(0).reportId()).isEqualTo(2L);
-            assertThat(response.reports().get(1).reportId()).isEqualTo(1L);
+            assertThat(view.reports()).hasSize(2);
+            assertThat(view.reports().get(0).reportId()).isEqualTo(2L);
+            assertThat(view.reports().get(1).reportId()).isEqualTo(1L);
         }
 
         @Test
         @DisplayName("리포트 이력 없으면 빈 배열을 반환한다")
         void should_returnEmptyList_when_noReports() {
-            // given
             given(reportQueryPort.findAllByUserIdOrderByCreatedAtDesc(USER_ID))
                     .willReturn(List.of());
 
-            // when
-            ReportListResponse response = service.getList(USER_ID);
+            ReportListView view = service.getList(USER_ID);
 
-            // then
-            assertThat(response.reports()).isEmpty();
+            assertThat(view.reports()).isEmpty();
         }
     }
 
@@ -185,7 +167,6 @@ class ReportQueryServiceTest {
         @Test
         @DisplayName("정상 조회: SUCCESS 상태의 본인 리포트를 반환한다")
         void should_returnDetail_when_validRequest() {
-            // given
             Report report =
                     report(
                             REPORT_ID,
@@ -195,21 +176,17 @@ class ReportQueryServiceTest {
                             OffsetDateTime.now());
             given(reportQueryPort.findById(REPORT_ID)).willReturn(Optional.of(report));
 
-            // when
-            ReportDetailResponse response = service.getDetail(REPORT_ID, USER_ID);
+            ReportDetailView view = service.getDetail(REPORT_ID, USER_ID);
 
-            // then
-            assertThat(response.reportId()).isEqualTo(REPORT_ID);
-            assertThat(response.reportType()).isEqualTo(ReportType.CAREER);
+            assertThat(view.reportId()).isEqualTo(REPORT_ID);
+            assertThat(view.reportType()).isEqualTo(ReportType.CAREER);
         }
 
         @Test
         @DisplayName("리포트 없으면 REPORT_NOT_FOUND를 던진다")
         void should_throwReportNotFound_when_missing() {
-            // given
             given(reportQueryPort.findById(REPORT_ID)).willReturn(Optional.empty());
 
-            // when & then
             assertThatThrownBy(() -> service.getDetail(REPORT_ID, USER_ID))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
@@ -219,7 +196,6 @@ class ReportQueryServiceTest {
         @Test
         @DisplayName("타 유저의 리포트면 FORBIDDEN을 던진다")
         void should_throwForbidden_when_otherUser() {
-            // given
             Report report =
                     report(
                             REPORT_ID,
@@ -229,7 +205,6 @@ class ReportQueryServiceTest {
                             OffsetDateTime.now());
             given(reportQueryPort.findById(REPORT_ID)).willReturn(Optional.of(report));
 
-            // when & then
             assertThatThrownBy(() -> service.getDetail(REPORT_ID, USER_ID))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
@@ -239,7 +214,6 @@ class ReportQueryServiceTest {
         @Test
         @DisplayName("SUCCESS 상태가 아닌 리포트면 REPORT_NOT_COMPLETED를 던진다")
         void should_throwReportNotCompleted_when_notSuccess() {
-            // given
             Report report =
                     report(
                             REPORT_ID,
@@ -249,7 +223,6 @@ class ReportQueryServiceTest {
                             OffsetDateTime.now());
             given(reportQueryPort.findById(REPORT_ID)).willReturn(Optional.of(report));
 
-            // when & then
             assertThatThrownBy(() -> service.getDetail(REPORT_ID, USER_ID))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")

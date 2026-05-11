@@ -34,7 +34,6 @@ public class ReportController {
     private final GetReportListUseCase getReportListUseCase;
     private final GetReportDetailUseCase getReportDetailUseCase;
 
-    /** RPT-001: 리포트 게이지 조회. */
     @Operation(summary = "리포트 게이지 조회", description = "마지막 리포트 생성 이후 완료된 심화기록 수와 다음 생성 임계치를 반환한다.")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -46,10 +45,9 @@ public class ReportController {
     })
     @GetMapping("/gauge")
     public ApiResponse<ReportGaugeResponse> getGauge(@CurrentUser Long userId) {
-        return ApiResponse.ok(getReportGaugeUseCase.getGauge(userId));
+        return ApiResponse.ok(ReportGaugeResponse.from(getReportGaugeUseCase.getGauge(userId)));
     }
 
-    /** RPT-001: 리포트 목록 조회. */
     @Operation(
             summary = "리포트 목록 조회",
             description = "유저의 리포트 목록을 생성일 기준 내림차순으로 반환한다. 이력 없으면 빈 배열 반환.")
@@ -63,10 +61,9 @@ public class ReportController {
     })
     @GetMapping
     public ApiResponse<ReportListResponse> getList(@CurrentUser Long userId) {
-        return ApiResponse.ok(getReportListUseCase.getList(userId));
+        return ApiResponse.ok(ReportListResponse.from(getReportListUseCase.getList(userId)));
     }
 
-    /** RPT-001: 리포트 상세 조회. */
     @Operation(
             summary = "리포트 상세 조회",
             description = "리포트 단건을 조회한다. MINI/CAREER 타입에 따라 content 구조가 다르다.")
@@ -87,6 +84,7 @@ public class ReportController {
     @GetMapping("/{reportId}")
     public ApiResponse<ReportDetailResponse> getDetail(
             @PathVariable Long reportId, @CurrentUser Long userId) {
-        return ApiResponse.ok(getReportDetailUseCase.getDetail(reportId, userId));
+        return ApiResponse.ok(
+                ReportDetailResponse.from(getReportDetailUseCase.getDetail(reportId, userId)));
     }
 }
