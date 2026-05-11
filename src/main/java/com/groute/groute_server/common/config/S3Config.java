@@ -13,8 +13,8 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 /**
  * AWS S3 빈 설정.
  *
- * <p>{@code aws.s3.bucket}이 비어 있으면 빈이 등록되지 않는다(로컬 환경 부팅 허용). stg/prod는 SSM 미주입 시
- * application.yaml placeholder 해석 실패로 부팅이 막힌다(fail-fast).
+ * <p>{@code aws.s3.bucket}이 비어 있으면 빈이 등록되지 않는다(로컬 환경 부팅 허용). stg/prod는 SSM 미주입 시 application.yaml
+ * placeholder 해석 실패로 부팅이 막힌다(fail-fast).
  */
 @Configuration
 @RequiredArgsConstructor

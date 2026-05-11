@@ -85,9 +85,7 @@ public class StarImageController {
     })
     @DeleteMapping("/{starRecordId}/images/{imageId}")
     public ApiResponse<Void> deleteImage(
-            @CurrentUser Long userId,
-            @PathVariable Long starRecordId,
-            @PathVariable Long imageId) {
+            @CurrentUser Long userId, @PathVariable Long starRecordId, @PathVariable Long imageId) {
         deleteStarImageUseCase.delete(userId, imageId);
         return ApiResponse.ok("이미지 삭제 성공", null);
     }

@@ -77,7 +77,8 @@ public class UploadStarImageService implements UploadStarImageUseCase {
                                 command.sizeBytes(),
                                 sortOrder));
 
-        return new UploadStarImageResult(saved.getId(), presigned.presignedUrl(), presigned.imageUrl());
+        return new UploadStarImageResult(
+                saved.getId(), presigned.presignedUrl(), presigned.imageUrl());
     }
 
     private String toExtension(String mimeType) {
