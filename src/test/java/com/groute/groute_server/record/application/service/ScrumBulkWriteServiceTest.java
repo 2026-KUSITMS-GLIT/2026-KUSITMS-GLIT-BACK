@@ -3,6 +3,7 @@ package com.groute.groute_server.record.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -64,7 +65,7 @@ class ScrumBulkWriteServiceTest {
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.SCRUM_DATE_ALREADY_WRITTEN);
 
-            verify(scrumTitleRepositoryPort, never()).saveAll(anyCollection());
+            verify(scrumTitleRepositoryPort, never()).saveAll(anyList());
             verify(scrumWritePort, never()).saveAll(anyCollection());
         }
 
@@ -79,7 +80,7 @@ class ScrumBulkWriteServiceTest {
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.SCRUM_DATE_LIMIT_EXCEEDED);
 
-            verify(scrumTitleRepositoryPort, never()).saveAll(anyCollection());
+            verify(scrumTitleRepositoryPort, never()).saveAll(anyList());
             verify(scrumWritePort, never()).saveAll(anyCollection());
         }
 
@@ -106,7 +107,7 @@ class ScrumBulkWriteServiceTest {
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.PROJECT_NOT_FOUND);
 
-            verify(scrumTitleRepositoryPort, never()).saveAll(anyCollection());
+            verify(scrumTitleRepositoryPort, never()).saveAll(anyList());
             verify(scrumWritePort, never()).saveAll(anyCollection());
         }
     }
@@ -228,7 +229,7 @@ class ScrumBulkWriteServiceTest {
     }
 
     private void stubSaveTitles() {
-        given(scrumTitleRepositoryPort.saveAll(anyCollection()))
+        given(scrumTitleRepositoryPort.saveAll(anyList()))
                 .willAnswer(
                         inv -> {
                             List<ScrumTitle> titles = new ArrayList<>(inv.getArgument(0));

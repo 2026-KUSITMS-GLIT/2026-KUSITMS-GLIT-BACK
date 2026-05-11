@@ -1,0 +1,181 @@
+package com.groute.groute_server.record.application.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import com.groute.groute_server.common.exception.BusinessException;
+import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.record.application.port.in.star.BulkCreateStarRecordCommand;
+import com.groute.groute_server.record.application.port.in.star.BulkCreateStarRecordResult;
+import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
+import com.groute.groute_server.record.application.port.out.star.StarRecordWritePort;
+import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
+import com.groute.groute_server.record.domain.Scrum;
+import com.groute.groute_server.record.domain.ScrumTitle;
+import com.groute.groute_server.record.domain.StarRecord;
+import com.groute.groute_server.user.entity.User;
+
+@ExtendWith(MockitoExtension.class)
+class BulkCreateStarRecordServiceTest {
+
+    private static final Long USER_ID = 1L;
+
+    @Mock ScrumQueryPort scrumQueryPort;
+    @Mock StarRecordWritePort starRecordWritePort;
+    @Mock UserReferencePort userReferencePort;
+
+    @InjectMocks BulkCreateStarRecordService service;
+
+    @Nested
+    @DisplayName("예외 케이스")
+    class Validation {
+
+        @Test
+        @DisplayName("중복 scrumId가 포함되면 INVALID_INPUT을 던진다")
+        void should_throwInvalidInput_when_duplicateScrumId() {
+            assertThatThrownBy(() -> service.bulkCreate(command(List.of(10L, 10L))))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INVALID_INPUT);
+
+            verify(starRecordWritePort, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("요청한 scrumId가 모두 본인 소유가 아니면 SCRUM_NOT_FOUND를 던진다")
+        void should_throwScrumNotFound_when_noneOwned() {
+            given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L, 20L), USER_ID))
+                    .willReturn(List.of());
+
+            assertThatThrownBy(() -> service.bulkCreate(command(List.of(10L, 20L))))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SCRUM_NOT_FOUND);
+
+            verify(starRecordWritePort, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("요청한 scrumId 중 일부만 본인 소유이면 SCRUM_NOT_FOUND를 던진다")
+        void should_throwScrumNotFound_when_partiallyOwned() {
+            given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L, 20L), USER_ID))
+                    .willReturn(List.of(scrum(10L)));
+
+            assertThatThrownBy(() -> service.bulkCreate(command(List.of(10L, 20L))))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SCRUM_NOT_FOUND);
+
+            verify(starRecordWritePort, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("서로 다른 날짜의 스크럼이 섞이면 INVALID_INPUT을 던진다")
+        void should_throwInvalidInput_when_scrumDatesAreMixed() {
+            Scrum scrum10 = scrum(10L, LocalDate.of(2026, 5, 9));
+            Scrum scrum20 = scrum(20L, LocalDate.of(2026, 5, 8));
+            given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L, 20L), USER_ID))
+                    .willReturn(List.of(scrum10, scrum20));
+
+            assertThatThrownBy(() -> service.bulkCreate(command(List.of(10L, 20L))))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INVALID_INPUT);
+
+            verify(starRecordWritePort, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("hasStar=true인 스크럼이 포함되면 SCRUM_EDIT_LOCKED_STAR를 던진다")
+        void should_throwLockedStar_when_anyHasStarIsTrue() {
+            Scrum starredScrum = scrum(10L);
+            ReflectionTestUtils.setField(starredScrum, "hasStar", true);
+            given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L, 20L), USER_ID))
+                    .willReturn(List.of(starredScrum, scrum(20L)));
+
+            assertThatThrownBy(() -> service.bulkCreate(command(List.of(10L, 20L))))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SCRUM_EDIT_LOCKED_STAR);
+
+            verify(starRecordWritePort, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("성공 케이스")
+    class Success {
+
+        @Test
+        @DisplayName("단일 스크럼 선택 시 StarRecord를 생성하고 starRecordId를 반환한다")
+        void should_returnStarRecordId_when_singleScrum() {
+            Scrum scrum = scrum(10L);
+            given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L), USER_ID))
+                    .willReturn(List.of(scrum));
+            given(userReferencePort.getReferenceById(USER_ID))
+                    .willReturn(User.createForSocialLogin());
+            given(starRecordWritePort.save(any())).willReturn(starRecord(100L));
+
+            BulkCreateStarRecordResult result = service.bulkCreate(command(List.of(10L)));
+
+            assertThat(result.starRecordIds()).containsExactly(100L);
+            verify(starRecordWritePort).save(any());
+        }
+
+        @Test
+        @DisplayName("복수 스크럼 선택 시 요청 순서대로 starRecordId 목록을 반환한다")
+        void should_returnStarRecordIdsInOrder_when_multipleScrum() {
+            Scrum scrum10 = scrum(10L);
+            Scrum scrum20 = scrum(20L);
+            given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L, 20L), USER_ID))
+                    .willReturn(List.of(scrum10, scrum20));
+            given(userReferencePort.getReferenceById(USER_ID))
+                    .willReturn(User.createForSocialLogin());
+            given(starRecordWritePort.save(any()))
+                    .willReturn(starRecord(100L))
+                    .willReturn(starRecord(101L));
+
+            BulkCreateStarRecordResult result = service.bulkCreate(command(List.of(10L, 20L)));
+
+            assertThat(result.starRecordIds()).containsExactly(100L, 101L);
+        }
+    }
+
+    // ============== helpers ==============
+
+    private static BulkCreateStarRecordCommand command(List<Long> scrumIds) {
+        return new BulkCreateStarRecordCommand(USER_ID, scrumIds);
+    }
+
+    private static Scrum scrum(Long id) {
+        return scrum(id, LocalDate.of(2026, 5, 9));
+    }
+
+    private static Scrum scrum(Long id, LocalDate date) {
+        Scrum scrum = Scrum.create(User.createForSocialLogin(), new ScrumTitle(), "내용", date);
+        ReflectionTestUtils.setField(scrum, "id", id);
+        return scrum;
+    }
+
+    private static StarRecord starRecord(Long id) {
+        StarRecord record = StarRecord.create(User.createForSocialLogin(), new Scrum());
+        ReflectionTestUtils.setField(record, "id", id);
+        return record;
+    }
+}
