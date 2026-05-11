@@ -1,0 +1,2 @@
+ALTER TABLE star_images
+    ADD COLUMN image_key VARCHAR(500) NOT NULL;
