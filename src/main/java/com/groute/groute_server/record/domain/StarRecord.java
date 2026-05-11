@@ -6,6 +6,7 @@ import java.util.Objects;
 import jakarta.persistence.*;
 
 import com.groute.groute_server.common.entity.SoftDeleteEntity;
+import com.groute.groute_server.record.domain.enums.StarRecordStatus;
 import com.groute.groute_server.record.domain.enums.StarStep;
 import com.groute.groute_server.user.entity.User;
 
@@ -49,20 +50,21 @@ public class StarRecord extends SoftDeleteEntity {
     @Column(name = "result", columnDefinition = "TEXT")
     private String result;
 
-    /** 현재 작성 단계(REC005). 재진입 시 이 단계부터 복원되어 임시저장 역할을 한다(REC010). */
+    /** 현재 작성 단계. 재진입 시 이 단계부터 복원된다. */
     @Enumerated(EnumType.STRING)
     @Column(name = "current_step", nullable = false)
     private StarStep currentStep = StarStep.ST;
 
-    /** R 단계 완료 + AI 태깅 호출 후 true. */
-    @Column(name = "is_completed", nullable = false)
-    private boolean isCompleted = false;
+    /** 작성·태깅 진행 상태. WRITING → WRITTEN(R 완료) → TAGGED(AI 태깅 완료). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 10)
+    private StarRecordStatus status = StarRecordStatus.WRITING;
 
-    /** 완료 시각. 리포트 임계치(10회 단위) 카운트 기준(RPT001). */
+    /** R 단계 완료 시각. 리포트 임계치(10회 단위) 카운트 기준(RPT001). */
     @Column(name = "completed_at")
     private OffsetDateTime completedAt;
 
-    /** 신규 StarRecord 팩토리. currentStep=ST, isCompleted=false로 초기화된다. */
+    /** 신규 StarRecord 팩토리. currentStep=ST, status=WRITING으로 초기화된다. */
     public static StarRecord create(User user, Scrum scrum) {
         StarRecord record = new StarRecord();
         record.user = Objects.requireNonNull(user, "user");
@@ -91,33 +93,29 @@ public class StarRecord extends SoftDeleteEntity {
         }
     }
 
-    /** R 단계 최종 완료 처리. isCompleted=true, currentStep=DONE, completedAt 설정. */
+    /** R 단계 완료 처리. status=WRITTEN, currentStep=DONE, completedAt 설정. */
     public void complete(OffsetDateTime completedAt) {
-        this.isCompleted = true;
+        this.status = StarRecordStatus.WRITTEN;
         this.currentStep = StarStep.DONE;
         this.completedAt = Objects.requireNonNull(completedAt, "completedAt");
     }
 
-    /**
-     * 이 StarRecord가 특정 유저의 소유인지 확인한다.
-     *
-     * <p>AI 태깅 트리거 시 본인 소유 검증에 사용한다(REC-005).
-     *
-     * @param userId 검증할 유저 ID
-     * @return 소유자이면 true
-     */
+    /** AI 태깅 완료 처리. status=TAGGED로 전환. */
+    public void tag() {
+        this.status = StarRecordStatus.TAGGED;
+    }
+
+    /** 작성이 잠긴 상태인지 확인한다. WRITTEN 또는 TAGGED이면 재저장 불가. */
+    public boolean isWriteLocked() {
+        return this.status != StarRecordStatus.WRITING;
+    }
+
     public boolean isOwnedBy(Long userId) {
         return this.user.getId().equals(userId);
     }
 
-    /**
-     * AI 태깅 호출 가능한 상태인지 확인한다.
-     *
-     * <p>currentStep이 DONE이어야 AI 태깅 트리거 가능하다(REC-005). DONE은 S·T, A, R 3단계가 모두 작성 완료된 상태를 의미한다.
-     *
-     * @return DONE 단계이면 true
-     */
+    /** AI 태깅 요청 가능 여부. status가 WRITTEN이어야 한다. */
     public boolean isReadyForTagging() {
-        return this.currentStep == StarStep.DONE;
+        return this.status == StarRecordStatus.WRITTEN;
     }
 }

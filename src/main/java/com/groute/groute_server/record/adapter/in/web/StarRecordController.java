@@ -11,15 +11,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.groute.groute_server.common.annotation.CurrentUser;
+import com.groute.groute_server.common.exception.BusinessException;
+import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.common.response.ApiResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.StarDetailResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.StarRecordBulkCreateRequest;
 import com.groute.groute_server.record.adapter.in.web.dto.StarRecordBulkCreateResponse;
+import com.groute.groute_server.record.adapter.in.web.dto.StarRecordStepUpdateRequest;
 import com.groute.groute_server.record.application.port.in.star.BulkCreateStarRecordUseCase;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarCommand;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarUseCase;
 import com.groute.groute_server.record.application.port.in.star.GetStarDetailQuery;
 import com.groute.groute_server.record.application.port.in.star.GetStarDetailUseCase;
+import com.groute.groute_server.record.application.port.in.star.UpdateStarRecordStepUseCase;
+import com.groute.groute_server.record.domain.enums.StarStep;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -39,6 +44,7 @@ import lombok.RequiredArgsConstructor;
 public class StarRecordController {
 
     private final BulkCreateStarRecordUseCase bulkCreateStarRecordUseCase;
+    private final UpdateStarRecordStepUseCase updateStarRecordStepUseCase;
     private final GetStarDetailUseCase getStarDetailUseCase;
     private final DeleteStarUseCase deleteStarUseCase;
 
@@ -67,6 +73,42 @@ public class StarRecordController {
                 "심화 기록 생성 성공",
                 StarRecordBulkCreateResponse.from(
                         bulkCreateStarRecordUseCase.bulkCreate(request.toCommand(userId))));
+    }
+
+    @Operation(
+            summary = "STAR 단계 저장",
+            description = "S·T·A·R 단계별 작성 내용을 저장한다. R 단계에서 isComplete=true 를 함께 보내면 STAR가 완료 처리된다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "저장 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "유효하지 않은 단계명 또는 빈 내용"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증 또는 만료된 액세스 토큰"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "403",
+                description = "본인의 심화기록이 아님"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "심화기록을 찾을 수 없음")
+    })
+    @PostMapping("/{starRecordId}/steps/{step}")
+    public ApiResponse<Void> updateStep(
+            @CurrentUser Long userId,
+            @PathVariable Long starRecordId,
+            @PathVariable String step,
+            @RequestBody @Valid StarRecordStepUpdateRequest request) {
+        StarStep starStep;
+        try {
+            starStep = StarStep.fromUrlPath(step);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        updateStarRecordStepUseCase.updateStep(request.toCommand(userId, starRecordId, starStep));
+        return ApiResponse.ok("STAR 단계 저장 성공");
     }
 
     @Operation(

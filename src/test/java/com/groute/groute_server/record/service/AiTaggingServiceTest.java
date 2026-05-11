@@ -33,6 +33,7 @@ import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.record.domain.StarTag;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 import com.groute.groute_server.record.domain.enums.JobStatus;
+import com.groute.groute_server.record.domain.enums.StarRecordStatus;
 import com.groute.groute_server.record.domain.enums.StarStep;
 import com.groute.groute_server.user.entity.User;
 
@@ -60,6 +61,9 @@ class AiTaggingServiceTest {
         StarRecord record = new StarRecord();
         ReflectionTestUtils.setField(record, "user", user);
         ReflectionTestUtils.setField(record, "currentStep", step);
+        if (step == StarStep.DONE) {
+            ReflectionTestUtils.setField(record, "status", StarRecordStatus.WRITTEN);
+        }
         return record;
     }
 
