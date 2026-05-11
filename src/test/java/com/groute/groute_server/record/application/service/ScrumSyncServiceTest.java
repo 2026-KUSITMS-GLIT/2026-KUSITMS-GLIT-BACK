@@ -30,12 +30,15 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumCommand.GroupCommand;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumCommand.ItemCommand;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
+import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
+import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordCascadePort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
 import com.groute.groute_server.record.domain.Project;
@@ -53,6 +56,9 @@ class ScrumSyncServiceTest {
     @Mock ScrumQueryPort scrumQueryPort;
     @Mock ScrumWritePort scrumWritePort;
     @Mock StarRecordCascadePort starRecordCascadePort;
+    @Mock StarImageQueryPort starImageQueryPort;
+    @Mock StarImageWritePort starImageWritePort;
+    @Mock PresignedUrlGeneratorPort presignedUrlGeneratorPort;
     @Mock UserReferencePort userReferencePort;
 
     @InjectMocks ScrumSyncService service;
