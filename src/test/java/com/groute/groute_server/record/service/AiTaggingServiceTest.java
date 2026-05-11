@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,10 +26,14 @@ import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingResultResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingStatusResponse;
 import com.groute.groute_server.record.application.port.out.AiTaggingJobPort;
+import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
+import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
 import com.groute.groute_server.record.application.service.AiTaggingService;
 import com.groute.groute_server.record.domain.AiTaggingJob;
+import com.groute.groute_server.record.domain.Scrum;
+import com.groute.groute_server.record.domain.ScrumTitle;
 import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.record.domain.StarTag;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
@@ -44,9 +49,13 @@ class AiTaggingServiceTest {
     private static final long OTHER_USER_ID = 2L;
     private static final long STAR_RECORD_ID = 10L;
 
+    private static final LocalDate DATE = LocalDate.of(2026, 5, 9);
+
     @Mock private StarRecordRepositoryPort starRecordPort;
     @Mock private AiTaggingJobPort aiTaggingJobPort;
     @Mock private StarTagQueryPort starTagPort;
+    @Mock private ScrumQueryPort scrumQueryPort;
+    @Mock private ScrumTitleRepositoryPort scrumTitleRepositoryPort;
 
     @InjectMocks private AiTaggingService aiTaggingService;
 
@@ -65,6 +74,26 @@ class AiTaggingServiceTest {
             ReflectionTestUtils.setField(record, "status", StarRecordStatus.WRITTEN);
         }
         return record;
+    }
+
+    private StarRecord makeStarRecordWithScrum(Long userId, StarStep step) {
+        StarRecord record = makeStarRecord(userId, step);
+        ScrumTitle title = new ScrumTitle();
+        ReflectionTestUtils.setField(title, "id", 100L);
+        Scrum scrum = new Scrum();
+        ReflectionTestUtils.setField(scrum, "scrumDate", DATE);
+        ReflectionTestUtils.setField(scrum, "title", title);
+        ReflectionTestUtils.setField(record, "scrum", scrum);
+        return record;
+    }
+
+    private static Scrum scrumWithTitle(Long scrumId, Long titleId) {
+        ScrumTitle title = new ScrumTitle();
+        ReflectionTestUtils.setField(title, "id", titleId);
+        Scrum scrum = new Scrum();
+        ReflectionTestUtils.setField(scrum, "id", scrumId);
+        ReflectionTestUtils.setField(scrum, "title", title);
+        return scrum;
     }
 
     private AiTaggingJob makeJob(JobStatus status, int retryCount) {
@@ -335,6 +364,54 @@ class AiTaggingServiceTest {
                     .isEqualTo(ErrorCode.AI_TAGGING_NOT_COMPLETED);
 
             verify(starTagPort, never()).findAllByStarRecordId(any());
+        }
+    }
+
+    // =========================================================
+    // completeTagging
+    // =========================================================
+
+    @Nested
+    @DisplayName("AI 태깅 완료 처리")
+    class CompleteTagging {
+
+        @Test
+        @DisplayName("성공 — 세션 내 마지막 태깅 완료 시 StarRecord TAGGED + ScrumTitle COMMITTED")
+        void marksTaggedAndCommits_whenAllTagged() {
+            StarRecord record = makeStarRecordWithScrum(USER_ID, StarStep.DONE);
+            given(starRecordPort.findByIdWithScrum(STAR_RECORD_ID)).willReturn(Optional.of(record));
+            given(starRecordPort.existsUntaggedByUserAndDate(USER_ID, DATE)).willReturn(false);
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
+                    .willReturn(List.of(scrumWithTitle(1L, 100L), scrumWithTitle(2L, 100L)));
+
+            aiTaggingService.completeTagging(STAR_RECORD_ID);
+
+            assertThat(record.getStatus()).isEqualTo(StarRecordStatus.TAGGED);
+            verify(scrumTitleRepositoryPort).commitAllByIds(List.of(100L));
+        }
+
+        @Test
+        @DisplayName("성공 — 아직 미완료 StarRecord 있으면 TAGGED 전환만 하고 COMMITTED 안 함")
+        void marksTaggedOnly_whenUntaggedRemain() {
+            StarRecord record = makeStarRecordWithScrum(USER_ID, StarStep.DONE);
+            given(starRecordPort.findByIdWithScrum(STAR_RECORD_ID)).willReturn(Optional.of(record));
+            given(starRecordPort.existsUntaggedByUserAndDate(USER_ID, DATE)).willReturn(true);
+
+            aiTaggingService.completeTagging(STAR_RECORD_ID);
+
+            assertThat(record.getStatus()).isEqualTo(StarRecordStatus.TAGGED);
+            verify(scrumTitleRepositoryPort, never()).commitAllByIds(any());
+        }
+
+        @Test
+        @DisplayName("실패 — StarRecord 없으면 STAR_RECORD_NOT_FOUND")
+        void throwsNotFound_whenStarRecordMissing() {
+            given(starRecordPort.findByIdWithScrum(STAR_RECORD_ID)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> aiTaggingService.completeTagging(STAR_RECORD_ID))
+                    .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
+                    .extracting(BusinessException::getErrorCode)
+                    .isEqualTo(ErrorCode.STAR_RECORD_NOT_FOUND);
         }
     }
 }

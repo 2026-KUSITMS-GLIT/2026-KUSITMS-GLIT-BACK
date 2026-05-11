@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.adapter.out.persistence;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Component;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordWritePort;
 import com.groute.groute_server.record.domain.StarRecord;
+import com.groute.groute_server.record.domain.enums.StarRecordStatus;
 
 import lombok.RequiredArgsConstructor;
 
@@ -48,5 +50,10 @@ class StarRecordPersistenceAdapter implements StarRecordRepositoryPort, StarReco
     @Override
     public StarRecord save(StarRecord starRecord) {
         return jpaRepository.save(starRecord);
+    }
+
+    @Override
+    public boolean existsUntaggedByUserAndDate(Long userId, LocalDate date) {
+        return jpaRepository.existsUntaggedByUserAndDate(userId, date, StarRecordStatus.TAGGED);
     }
 }
