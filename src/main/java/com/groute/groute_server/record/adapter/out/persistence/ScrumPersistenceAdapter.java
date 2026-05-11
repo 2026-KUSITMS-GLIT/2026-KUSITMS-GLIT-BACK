@@ -72,4 +72,9 @@ class ScrumPersistenceAdapter implements ScrumQueryPort, ScrumWritePort {
     public boolean updateCompetency(Long scrumId, CompetencyCategory competency) {
         return jpaRepository.updateCompetency(scrumId, competency) > 0;
     }
+
+    @Override
+    public int completeStar(Long scrumId) {
+        return jpaRepository.completeStarById(scrumId);
+    }
 }

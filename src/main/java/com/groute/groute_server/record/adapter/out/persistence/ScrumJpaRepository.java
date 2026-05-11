@@ -77,4 +77,9 @@ public interface ScrumJpaRepository extends JpaRepository<Scrum, Long> {
             "UPDATE Scrum s SET s.selectedCompetency = :competency "
                     + "WHERE s.id = :id AND s.isDeleted = false AND s.hasStar = false")
     int updateCompetency(@Param("id") Long id, @Param("competency") CompetencyCategory competency);
+
+    /** STAR 완료 시 hasStar=true 설정. clearHasStarById의 역연산. */
+    @Modifying
+    @Query("UPDATE Scrum s SET s.hasStar = true WHERE s.id = :id AND s.isDeleted = false")
+    int completeStarById(@Param("id") Long id);
 }
