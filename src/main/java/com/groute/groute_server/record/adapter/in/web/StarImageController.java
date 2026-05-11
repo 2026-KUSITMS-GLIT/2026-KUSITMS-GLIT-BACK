@@ -2,7 +2,10 @@ package com.groute.groute_server.record.adapter.in.web;
 
 import jakarta.validation.Valid;
 
+import java.util.List;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,9 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.groute.groute_server.common.annotation.CurrentUser;
 import com.groute.groute_server.common.response.ApiResponse;
+import com.groute.groute_server.record.adapter.in.web.dto.StarImageListItemResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.UploadStarImageRequest;
 import com.groute.groute_server.record.adapter.in.web.dto.UploadStarImageResponse;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarImageUseCase;
+import com.groute.groute_server.record.application.port.in.star.QueryStarImagesUseCase;
 import com.groute.groute_server.record.application.port.in.star.UploadStarImageUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +34,32 @@ public class StarImageController {
 
     private final UploadStarImageUseCase uploadStarImageUseCase;
     private final DeleteStarImageUseCase deleteStarImageUseCase;
+    private final QueryStarImagesUseCase queryStarImagesUseCase;
+
+    @Operation(summary = "이미지 목록 조회", description = "STAR 기록에 첨부된 이미지 목록을 sortOrder 오름차순으로 반환한다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "403",
+                description = "본인 소유가 아님"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "심화기록을 찾을 수 없음")
+    })
+    @GetMapping("/{starRecordId}/images")
+    public ApiResponse<List<StarImageListItemResponse>> getImages(
+            @CurrentUser Long userId, @PathVariable Long starRecordId) {
+        List<StarImageListItemResponse> images =
+                queryStarImagesUseCase.query(userId, starRecordId).stream()
+                        .map(StarImageListItemResponse::from)
+                        .toList();
+        return ApiResponse.ok("이미지 목록 조회 성공", images);
+    }
 
     @Operation(
             summary = "이미지 업로드 Presigned URL 발급",
