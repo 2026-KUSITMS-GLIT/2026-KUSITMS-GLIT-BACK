@@ -1,6 +1,5 @@
 package com.groute.groute_server.record.adapter.out.persistence;
 
-import java.time.LocalDate;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
@@ -35,11 +34,6 @@ class StarRecordPersistenceAdapter implements StarRecordRepositoryPort, StarReco
     @Override
     public void softDeleteById(Long id) {
         jpaRepository.softDeleteById(id);
-    }
-
-    @Override
-    public boolean existsIncompleteByUserAndDate(Long userId, LocalDate date) {
-        return jpaRepository.existsIncompleteByUserAndDate(userId, date);
     }
 
     @Override
