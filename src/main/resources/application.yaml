@@ -129,6 +129,13 @@ app:
     # 로컬은 하단 local 프로파일에서 빈 문자열 fallback 허용
     default-profile-image-url: ${USER_DEFAULT_PROFILE_IMAGE_URL}
 
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_S3_REGION:ap-northeast-2}
+    presigned-url-expiration-minutes: ${AWS_S3_PRESIGNED_URL_EXPIRATION_MINUTES:10}
+    cdn-base-url: ${AWS_S3_CDN_BASE_URL}
+
 discord:
   webhook:
     enabled: false
@@ -168,6 +175,11 @@ auth:
   callback:
     local: ${AUTH_CALLBACK_LOCAL:http://localhost:3000/auth/callback}
   default-env: ${AUTH_DEFAULT_ENV:local}
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET:}
+    cdn-base-url: ${AWS_S3_CDN_BASE_URL:}
 
 firebase:
   credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
