@@ -148,10 +148,26 @@ class UpdateStarRecordStepServiceTest {
             record.saveStep(StarStep.A, "A 답변");
             given(starRecordRepositoryPort.findByIdWithScrum(STAR_ID))
                     .willReturn(Optional.of(record));
+            given(scrumWritePort.completeStar(scrum.getId())).willReturn(1);
 
             service.updateStep(command(StarStep.R));
 
             verify(scrumWritePort).completeStar(scrum.getId());
+        }
+
+        @Test
+        @DisplayName("completeStar가 0을 반환하면 SCRUM_NOT_FOUND를 던진다")
+        void should_throwScrumNotFound_when_completeStarUpdatesNothing() {
+            record.saveStep(StarStep.ST, "ST 답변");
+            record.saveStep(StarStep.A, "A 답변");
+            given(starRecordRepositoryPort.findByIdWithScrum(STAR_ID))
+                    .willReturn(Optional.of(record));
+            given(scrumWritePort.completeStar(scrum.getId())).willReturn(0);
+
+            assertThatThrownBy(() -> service.updateStep(command(StarStep.R)))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SCRUM_NOT_FOUND);
         }
     }
 
