@@ -35,7 +35,8 @@ public interface ScrumTitleJpaRepository extends JpaRepository<ScrumTitle, Long>
     @Modifying
     @Query(
             "UPDATE ScrumTitle t SET t.status = com.groute.groute_server.record.domain.enums.ScrumTitleStatus.COMMITTED "
-                    + "WHERE t.id IN :ids AND t.isDeleted = false")
+                    + "WHERE t.id IN :ids AND t.isDeleted = false "
+                    + "AND t.status = com.groute.groute_server.record.domain.enums.ScrumTitleStatus.PENDING")
     int commitAllByIds(@Param("ids") Collection<Long> ids);
 
     /** PENDING 세션 취소 시 ScrumTitle 일괄 soft-delete. */
@@ -43,6 +44,7 @@ public interface ScrumTitleJpaRepository extends JpaRepository<ScrumTitle, Long>
     @Query(
             "UPDATE ScrumTitle t "
                     + "SET t.isDeleted = true, t.deletedAt = CURRENT_TIMESTAMP "
-                    + "WHERE t.id IN :ids AND t.isDeleted = false")
+                    + "WHERE t.id IN :ids AND t.isDeleted = false "
+                    + "AND t.status = com.groute.groute_server.record.domain.enums.ScrumTitleStatus.PENDING")
     int softDeleteAllByIds(@Param("ids") Collection<Long> ids);
 }
