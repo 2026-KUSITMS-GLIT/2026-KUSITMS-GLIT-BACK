@@ -30,4 +30,11 @@ public interface ScrumTitleJpaRepository extends JpaRepository<ScrumTitle, Long>
             "UPDATE ScrumTitle t SET t.scrumCount = t.scrumCount + :increment "
                     + "WHERE t.id = :id AND t.isDeleted = false")
     int applyScrumCountIncrement(@Param("id") Long id, @Param("increment") int increment);
+
+    /** 지정 title 전체를 PENDING → COMMITTED 전환. 모든 STAR 완료 시 배치 업데이트. */
+    @Modifying
+    @Query(
+            "UPDATE ScrumTitle t SET t.status = com.groute.groute_server.record.domain.enums.ScrumTitleStatus.COMMITTED "
+                    + "WHERE t.id IN :ids AND t.isDeleted = false")
+    int commitAllByIds(@Param("ids") Collection<Long> ids);
 }

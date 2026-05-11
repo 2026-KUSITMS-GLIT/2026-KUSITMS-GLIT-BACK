@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.adapter.out.persistence;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -50,4 +51,14 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
                     + "SET sr.isDeleted = true, sr.deletedAt = CURRENT_TIMESTAMP "
                     + "WHERE sr.id = :id AND sr.isDeleted = false")
     int softDeleteById(@Param("id") Long id);
+
+    /** 해당 날짜에 미완료 StarRecord가 존재하는지 확인. 모든 STAR 완료 여부 판단에 사용. */
+    @Query(
+            "SELECT (count(sr) > 0) FROM StarRecord sr "
+                    + "WHERE sr.user.id = :userId "
+                    + "AND sr.scrum.scrumDate = :date "
+                    + "AND sr.isCompleted = false "
+                    + "AND sr.isDeleted = false")
+    boolean existsIncompleteByUserAndDate(
+            @Param("userId") Long userId, @Param("date") LocalDate date);
 }

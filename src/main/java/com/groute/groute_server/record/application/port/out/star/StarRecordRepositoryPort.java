@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.application.port.out.star;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import com.groute.groute_server.record.domain.StarRecord;
@@ -20,4 +21,7 @@ public interface StarRecordRepositoryPort {
 
     /** 단건 soft-delete. cascade(Scrum.hasStar=false 등)는 호출자가 별도 처리. */
     void softDeleteById(Long id);
+
+    /** 해당 날짜에 미완료(isCompleted=false) StarRecord가 존재하는지 확인. 모든 STAR 완료 여부 판단에 사용. */
+    boolean existsIncompleteByUserAndDate(Long userId, LocalDate date);
 }
