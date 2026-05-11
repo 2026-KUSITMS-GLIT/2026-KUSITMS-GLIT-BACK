@@ -51,7 +51,9 @@ public class UpdateStarRecordStepService implements UpdateStarRecordStepUseCase 
         if (command.step() == StarStep.R) {
             record.complete(OffsetDateTime.now());
             Scrum scrum = record.getScrum();
-            scrumWritePort.completeStar(scrum.getId());
+            if (scrumWritePort.completeStar(scrum.getId()) == 0) {
+                throw new BusinessException(ErrorCode.SCRUM_NOT_FOUND);
+            }
         }
     }
 }
