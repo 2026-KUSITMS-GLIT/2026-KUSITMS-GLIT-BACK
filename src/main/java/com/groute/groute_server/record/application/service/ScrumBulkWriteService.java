@@ -17,10 +17,12 @@ import com.groute.groute_server.record.application.port.out.ProjectPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
+import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
 import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
+import com.groute.groute_server.record.domain.enums.ScrumTitleStatus;
 import com.groute.groute_server.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
@@ -41,13 +43,22 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
     private final ScrumQueryPort scrumQueryPort;
     private final ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     private final ScrumWritePort scrumWritePort;
+    private final StarRecordRepositoryPort starRecordRepositoryPort;
     private final UserReferencePort userReferencePort;
 
     @Override
     public BulkWriteScrumResult bulkWrite(BulkWriteScrumCommand command) {
-        // 1. 해당 날짜 중복 작성 차단
-        if (scrumQueryPort.existsByUserAndDate(command.userId(), command.date())) {
-            throw new BusinessException(ErrorCode.SCRUM_DATE_ALREADY_WRITTEN);
+        // 1. 해당 날짜 기존 세션 확인
+        List<Scrum> existingScrums =
+                scrumQueryPort.findAllByUserAndDate(command.userId(), command.date());
+        if (!existingScrums.isEmpty()) {
+            boolean hasCommitted =
+                    existingScrums.stream()
+                            .anyMatch(s -> s.getTitle().getStatus() == ScrumTitleStatus.COMMITTED);
+            if (hasCommitted) {
+                throw new BusinessException(ErrorCode.SCRUM_DATE_ALREADY_WRITTEN);
+            }
+            cleanupPendingSession(existingScrums);
         }
 
         // 2. 총 스크럼 수 ≤ 5
@@ -121,5 +132,22 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
                             projects.get(i).getName(), savedTitles.get(i).getFreeText(), items));
         }
         return new BulkWriteScrumResult(results);
+    }
+
+    private void cleanupPendingSession(List<Scrum> scrums) {
+        List<Long> scrumIds = scrums.stream().map(Scrum::getId).toList();
+        List<Long> titleIds = scrums.stream().map(s -> s.getTitle().getId()).distinct().toList();
+
+        starRecordRepositoryPort.softDeleteByScrumIds(scrumIds);
+        scrumWritePort.softDeleteAllByIdIn(scrumIds);
+        scrumTitleRepositoryPort.softDeleteAllByIds(titleIds);
+
+        scrums.stream()
+                .collect(
+                        Collectors.groupingBy(
+                                s -> s.getTitle().getProject().getId(), Collectors.counting()))
+                .forEach(
+                        (projectId, count) ->
+                                projectPort.applyTitleCountIncrement(projectId, -count.intValue()));
     }
 }

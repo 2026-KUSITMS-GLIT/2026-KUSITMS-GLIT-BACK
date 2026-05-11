@@ -64,11 +64,6 @@ class ScrumPersistenceAdapter implements ScrumQueryPort, ScrumWritePort {
     }
 
     @Override
-    public boolean existsByUserAndDate(Long userId, LocalDate date) {
-        return jpaRepository.existsByUserIdAndScrumDateAndIsDeletedFalse(userId, date);
-    }
-
-    @Override
     public boolean updateCompetency(Long scrumId, CompetencyCategory competency) {
         return jpaRepository.updateCompetency(scrumId, competency) > 0;
     }
