@@ -65,8 +65,7 @@ public class StarRecordController {
     @GetMapping("/home-summary")
     public ApiResponse<HomeSummaryResponse> getHomeSummary(@CurrentUser Long userId) {
         return ApiResponse.ok(
-                "홈 요약 정보 조회 성공",
-                HomeSummaryResponse.from(homeSummaryUseCase.getSummary(userId)));
+                "홈 요약 정보 조회 성공", HomeSummaryResponse.from(homeSummaryUseCase.getSummary(userId)));
     }
 
     @Operation(
