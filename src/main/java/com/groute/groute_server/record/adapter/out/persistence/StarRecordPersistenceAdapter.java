@@ -61,4 +61,9 @@ class StarRecordPersistenceAdapter implements StarRecordRepositoryPort, StarReco
     public boolean existsUntaggedByUserAndDate(Long userId, LocalDate date) {
         return jpaRepository.existsUntaggedByUserAndDate(userId, date, StarRecordStatus.TAGGED);
     }
+
+    @Override
+    public long countTaggedByUserId(Long userId) {
+        return jpaRepository.countTaggedByUserId(userId, StarRecordStatus.TAGGED);
+    }
 }

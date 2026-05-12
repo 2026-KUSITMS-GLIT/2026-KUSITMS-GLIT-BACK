@@ -31,4 +31,7 @@ public interface StarRecordRepositoryPort {
 
     /** 해당 날짜에 TAGGED 미완료(WRITING·WRITTEN) StarRecord가 남아있는지 확인. */
     boolean existsUntaggedByUserAndDate(Long userId, LocalDate date);
+
+    /** 사용자의 TAGGED 심화기록 총 개수. */
+    long countTaggedByUserId(Long userId);
 }

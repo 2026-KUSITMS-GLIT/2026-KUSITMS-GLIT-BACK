@@ -61,6 +61,15 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
                     + "WHERE sr.id = :id AND sr.isDeleted = false")
     int softDeleteById(@Param("id") Long id);
 
+    /** 사용자의 TAGGED 심화기록 총 개수. 홈 요약(isFirstStar·reportModal) 판단에 사용. */
+    @Query(
+            "SELECT COUNT(sr) FROM StarRecord sr "
+                    + "WHERE sr.user.id = :userId "
+                    + "AND sr.status = :status "
+                    + "AND sr.isDeleted = false")
+    long countTaggedByUserId(
+            @Param("userId") Long userId, @Param("status") StarRecordStatus status);
+
     /** 해당 날짜에 TAGGED 미완료 StarRecord가 존재하는지 확인. */
     @Query(
             "SELECT (COUNT(sr) > 0) FROM StarRecord sr "
