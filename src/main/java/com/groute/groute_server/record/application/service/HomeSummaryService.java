@@ -21,13 +21,13 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class HomeSummaryService implements HomeSummaryUseCase {
 
+    private final StarRecordRepositoryPort starRecordRepositoryPort;
+
     @Override
     public HomeSummaryResult getSummary(Long userId) {
         long count = starRecordRepositoryPort.countTaggedByUserId(userId);
         return new HomeSummaryResult(count == 1, resolveModal(count));
     }
-
-    private final StarRecordRepositoryPort starRecordRepositoryPort;
 
     private static ReportModal resolveModal(long count) {
         if (count == 10) {
