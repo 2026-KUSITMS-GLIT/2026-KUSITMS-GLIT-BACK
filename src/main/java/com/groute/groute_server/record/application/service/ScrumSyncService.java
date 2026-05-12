@@ -157,8 +157,8 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
         if (!toDelete.isEmpty()) {
             Set<Long> deleteIds = toDelete.stream().map(Scrum::getId).collect(Collectors.toSet());
             List<StarImage> images = starImageQueryPort.findAllByScrumIdIn(deleteIds);
-            images.forEach(img -> presignedUrlGeneratorPort.deleteObject(img.getImageKey()));
             starImageWritePort.deleteAll(images);
+            images.forEach(img -> presignedUrlGeneratorPort.deleteObject(img.getImageKey()));
             scrumWritePort.softDeleteAllByIdIn(deleteIds);
             starRecordCascadePort.cascadeDeleteByScrumIdIn(deleteIds);
         }

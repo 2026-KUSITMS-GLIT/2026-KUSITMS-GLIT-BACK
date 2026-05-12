@@ -58,8 +58,8 @@ public class StarRecordDeleteService implements DeleteStarUseCase {
         // 3. StarImage S3+DB 정리
         List<StarImage> images =
                 starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(command.starRecordId());
-        images.forEach(img -> presignedUrlGeneratorPort.deleteObject(img.getImageKey()));
         starImageWritePort.deleteAll(images);
+        images.forEach(img -> presignedUrlGeneratorPort.deleteObject(img.getImageKey()));
 
         // 4. STAR soft-delete
         starRecordRepositoryPort.softDeleteById(command.starRecordId());

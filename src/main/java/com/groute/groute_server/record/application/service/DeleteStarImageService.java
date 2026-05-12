@@ -38,7 +38,7 @@ public class DeleteStarImageService implements DeleteStarImageUseCase {
             throw new BusinessException(ErrorCode.STAR_WRITE_LOCKED);
         }
 
-        presignedUrlGeneratorPort.deleteObject(image.getImageKey());
         starImageWritePort.deleteById(imageId);
+        presignedUrlGeneratorPort.deleteObject(image.getImageKey());
     }
 }
