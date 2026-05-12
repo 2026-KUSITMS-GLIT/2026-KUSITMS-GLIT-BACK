@@ -4,7 +4,10 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Optional;
 
+import jakarta.persistence.LockModeType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,6 +38,11 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
 
     /** 논리 삭제된 레코드를 제외한 단건 조회. */
     Optional<StarRecord> findByIdAndIsDeletedFalse(Long id);
+
+    /** 이미지 업로드 시 2장 제한 Race Condition 방지용 비관적 락 조회. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT sr FROM StarRecord sr WHERE sr.id = :id AND sr.isDeleted = false")
+    Optional<StarRecord> findByIdWithLock(@Param("id") Long id);
 
     /** 단건 상세 조회. 응답 카테고리·부제목 매핑을 위해 Scrum·Title·Project까지 fetch join. */
     @Query(

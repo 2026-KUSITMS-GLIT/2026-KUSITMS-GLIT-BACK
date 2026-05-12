@@ -20,6 +20,9 @@ public interface StarRecordRepositoryPort {
     /** 논리 삭제된 레코드를 제외한 단건 조회. */
     Optional<StarRecord> findById(Long starRecordId);
 
+    /** 이미지 업로드 시 2장 제한 Race Condition 방지용 비관적 락 조회. */
+    Optional<StarRecord> findByIdWithLock(Long starRecordId);
+
     /** 단건 soft-delete. cascade(Scrum.hasStar=false 등)는 호출자가 별도 처리. */
     void softDeleteById(Long id);
 
