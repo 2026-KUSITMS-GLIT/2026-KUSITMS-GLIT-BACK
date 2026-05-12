@@ -26,6 +26,7 @@ public interface ScrumForReportJpaRepository extends JpaRepository<Scrum, Long> 
                     + "AND s.scrumDate IN ("
                     + "  SELECT sr.scrum.scrumDate FROM StarRecord sr "
                     + "  WHERE sr.id IN :starRecordIds "
+                    + "  AND sr.user.id = :userId "
                     + "  AND sr.isDeleted = false"
                     + ") "
                     + "AND s.isDeleted = false")
