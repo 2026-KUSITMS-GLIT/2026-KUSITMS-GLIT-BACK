@@ -146,8 +146,8 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
         List<Long> titleIds = scrums.stream().map(s -> s.getTitle().getId()).distinct().toList();
 
         List<StarImage> images = starImageQueryPort.findAllByScrumIdIn(scrumIds);
-        images.forEach(img -> presignedUrlGeneratorPort.deleteObject(img.getImageKey()));
         starImageWritePort.deleteAll(images);
+        images.forEach(img -> presignedUrlGeneratorPort.deleteObject(img.getImageKey()));
 
         starRecordRepositoryPort.softDeleteByScrumIds(scrumIds);
         scrumWritePort.softDeleteAllByIdIn(scrumIds);
