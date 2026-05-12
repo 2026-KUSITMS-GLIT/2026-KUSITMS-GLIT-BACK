@@ -77,9 +77,18 @@ public class SecurityConfig {
      *
      * <p>로컬 개발은 Vite(5173)/Next·CRA(3000), 운영은 {@code https://glit.today}에서 호출. {@code
      * allowCredentials(true)}는 refresh 쿠키 동작에 필수.
+     *
+     * <p>{@code stg-api.glit.today} / {@code api.glit.today}는 Swagger UI가 같은 호스트에서 API를 호출할 때 브라우저가
+     * Origin 헤더를 함께 보내 Spring CORS 필터가 cross-origin으로 판정하기 때문에 self-origin도 화이트리스트에 포함한다. (정식
+     * refactor는 별도 이슈에서 yaml/SSM 기반으로 분리 예정)
      */
     private static final List<String> ALLOWED_ORIGINS =
-            List.of("http://localhost:3000", "http://localhost:5173", "https://glit.today");
+            List.of(
+                    "http://localhost:3000",
+                    "http://localhost:5173",
+                    "https://glit.today",
+                    "https://stg-api.glit.today",
+                    "https://api.glit.today");
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
