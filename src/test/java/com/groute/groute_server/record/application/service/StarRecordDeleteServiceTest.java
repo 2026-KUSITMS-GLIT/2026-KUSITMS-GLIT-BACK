@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import java.lang.reflect.Constructor;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
@@ -21,8 +22,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarCommand;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
+import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
+import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
@@ -37,6 +41,9 @@ class StarRecordDeleteServiceTest {
     private static final Long SCRUM_ID = 50L;
 
     @Mock StarRecordRepositoryPort starRecordRepositoryPort;
+    @Mock StarImageQueryPort starImageQueryPort;
+    @Mock StarImageWritePort starImageWritePort;
+    @Mock PresignedUrlGeneratorPort presignedUrlGeneratorPort;
     @Mock ScrumWritePort scrumWritePort;
 
     @InjectMocks StarRecordDeleteService service;
@@ -52,6 +59,8 @@ class StarRecordDeleteServiceTest {
             StarRecord star = star(STAR_ID, USER_ID, SCRUM_ID);
             given(starRecordRepositoryPort.findByIdWithScrum(STAR_ID))
                     .willReturn(Optional.of(star));
+            given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
+                    .willReturn(List.of());
 
             // when
             assertThatCode(() -> service.deleteStar(new DeleteStarCommand(USER_ID, STAR_ID)))
