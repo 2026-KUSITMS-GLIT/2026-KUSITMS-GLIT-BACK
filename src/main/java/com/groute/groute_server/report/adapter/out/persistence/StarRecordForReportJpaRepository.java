@@ -47,7 +47,11 @@ public interface StarRecordForReportJpaRepository extends JpaRepository<StarReco
                     + "ORDER BY sr.scrum.scrumDate DESC")
     List<String> findCompletedStarDatesByUserId(@Param("userId") Long userId);
 
-    /** 심화기록 ID 목록으로 심화기록을 조회한다. */
-    @Query("SELECT sr FROM StarRecord sr " + "WHERE sr.id IN :ids " + "AND sr.isDeleted = false")
-    List<StarRecord> findAllByIds(@Param("ids") List<Long> ids);
+    /** 심화기록 ID 목록으로 심화기록을 조회한다. userId로 소유권을 함께 검증한다. */
+    @Query(
+            "SELECT sr FROM StarRecord sr "
+                    + "WHERE sr.user.id = :userId "
+                    + "AND sr.id IN :ids "
+                    + "AND sr.isDeleted = false")
+    List<StarRecord> findAllByIds(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 }

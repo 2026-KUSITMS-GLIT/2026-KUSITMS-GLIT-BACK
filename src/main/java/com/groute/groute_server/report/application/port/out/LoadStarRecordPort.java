@@ -40,12 +40,13 @@ public interface LoadStarRecordPort {
     /**
      * 심화기록 ID 목록으로 심화기록을 조회한다.
      *
-     * <p>POST /api/reports 시 선택된 심화기록 로드용.
+     * <p>POST /api/reports 시 선택된 심화기록 로드용. userId로 소유권을 함께 검증한다.
      *
+     * @param userId 유저 PK
      * @param starRecordIds 심화기록 ID 목록
      * @return 심화기록 목록
      */
-    List<StarRecord> findAllByIds(List<Long> starRecordIds);
+    List<StarRecord> findAllByIds(Long userId, List<Long> starRecordIds);
 
     /**
      * 선택된 심화기록의 날짜에 속한 스크럼 목록을 반환한다.

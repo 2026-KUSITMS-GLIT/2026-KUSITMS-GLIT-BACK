@@ -114,8 +114,9 @@ public class ReportService
         Report report = Report.create(user, command.reportType(), totalStarCount);
         Report savedReport = saveReportPort.save(report);
 
-        // 6. 선택된 심화기록 로드
-        List<StarRecord> starRecords = loadStarRecordPort.findAllByIds(command.starRecordIds());
+        // 6. 선택된 심화기록 로드 (userId로 소유권 검증)
+        List<StarRecord> starRecords =
+                loadStarRecordPort.findAllByIds(command.userId(), command.starRecordIds());
 
         // 7. 선택된 심화기록 날짜의 스크럼 자동 수집
         List<Scrum> scrums =
