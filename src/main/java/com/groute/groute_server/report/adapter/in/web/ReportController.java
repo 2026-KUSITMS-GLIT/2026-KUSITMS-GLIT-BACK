@@ -117,7 +117,8 @@ public class ReportController {
     public ApiResponse<ReportSelectableInfoResponse> getSelectableInfo(@CurrentUser Long userId) {
         return ApiResponse.ok(
                 "기록 선택용 정보 조회 성공",
-                ReportSelectableInfoResponse.from(getSelectableInfoUseCase.getSelectableInfo(userId)));
+                ReportSelectableInfoResponse.from(
+                        getSelectableInfoUseCase.getSelectableInfo(userId)));
     }
 
     @Operation(
@@ -139,7 +140,8 @@ public class ReportController {
             @CurrentUser Long userId, @RequestBody ReportCreateRequest request) {
         return ApiResponse.ok(
                 "리포트 생성 요청 성공",
-                ReportCreateResponse.from(createReportUseCase.createReport(request.toCommand(userId))));
+                ReportCreateResponse.from(
+                        createReportUseCase.createReport(request.toCommand(userId))));
     }
 
     @Operation(
@@ -164,12 +166,11 @@ public class ReportController {
             @CurrentUser Long userId, @PathVariable Long reportId) {
         return ApiResponse.ok(
                 "리포트 생성 상태 조회 성공",
-                ReportStatusResponse.from(getReportStatusUseCase.getReportStatus(userId, reportId)));
+                ReportStatusResponse.from(
+                        getReportStatusUseCase.getReportStatus(userId, reportId)));
     }
 
-    @Operation(
-            summary = "리포트 생성 재시도",
-            description = "AI 생성 실패 시 1회에 한해 재시도를 요청한다.")
+    @Operation(summary = "리포트 생성 재시도", description = "AI 생성 실패 시 1회에 한해 재시도를 요청한다.")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",

@@ -52,7 +52,8 @@ class ReportPersistenceAdapter implements ReportQueryPort, LoadReportPort, SaveR
 
     @Override
     public boolean existsMiniReportByUserId(Long userId) {
-        return jpaRepository.existsByUserIdAndReportType(userId, ReportType.MINI);
+        return jpaRepository.existsByUserIdAndReportTypeAndStatus(
+                userId, ReportType.MINI, ReportStatus.SUCCESS);
     }
 
     // SaveReportPort

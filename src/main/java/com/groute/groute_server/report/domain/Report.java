@@ -4,13 +4,12 @@ import java.util.Map;
 
 import jakarta.persistence.*;
 
-import com.groute.groute_server.common.exception.BusinessException;
-import com.groute.groute_server.common.exception.ErrorCode;
-
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import com.groute.groute_server.common.entity.BaseTimeEntity;
+import com.groute.groute_server.common.exception.BusinessException;
+import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.report.domain.enums.ReportStatus;
 import com.groute.groute_server.report.domain.enums.ReportType;
 import com.groute.groute_server.user.entity.User;
@@ -106,9 +105,7 @@ public class Report extends BaseTimeEntity {
     // 도메인 규칙
     // =========================================================
 
-    /**
-     * 재시도 가능 여부. FAILED 상태이고 아직 재시도를 1회도 하지 않은 경우에만 true.
-     */
+    /** 재시도 가능 여부. FAILED 상태이고 아직 재시도를 1회도 하지 않은 경우에만 true. */
     public boolean isRetryAvailable() {
         return this.status == ReportStatus.FAILED && this.retryCount < 1;
     }
