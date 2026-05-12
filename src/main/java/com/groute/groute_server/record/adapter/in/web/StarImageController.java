@@ -1,8 +1,8 @@
 package com.groute.groute_server.record.adapter.in.web;
 
-import jakarta.validation.Valid;
-
 import java.util.List;
+
+import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
