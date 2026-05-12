@@ -117,7 +117,7 @@ class ReportServiceTest {
             given(loadReportPort.existsMiniReportByUserId(USER_ID)).willReturn(false);
             given(userRepository.findById(USER_ID)).willReturn(Optional.of(user(USER_ID)));
             given(loadStarRecordPort.countCompletedByUserId(USER_ID)).willReturn(10);
-            given(loadStarRecordPort.findAllByIds(ids)).willReturn(starRecords(10));
+            given(loadStarRecordPort.findAllByIds(USER_ID, ids)).willReturn(starRecords(10));
             given(loadStarRecordPort.findScrumsByStarRecordIds(USER_ID, ids)).willReturn(List.of());
             Report saved = report(REPORT_ID, USER_ID, ReportType.MINI, ReportStatus.GENERATING, 0);
             given(saveReportPort.save(any())).willReturn(saved);

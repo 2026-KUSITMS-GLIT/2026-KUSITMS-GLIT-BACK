@@ -38,8 +38,8 @@ class StarRecordForReportPersistenceAdapter implements LoadStarRecordPort {
     }
 
     @Override
-    public List<StarRecord> findAllByIds(List<Long> starRecordIds) {
-        return starRecordJpaRepository.findAllByIds(starRecordIds);
+    public List<StarRecord> findAllByIds(Long userId, List<Long> starRecordIds) {
+        return starRecordJpaRepository.findAllByIds(userId, starRecordIds);
     }
 
     @Override
