@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
+import com.groute.groute_server.record.application.port.out.star.CompetencyCount;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordWritePort;
 import com.groute.groute_server.record.domain.StarRecord;
@@ -65,5 +66,10 @@ class StarRecordPersistenceAdapter implements StarRecordRepositoryPort, StarReco
     @Override
     public long countTaggedByUserId(Long userId) {
         return jpaRepository.countTaggedByUserId(userId, StarRecordStatus.TAGGED);
+    }
+
+    @Override
+    public List<CompetencyCount> countCompletedByCompetency(Long userId, StarRecordStatus status) {
+        return jpaRepository.countCompletedByCompetency(userId, status);
     }
 }

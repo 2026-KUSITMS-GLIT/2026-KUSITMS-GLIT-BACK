@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.groute.groute_server.record.domain.StarRecord;
+import com.groute.groute_server.record.domain.enums.StarRecordStatus;
 
 /**
  * StarRecord 단건 조회·삭제 포트 (CAL-003).
@@ -34,4 +35,7 @@ public interface StarRecordRepositoryPort {
 
     /** 사용자의 TAGGED 심화기록 총 개수. */
     long countTaggedByUserId(Long userId);
+
+    /** TAGGED 완료된 STAR 기록의 역량 카테고리별 건수. selectedCompetency가 NULL인 스크럼은 제외. */
+    List<CompetencyCount> countCompletedByCompetency(Long userId, StarRecordStatus status);
 }

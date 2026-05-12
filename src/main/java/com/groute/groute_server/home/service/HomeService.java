@@ -10,8 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
-import com.groute.groute_server.home.dto.CompetencyCount;
-import com.groute.groute_server.home.repository.HomeRepository;
+import com.groute.groute_server.record.application.port.out.star.CompetencyCount;
+import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 import com.groute.groute_server.record.domain.enums.StarRecordStatus;
 import com.groute.groute_server.user.repository.UserRepository;
@@ -23,12 +23,13 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class HomeService {
 
-    private final HomeRepository homeRepository;
+    private final StarRecordRepositoryPort starRecordRepositoryPort;
     private final UserRepository userRepository;
 
     public RadarResult getRadar(Long userId) {
         List<CompetencyCount> rows =
-                homeRepository.countCompletedByCompetency(userId, StarRecordStatus.TAGGED);
+                starRecordRepositoryPort.countCompletedByCompetency(
+                        userId, StarRecordStatus.TAGGED);
 
         Map<CompetencyCategory, Integer> categories = new EnumMap<>(CompetencyCategory.class);
         for (CompetencyCategory cat : CompetencyCategory.values()) {

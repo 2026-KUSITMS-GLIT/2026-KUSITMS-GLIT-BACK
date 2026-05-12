@@ -17,9 +17,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
-import com.groute.groute_server.home.dto.CompetencyCount;
-import com.groute.groute_server.home.repository.HomeRepository;
 import com.groute.groute_server.home.service.HomeService.RadarResult;
+import com.groute.groute_server.record.application.port.out.star.CompetencyCount;
+import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 import com.groute.groute_server.record.domain.enums.StarRecordStatus;
 import com.groute.groute_server.user.entity.User;
@@ -30,7 +30,7 @@ class HomeServiceTest {
 
     private static final long USER_ID = 1L;
 
-    @Mock private HomeRepository homeRepository;
+    @Mock private StarRecordRepositoryPort starRecordRepositoryPort;
     @Mock private UserRepository userRepository;
 
     @InjectMocks private HomeService homeService;
@@ -42,7 +42,9 @@ class HomeServiceTest {
         @Test
         @DisplayName("STAR 0건 — 전 카테고리 0, min=0, max=0")
         void allZero_whenNoCompletedStar() {
-            given(homeRepository.countCompletedByCompetency(USER_ID, StarRecordStatus.TAGGED))
+            given(
+                            starRecordRepositoryPort.countCompletedByCompetency(
+                                    USER_ID, StarRecordStatus.TAGGED))
                     .willReturn(List.of());
 
             RadarResult result = homeService.getRadar(USER_ID);
@@ -56,7 +58,9 @@ class HomeServiceTest {
         @Test
         @DisplayName("일부 카테고리만 존재 — 나머지는 0으로 채워짐")
         void fillsZero_forMissingCategories() {
-            given(homeRepository.countCompletedByCompetency(USER_ID, StarRecordStatus.TAGGED))
+            given(
+                            starRecordRepositoryPort.countCompletedByCompetency(
+                                    USER_ID, StarRecordStatus.TAGGED))
                     .willReturn(
                             List.of(
                                     new CompetencyCount(CompetencyCategory.COLLABORATION, 7L),
@@ -74,7 +78,9 @@ class HomeServiceTest {
         @Test
         @DisplayName("전 카테고리 존재 — min/max 정확히 계산")
         void calcMinMax_whenAllCategoriesPresent() {
-            given(homeRepository.countCompletedByCompetency(USER_ID, StarRecordStatus.TAGGED))
+            given(
+                            starRecordRepositoryPort.countCompletedByCompetency(
+                                    USER_ID, StarRecordStatus.TAGGED))
                     .willReturn(
                             List.of(
                                     new CompetencyCount(CompetencyCategory.DISCOVERY_ANALYSIS, 5L),
