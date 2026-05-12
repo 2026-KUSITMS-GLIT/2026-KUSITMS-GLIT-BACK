@@ -59,4 +59,15 @@ public interface LoadStarRecordPort {
      * @return 해당 날짜들의 스크럼 목록
      */
     List<Scrum> findScrumsByStarRecordIds(Long userId, List<Long> starRecordIds);
+
+    /**
+     * 유저의 특정 날짜에 완료된 심화기록 목록을 반환한다.
+     *
+     * <p>리포트 생성 화면에서 날짜 셀 클릭 시 모달에 노출할 심화기록 목록 조회용. 기록 순서 기준 오름차순 정렬.
+     *
+     * @param userId 유저 PK
+     * @param date 조회 날짜
+     * @return 해당 날짜에 완료된 심화기록 목록
+     */
+    List<StarRecord> findCompletedByUserIdAndDate(Long userId, LocalDate date);
 }

@@ -1,5 +1,6 @@
 package com.groute.groute_server.report.adapter.out.persistence;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -54,4 +55,22 @@ public interface StarRecordForReportJpaRepository extends JpaRepository<StarReco
                     + "AND sr.id IN :ids "
                     + "AND sr.isDeleted = false")
     List<StarRecord> findAllByIds(@Param("userId") Long userId, @Param("ids") List<Long> ids);
+
+    /**
+     * 유저의 특정 날짜에 완료된 심화기록 목록을 기록 순서 기준 오름차순으로 반환한다.
+     *
+     * <p>projectName 조회를 위해 scrum → title → project 경로를 fetch join으로 한 번에 로드한다.
+     */
+    @Query(
+            "SELECT sr FROM StarRecord sr "
+                    + "JOIN FETCH sr.scrum s "
+                    + "JOIN FETCH s.title t "
+                    + "JOIN FETCH t.project p "
+                    + "WHERE sr.user.id = :userId "
+                    + "AND s.scrumDate = :date "
+                    + "AND sr.isCompleted = true "
+                    + "AND sr.isDeleted = false "
+                    + "ORDER BY sr.id ASC")
+    List<StarRecord> findCompletedByUserIdAndDate(
+            @Param("userId") Long userId, @Param("date") LocalDate date);
 }

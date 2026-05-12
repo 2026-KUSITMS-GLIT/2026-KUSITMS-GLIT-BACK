@@ -47,4 +47,9 @@ class StarRecordForReportPersistenceAdapter implements LoadStarRecordPort {
     public List<Scrum> findScrumsByStarRecordIds(Long userId, List<Long> starRecordIds) {
         return scrumJpaRepository.findScrumsByStarRecordIds(userId, starRecordIds);
     }
+
+    @Override
+    public List<StarRecord> findCompletedByUserIdAndDate(Long userId, LocalDate date) {
+        return starRecordJpaRepository.findCompletedByUserIdAndDate(userId, date);
+    }
 }
