@@ -49,13 +49,14 @@ public class UploadStarImageService implements UploadStarImageUseCase {
             throw new BusinessException(ErrorCode.STAR_WRITE_LOCKED);
         }
 
+        // sortOrder 결정을 위해 전체 목록 조회 (개수 체크 겸용)
         List<StarImage> existing =
                 starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(command.starRecordId());
         if (existing.size() >= MAX_IMAGES_PER_STAR) {
             throw new BusinessException(ErrorCode.STAR_IMAGE_LIMIT_EXCEEDED);
         }
 
-        short sortOrder = (short) existing.size();
+        short sortOrder = (short) existing.size(); // 0 또는 1 (두 번째 이미지)
         String imageKey =
                 String.format(
                         "star-images/%d/%d/%s.%s",

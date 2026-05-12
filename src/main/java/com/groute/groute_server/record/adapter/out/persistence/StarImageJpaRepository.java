@@ -23,8 +23,6 @@ public interface StarImageJpaRepository extends JpaRepository<StarImage, Long> {
     List<StarImage> findAllByStarRecordIdOrderBySortOrderAsc(
             @Param("starRecordId") Long starRecordId);
 
-    long countByStarRecordId(Long starRecordId);
-
     @Query("SELECT i FROM StarImage i WHERE i.starRecord.scrum.id IN :scrumIds")
     List<StarImage> findAllByStarRecordScrumIdIn(@Param("scrumIds") Collection<Long> scrumIds);
 }
