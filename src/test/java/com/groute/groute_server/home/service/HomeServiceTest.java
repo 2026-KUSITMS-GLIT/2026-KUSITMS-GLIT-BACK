@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.home.dto.CompetencyCount;
 import com.groute.groute_server.home.repository.HomeRepository;
 import com.groute.groute_server.home.service.HomeService.RadarResult;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
@@ -58,8 +59,8 @@ class HomeServiceTest {
             given(homeRepository.countCompletedByCompetency(USER_ID, StarRecordStatus.TAGGED))
                     .willReturn(
                             List.of(
-                                    new Object[] {CompetencyCategory.COLLABORATION, 7L},
-                                    new Object[] {CompetencyCategory.PROBLEM_SOLVING, 2L}));
+                                    new CompetencyCount(CompetencyCategory.COLLABORATION, 7L),
+                                    new CompetencyCount(CompetencyCategory.PROBLEM_SOLVING, 2L)));
 
             RadarResult result = homeService.getRadar(USER_ID);
 
@@ -76,11 +77,11 @@ class HomeServiceTest {
             given(homeRepository.countCompletedByCompetency(USER_ID, StarRecordStatus.TAGGED))
                     .willReturn(
                             List.of(
-                                    new Object[] {CompetencyCategory.DISCOVERY_ANALYSIS, 5L},
-                                    new Object[] {CompetencyCategory.PLANNING_EXECUTION, 3L},
-                                    new Object[] {CompetencyCategory.COLLABORATION, 7L},
-                                    new Object[] {CompetencyCategory.PROBLEM_SOLVING, 2L},
-                                    new Object[] {CompetencyCategory.REFLECTION_GROWTH, 4L}));
+                                    new CompetencyCount(CompetencyCategory.DISCOVERY_ANALYSIS, 5L),
+                                    new CompetencyCount(CompetencyCategory.PLANNING_EXECUTION, 3L),
+                                    new CompetencyCount(CompetencyCategory.COLLABORATION, 7L),
+                                    new CompetencyCount(CompetencyCategory.PROBLEM_SOLVING, 2L),
+                                    new CompetencyCount(CompetencyCategory.REFLECTION_GROWTH, 4L)));
 
             RadarResult result = homeService.getRadar(USER_ID);
 
