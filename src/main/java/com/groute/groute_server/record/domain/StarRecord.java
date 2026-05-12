@@ -64,6 +64,10 @@ public class StarRecord extends SoftDeleteEntity {
     @Column(name = "completed_at")
     private OffsetDateTime completedAt;
 
+    /** AI 태깅 완료 여부. status=TAGGED 전환 시 true로 설정. JPQL 조건절 호환용. */
+    @Column(name = "is_completed", nullable = false)
+    private boolean isCompleted = false;
+
     /** 신규 StarRecord 팩토리. currentStep=ST, status=WRITING으로 초기화된다. */
     public static StarRecord create(User user, Scrum scrum) {
         StarRecord record = new StarRecord();
@@ -100,9 +104,10 @@ public class StarRecord extends SoftDeleteEntity {
         this.completedAt = Objects.requireNonNull(completedAt, "completedAt");
     }
 
-    /** AI 태깅 완료 처리. status=TAGGED로 전환. */
+    /** AI 태깅 완료 처리. status=TAGGED로 전환하고 isCompleted=true로 설정. */
     public void tag() {
         this.status = StarRecordStatus.TAGGED;
+        this.isCompleted = true;
     }
 
     /** 작성이 잠긴 상태인지 확인한다. WRITTEN 또는 TAGGED이면 재저장 불가. */

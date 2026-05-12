@@ -2,6 +2,7 @@ package com.groute.groute_server.record.adapter.out.persistence;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import jakarta.persistence.LockModeType;
@@ -12,6 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.groute.groute_server.record.application.port.out.star.CompetencyCount;
 import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.record.domain.enums.StarRecordStatus;
 
@@ -68,6 +70,19 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
                     + "AND sr.status = :status "
                     + "AND sr.isDeleted = false")
     long countTaggedByUserId(
+            @Param("userId") Long userId, @Param("status") StarRecordStatus status);
+
+    /** TAGGED 완료된 STAR 기록의 역량 카테고리별 건수. selectedCompetency가 NULL인 스크럼은 제외. */
+    @Query(
+            "SELECT new com.groute.groute_server.record.application.port.out.star.CompetencyCount("
+                    + "s.selectedCompetency, COUNT(sr)) "
+                    + "FROM StarRecord sr JOIN sr.scrum s "
+                    + "WHERE sr.user.id = :userId "
+                    + "AND sr.status = :status "
+                    + "AND sr.isDeleted = false "
+                    + "AND s.selectedCompetency IS NOT NULL "
+                    + "GROUP BY s.selectedCompetency")
+    List<CompetencyCount> countCompletedByCompetency(
             @Param("userId") Long userId, @Param("status") StarRecordStatus status);
 
     /** 해당 날짜에 TAGGED 미완료 StarRecord가 존재하는지 확인. */
