@@ -1,5 +1,6 @@
 package com.groute.groute_server.report.adapter.out.persistence;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -33,7 +34,7 @@ class StarRecordForReportPersistenceAdapter implements LoadStarRecordPort {
     }
 
     @Override
-    public List<String> findCompletedStarDatesByUserId(Long userId) {
+    public List<LocalDate> findCompletedStarDatesByUserId(Long userId) {
         return starRecordJpaRepository.findCompletedStarDatesByUserId(userId);
     }
 

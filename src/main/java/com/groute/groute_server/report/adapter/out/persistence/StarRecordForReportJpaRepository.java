@@ -40,12 +40,12 @@ public interface StarRecordForReportJpaRepository extends JpaRepository<StarReco
 
     /** 완료된 심화기록이 있는 날짜 목록을 전체 기간 반환한다. 달력 하이라이트 렌더링용. */
     @Query(
-            "SELECT DISTINCT CAST(sr.scrum.scrumDate AS string) FROM StarRecord sr "
+            "SELECT DISTINCT sr.scrum.scrumDate FROM StarRecord sr "
                     + "WHERE sr.user.id = :userId "
                     + "AND sr.isCompleted = true "
                     + "AND sr.isDeleted = false "
                     + "ORDER BY sr.scrum.scrumDate DESC")
-    List<String> findCompletedStarDatesByUserId(@Param("userId") Long userId);
+    List<java.time.LocalDate> findCompletedStarDatesByUserId(@Param("userId") Long userId);
 
     /** 심화기록 ID 목록으로 심화기록을 조회한다. userId로 소유권을 함께 검증한다. */
     @Query(

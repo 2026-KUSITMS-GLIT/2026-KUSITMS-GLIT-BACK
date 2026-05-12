@@ -1,5 +1,6 @@
 package com.groute.groute_server.report.application.port.out;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.groute.groute_server.record.domain.Scrum;
@@ -33,9 +34,9 @@ public interface LoadStarRecordPort {
      * <p>달력 하이라이트 렌더링용(기능명세서 RPT-002).
      *
      * @param userId 유저 PK
-     * @return 완료된 심화기록이 존재하는 날짜 목록 (yyyy-MM-dd)
+     * @return 완료된 심화기록이 존재하는 날짜 목록
      */
-    List<String> findCompletedStarDatesByUserId(Long userId);
+    List<LocalDate> findCompletedStarDatesByUserId(Long userId);
 
     /**
      * 심화기록 ID 목록으로 심화기록을 조회한다.

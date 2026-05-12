@@ -1,5 +1,6 @@
 package com.groute.groute_server.report.application.service;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
@@ -74,7 +75,10 @@ public class ReportService
                         .map(StarRecord::getId)
                         .toList();
 
-        List<String> starRecordDates = loadStarRecordPort.findCompletedStarDatesByUserId(userId);
+        List<String> starRecordDates =
+                loadStarRecordPort.findCompletedStarDatesByUserId(userId).stream()
+                        .map(date -> date.format(DateTimeFormatter.ISO_LOCAL_DATE))
+                        .toList();
 
         return new SelectableInfoView(
                 reportType.name(), totalStarCount, autoSelectedIds, starRecordDates);
