@@ -65,9 +65,10 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
     @Query(
             "SELECT COUNT(sr) FROM StarRecord sr "
                     + "WHERE sr.user.id = :userId "
-                    + "AND sr.status = 'TAGGED' "
+                    + "AND sr.status = :status "
                     + "AND sr.isDeleted = false")
-    long countTaggedByUserId(@Param("userId") Long userId);
+    long countTaggedByUserId(
+            @Param("userId") Long userId, @Param("status") StarRecordStatus status);
 
     /** 해당 날짜에 TAGGED 미완료 StarRecord가 존재하는지 확인. */
     @Query(

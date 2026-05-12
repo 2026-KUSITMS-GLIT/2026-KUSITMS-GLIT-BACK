@@ -64,6 +64,6 @@ class StarRecordPersistenceAdapter implements StarRecordRepositoryPort, StarReco
 
     @Override
     public long countTaggedByUserId(Long userId) {
-        return jpaRepository.countTaggedByUserId(userId);
+        return jpaRepository.countTaggedByUserId(userId, StarRecordStatus.TAGGED);
     }
 }
