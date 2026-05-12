@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.application.service;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
@@ -7,10 +8,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarCommand;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarUseCase;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
+import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
+import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
+import com.groute.groute_server.record.domain.StarImage;
 import com.groute.groute_server.record.domain.StarRecord;
 
 import lombok.RequiredArgsConstructor;
@@ -18,10 +23,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * 심화기록 단독 삭제 서비스 (CAL-003).
  *
- * <p>STAR soft-delete + 연결된 Scrum의 hasStar 플래그를 false로 동기화한다. 스크럼 본문은 보존되며 한 트랜잭션에서 원자적으로 처리된다.
- *
- * <p>StarTag/StarImage는 자체 soft-delete 필드가 없으므로 별도 cascade 없이 둔다 — 부모(StarRecord)가 isDeleted=true로
- * 마킹되면 후속 조회에서 JOIN 필터로 자연 차단된다.
+ * <p>STAR soft-delete + 연결된 StarImage S3·DB 정리 + Scrum의 hasStar 플래그 false 동기화를 한 트랜잭션에서 원자적으로 처리한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,6 +31,9 @@ import lombok.RequiredArgsConstructor;
 public class StarRecordDeleteService implements DeleteStarUseCase {
 
     private final StarRecordRepositoryPort starRecordRepositoryPort;
+    private final StarImageQueryPort starImageQueryPort;
+    private final StarImageWritePort starImageWritePort;
+    private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
     private final ScrumWritePort scrumWritePort;
 
     /**
@@ -50,10 +55,16 @@ public class StarRecordDeleteService implements DeleteStarUseCase {
             throw new BusinessException(ErrorCode.STAR_FORBIDDEN);
         }
 
-        // 3. STAR soft-delete
+        // 3. StarImage S3+DB 정리
+        List<StarImage> images =
+                starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(command.starRecordId());
+        images.forEach(img -> presignedUrlGeneratorPort.deleteObject(img.getImageKey()));
+        starImageWritePort.deleteAll(images);
+
+        // 4. STAR soft-delete
         starRecordRepositoryPort.softDeleteById(command.starRecordId());
 
-        // 4. Scrum.hasStar = false (스크럼 본문은 그대로)
+        // 5. Scrum.hasStar = false (스크럼 본문은 그대로)
         scrumWritePort.clearHasStar(starRecord.getScrum().getId());
     }
 }
