@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.validation.annotation.Validated;
+
 import com.groute.groute_server.common.annotation.CurrentUser;
 import com.groute.groute_server.common.response.ApiResponse;
 import com.groute.groute_server.report.adapter.in.web.dto.ReportCreateRequest;
@@ -137,7 +139,7 @@ public class ReportController {
     })
     @PostMapping
     public ApiResponse<ReportCreateResponse> createReport(
-            @CurrentUser Long userId, @RequestBody ReportCreateRequest request) {
+            @CurrentUser Long userId, @Validated @RequestBody ReportCreateRequest request) {
         return ApiResponse.ok(
                 "리포트 생성 요청 성공",
                 ReportCreateResponse.from(
