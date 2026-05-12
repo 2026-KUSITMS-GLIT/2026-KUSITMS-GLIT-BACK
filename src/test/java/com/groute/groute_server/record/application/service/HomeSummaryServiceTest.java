@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.groute.groute_server.record.application.port.in.star.HomeSummaryResult;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
+import com.groute.groute_server.record.domain.enums.ReportModalType;
 
 @ExtendWith(MockitoExtension.class)
 class HomeSummaryServiceTest {
@@ -59,7 +60,7 @@ class HomeSummaryServiceTest {
             given(starRecordRepositoryPort.countTaggedByUserId(USER_ID)).willReturn(10L);
             HomeSummaryResult.ReportModal modal = service.getSummary(USER_ID).reportModal();
             assertThat(modal.show()).isTrue();
-            assertThat(modal.type()).isEqualTo("MINI");
+            assertThat(modal.type()).isEqualTo(ReportModalType.MINI);
         }
 
         @Test
@@ -68,7 +69,7 @@ class HomeSummaryServiceTest {
             given(starRecordRepositoryPort.countTaggedByUserId(USER_ID)).willReturn(20L);
             HomeSummaryResult.ReportModal modal = service.getSummary(USER_ID).reportModal();
             assertThat(modal.show()).isTrue();
-            assertThat(modal.type()).isEqualTo("FULL");
+            assertThat(modal.type()).isEqualTo(ReportModalType.FULL);
         }
 
         @Test
@@ -77,7 +78,7 @@ class HomeSummaryServiceTest {
             given(starRecordRepositoryPort.countTaggedByUserId(USER_ID)).willReturn(30L);
             HomeSummaryResult.ReportModal modal = service.getSummary(USER_ID).reportModal();
             assertThat(modal.show()).isTrue();
-            assertThat(modal.type()).isEqualTo("FULL");
+            assertThat(modal.type()).isEqualTo(ReportModalType.FULL);
         }
 
         @Test

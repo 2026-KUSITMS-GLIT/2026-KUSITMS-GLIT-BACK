@@ -7,6 +7,7 @@ import com.groute.groute_server.record.application.port.in.star.HomeSummaryResul
 import com.groute.groute_server.record.application.port.in.star.HomeSummaryResult.ReportModal;
 import com.groute.groute_server.record.application.port.in.star.HomeSummaryUseCase;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
+import com.groute.groute_server.record.domain.enums.ReportModalType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,10 +31,10 @@ public class HomeSummaryService implements HomeSummaryUseCase {
 
     private static ReportModal resolveModal(long count) {
         if (count == 10) {
-            return new ReportModal(true, "MINI");
+            return new ReportModal(true, ReportModalType.MINI);
         }
         if (count >= 20 && count % 10 == 0) {
-            return new ReportModal(true, "FULL");
+            return new ReportModal(true, ReportModalType.FULL);
         }
         return ReportModal.none();
     }
