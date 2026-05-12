@@ -3,8 +3,8 @@ ALTER TABLE star_records
     ADD COLUMN status VARCHAR(10) NOT NULL DEFAULT 'WRITING',
     ADD CONSTRAINT ck_star_records_status CHECK (status IN ('WRITING', 'WRITTEN', 'TAGGED'));
 
--- 기존 is_completed=true 인 레코드를 WRITTEN으로 전환
-UPDATE star_records SET status = 'WRITTEN' WHERE is_completed = TRUE AND is_deleted = FALSE;
+-- 기존 is_completed=true 인 레코드를 TAGGED로 전환
+UPDATE star_records SET status = 'TAGGED' WHERE is_completed = TRUE AND is_deleted = FALSE;
 
 DROP INDEX idx_star_records_user_is_completed;
 
