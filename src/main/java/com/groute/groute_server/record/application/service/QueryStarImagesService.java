@@ -34,9 +34,7 @@ public class QueryStarImagesService implements QueryStarImagesUseCase {
             throw new BusinessException(ErrorCode.STAR_FORBIDDEN);
         }
 
-        return starImageQueryPort
-                .findAllByStarRecordIdOrderBySortOrder(starRecordId)
-                .stream()
+        return starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(starRecordId).stream()
                 .map(img -> new QueryStarImagesResult(img.getId(), img.getImageUrl()))
                 .toList();
     }

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -119,6 +120,40 @@ class UploadStarImageServiceTest {
             // then
             assertThat(result.imageId()).isEqualTo(102L);
             verify(starImageWritePort).save(any(StarImage.class));
+        }
+
+        @Test
+        @DisplayName("image/png mimeType으로 업로드하면 확장자 png로 S3 키가 생성된다")
+        void should_generatePngKey_when_mimeTypeIsPng() {
+            given(starRecordRepositoryPort.findById(STAR_ID)).willReturn(Optional.of(record));
+            given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
+                    .willReturn(List.of());
+            given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
+                    .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
+            given(starImageWritePort.save(any(StarImage.class)))
+                    .willReturn(starImage(100L, record, (short) 0));
+
+            service.upload(new UploadStarImageCommand(USER_ID, STAR_ID, "image/png", SIZE_BYTES));
+
+            verify(presignedUrlGeneratorPort)
+                    .generate(argThat(key -> key.endsWith(".png")), anyString());
+        }
+
+        @Test
+        @DisplayName("image/webp mimeType으로 업로드하면 확장자 webp로 S3 키가 생성된다")
+        void should_generateWebpKey_when_mimeTypeIsWebp() {
+            given(starRecordRepositoryPort.findById(STAR_ID)).willReturn(Optional.of(record));
+            given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
+                    .willReturn(List.of());
+            given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
+                    .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
+            given(starImageWritePort.save(any(StarImage.class)))
+                    .willReturn(starImage(100L, record, (short) 0));
+
+            service.upload(new UploadStarImageCommand(USER_ID, STAR_ID, "image/webp", SIZE_BYTES));
+
+            verify(presignedUrlGeneratorPort)
+                    .generate(argThat(key -> key.endsWith(".webp")), anyString());
         }
     }
 
