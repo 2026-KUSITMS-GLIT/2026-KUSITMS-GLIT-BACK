@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -68,7 +69,7 @@ class ReportServiceTest {
             given(loadStarRecordPort.findCompletedByUserIdOrderByLatest(USER_ID, 10))
                     .willReturn(starRecords(10));
             given(loadStarRecordPort.findCompletedStarDatesByUserId(USER_ID))
-                    .willReturn(List.of("2026-04-09", "2026-04-07"));
+                    .willReturn(List.of(LocalDate.of(2026, 4, 9), LocalDate.of(2026, 4, 7)));
 
             // when
             SelectableInfoView view = service.getSelectableInfo(USER_ID);
@@ -89,7 +90,7 @@ class ReportServiceTest {
             given(loadStarRecordPort.findCompletedByUserIdOrderByLatest(USER_ID, 20))
                     .willReturn(starRecords(20));
             given(loadStarRecordPort.findCompletedStarDatesByUserId(USER_ID))
-                    .willReturn(List.of("2026-04-09"));
+                    .willReturn(List.of(LocalDate.of(2026, 4, 9)));
 
             // when
             SelectableInfoView view = service.getSelectableInfo(USER_ID);

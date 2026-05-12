@@ -131,7 +131,10 @@ public class ReportController {
                 description = "생성 요청 성공"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "400",
-                description = "잘못된 요청 (미니 중복 생성, 심화기록 개수 오류)"),
+                description = "잘못된 요청 (심화기록 개수 오류)"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "409",
+                description = "미니 리포트 중복 생성"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "401",
                 description = "미인증 또는 만료된 액세스 토큰")
