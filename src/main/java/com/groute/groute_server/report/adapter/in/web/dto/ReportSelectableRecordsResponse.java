@@ -27,7 +27,6 @@ public record ReportSelectableRecordsResponse(
 
     public static ReportSelectableRecordsResponse from(SelectableRecordsView view) {
         return new ReportSelectableRecordsResponse(
-                view.date(),
-                view.starRecords().stream().map(StarRecordItem::from).toList());
+                view.date(), view.starRecords().stream().map(StarRecordItem::from).toList());
     }
 }
