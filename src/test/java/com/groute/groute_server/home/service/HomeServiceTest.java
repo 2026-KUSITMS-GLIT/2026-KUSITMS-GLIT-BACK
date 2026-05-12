@@ -51,8 +51,9 @@ class HomeServiceTest {
 
             assertThat(result.min()).isZero();
             assertThat(result.max()).isZero();
-            assertThat(result.categories()).hasSize(5);
-            assertThat(result.categories()).containsValue(0);
+            assertThat(result.categories())
+                    .hasSize(5)
+                    .allSatisfy((cat, count) -> assertThat(count).isZero());
         }
 
         @Test
