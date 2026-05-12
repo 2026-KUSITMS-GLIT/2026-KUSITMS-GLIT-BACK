@@ -17,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
-import com.groute.groute_server.home.service.HomeService.RadarResult;
+import com.groute.groute_server.home.dto.RadarResult;
 import com.groute.groute_server.record.application.port.out.star.CompetencyCount;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;

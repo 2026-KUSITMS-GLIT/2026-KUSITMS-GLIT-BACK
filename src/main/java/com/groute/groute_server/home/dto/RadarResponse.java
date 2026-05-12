@@ -2,7 +2,6 @@ package com.groute.groute_server.home.dto;
 
 import java.util.Map;
 
-import com.groute.groute_server.home.service.HomeService.RadarResult;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 
 import io.swagger.v3.oas.annotations.media.Schema;

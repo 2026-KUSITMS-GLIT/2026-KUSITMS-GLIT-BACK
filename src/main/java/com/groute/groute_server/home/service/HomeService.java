@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.home.dto.RadarResult;
 import com.groute.groute_server.record.application.port.out.star.CompetencyCount;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
@@ -41,7 +42,7 @@ public class HomeService {
 
         int min = Collections.min(categories.values());
         int max = Collections.max(categories.values());
-        return new RadarResult(min, max, categories);
+        return new RadarResult(min, max, Collections.unmodifiableMap(categories));
     }
 
     public String getBrandingTitle(Long userId) {
@@ -50,6 +51,4 @@ public class HomeService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND))
                 .getBrandingTitle();
     }
-
-    public record RadarResult(int min, int max, Map<CompetencyCategory, Integer> categories) {}
 }
