@@ -14,6 +14,7 @@ import com.groute.groute_server.common.annotation.CurrentUser;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.common.response.ApiResponse;
+import com.groute.groute_server.record.adapter.in.web.dto.HomeSummaryResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.StarDetailResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.StarRecordBulkCreateRequest;
 import com.groute.groute_server.record.adapter.in.web.dto.StarRecordBulkCreateResponse;
@@ -23,6 +24,7 @@ import com.groute.groute_server.record.application.port.in.star.DeleteStarComman
 import com.groute.groute_server.record.application.port.in.star.DeleteStarUseCase;
 import com.groute.groute_server.record.application.port.in.star.GetStarDetailQuery;
 import com.groute.groute_server.record.application.port.in.star.GetStarDetailUseCase;
+import com.groute.groute_server.record.application.port.in.star.HomeSummaryUseCase;
 import com.groute.groute_server.record.application.port.in.star.UpdateStarRecordStepUseCase;
 import com.groute.groute_server.record.domain.enums.StarStep;
 
@@ -47,6 +49,25 @@ public class StarRecordController {
     private final UpdateStarRecordStepUseCase updateStarRecordStepUseCase;
     private final GetStarDetailUseCase getStarDetailUseCase;
     private final DeleteStarUseCase deleteStarUseCase;
+    private final HomeSummaryUseCase homeSummaryUseCase;
+
+    @Operation(
+            summary = "홈 복귀 요약 정보 조회",
+            description = "STAR 기록 완료 후 홈 복귀 시 코치마크(isFirstStar)와 리포트 모달 노출 여부를 반환한다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증")
+    })
+    @GetMapping("/home-summary")
+    public ApiResponse<HomeSummaryResponse> getHomeSummary(@CurrentUser Long userId) {
+        return ApiResponse.ok(
+                "홈 요약 정보 조회 성공",
+                HomeSummaryResponse.from(homeSummaryUseCase.getSummary(userId)));
+    }
 
     @Operation(
             summary = "심화 기록 일괄 생성",
