@@ -83,7 +83,8 @@ class UploadStarImageServiceTest {
         @DisplayName("첫 번째 이미지 업로드 시 sortOrder=0으로 저장하고 결과를 반환한다")
         void should_uploadFirstImage_with_sortOrder0() {
             // given
-            given(starRecordRepositoryPort.findById(STAR_ID)).willReturn(Optional.of(record));
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
+                    .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of());
             given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
@@ -106,7 +107,8 @@ class UploadStarImageServiceTest {
         void should_uploadSecondImage_with_sortOrder1() {
             // given
             StarImage firstImage = starImage(101L, record, (short) 0);
-            given(starRecordRepositoryPort.findById(STAR_ID)).willReturn(Optional.of(record));
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
+                    .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of(firstImage));
             given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
@@ -125,7 +127,8 @@ class UploadStarImageServiceTest {
         @Test
         @DisplayName("image/png mimeType으로 업로드하면 확장자 png로 S3 키가 생성된다")
         void should_generatePngKey_when_mimeTypeIsPng() {
-            given(starRecordRepositoryPort.findById(STAR_ID)).willReturn(Optional.of(record));
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
+                    .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of());
             given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
@@ -142,7 +145,8 @@ class UploadStarImageServiceTest {
         @Test
         @DisplayName("image/webp mimeType으로 업로드하면 확장자 webp로 S3 키가 생성된다")
         void should_generateWebpKey_when_mimeTypeIsWebp() {
-            given(starRecordRepositoryPort.findById(STAR_ID)).willReturn(Optional.of(record));
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
+                    .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of());
             given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
@@ -164,7 +168,7 @@ class UploadStarImageServiceTest {
         @Test
         @DisplayName("존재하지 않는 starRecordId면 STAR_NOT_FOUND를 던진다")
         void should_throwStarNotFound_when_notExist() {
-            given(starRecordRepositoryPort.findById(STAR_ID)).willReturn(Optional.empty());
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.upload(command(USER_ID)))
                     .isInstanceOf(BusinessException.class)
@@ -176,7 +180,8 @@ class UploadStarImageServiceTest {
         @Test
         @DisplayName("타 유저의 StarRecord면 STAR_FORBIDDEN을 던진다")
         void should_throwForbidden_when_notOwner() {
-            given(starRecordRepositoryPort.findById(STAR_ID)).willReturn(Optional.of(record));
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
+                    .willReturn(Optional.of(record));
 
             assertThatThrownBy(() -> service.upload(command(OTHER_USER_ID)))
                     .isInstanceOf(BusinessException.class)
@@ -191,7 +196,8 @@ class UploadStarImageServiceTest {
             record.saveStep(StarStep.ST, "ST 답변");
             record.saveStep(StarStep.A, "A 답변");
             record.complete(java.time.OffsetDateTime.now());
-            given(starRecordRepositoryPort.findById(STAR_ID)).willReturn(Optional.of(record));
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
+                    .willReturn(Optional.of(record));
 
             assertThatThrownBy(() -> service.upload(command(USER_ID)))
                     .isInstanceOf(BusinessException.class)
@@ -205,7 +211,8 @@ class UploadStarImageServiceTest {
         void should_throwLimitExceeded_when_alreadyTwoImages() {
             StarImage img1 = starImage(101L, record, (short) 0);
             StarImage img2 = starImage(102L, record, (short) 1);
-            given(starRecordRepositoryPort.findById(STAR_ID)).willReturn(Optional.of(record));
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
+                    .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of(img1, img2));
 

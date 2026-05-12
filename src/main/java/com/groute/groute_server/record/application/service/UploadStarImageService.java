@@ -38,7 +38,7 @@ public class UploadStarImageService implements UploadStarImageUseCase {
     public UploadStarImageResult upload(UploadStarImageCommand command) {
         StarRecord record =
                 starRecordRepositoryPort
-                        .findById(command.starRecordId())
+                        .findByIdWithLock(command.starRecordId())
                         .orElseThrow(() -> new BusinessException(ErrorCode.STAR_NOT_FOUND));
 
         if (!record.isOwnedBy(command.userId())) {
