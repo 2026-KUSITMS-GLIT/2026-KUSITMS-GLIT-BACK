@@ -4,6 +4,9 @@ import java.util.Map;
 
 import jakarta.persistence.*;
 
+import com.groute.groute_server.common.exception.BusinessException;
+import com.groute.groute_server.common.exception.ErrorCode;
+
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -60,4 +63,53 @@ public class Report extends BaseTimeEntity {
     /** AI 실패 시 1회 재시도 제공(RPT003). */
     @Column(name = "retry_count", nullable = false)
     private Short retryCount = 0;
+
+    // =========================================================
+    // 팩토리 메서드
+    // =========================================================
+
+    /**
+     * 리포트 생성 요청 시 호출. status는 GENERATING으로 초기화된다.
+     *
+     * @param user 요청 유저
+     * @param reportType MINI / CAREER
+     * @param starCountAt 발행 시점 누적 STAR 수
+     */
+    public static Report create(User user, ReportType reportType, int starCountAt) {
+        Report report = new Report();
+        report.user = user;
+        report.reportType = reportType;
+        report.status = ReportStatus.GENERATING;
+        report.starCountAt = starCountAt;
+        report.retryCount = 0;
+        return report;
+    }
+
+    // =========================================================
+    // 상태 전환
+    // =========================================================
+
+    /**
+     * AI 실패 후 재시도 요청 시 호출. status를 GENERATING으로 되돌리고 retryCount를 1로 올린다.
+     *
+     * <p>재시도 가능 여부는 {@link #isRetryAvailable()}로 먼저 확인해야 한다.
+     */
+    public void startRetry() {
+        if (!isRetryAvailable()) {
+            throw new BusinessException(ErrorCode.REPORT_RETRY_NOT_AVAILABLE);
+        }
+        this.status = ReportStatus.GENERATING;
+        this.retryCount = 1;
+    }
+
+    // =========================================================
+    // 도메인 규칙
+    // =========================================================
+
+    /**
+     * 재시도 가능 여부. FAILED 상태이고 아직 재시도를 1회도 하지 않은 경우에만 true.
+     */
+    public boolean isRetryAvailable() {
+        return this.status == ReportStatus.FAILED && this.retryCount < 1;
+    }
 }

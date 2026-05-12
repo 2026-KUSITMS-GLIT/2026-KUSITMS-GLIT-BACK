@@ -82,6 +82,9 @@ public enum ErrorCode {
     // Report
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT_001", "리포트를 찾을 수 없습니다."),
     REPORT_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "REPORT_002", "아직 생성 완료되지 않은 리포트입니다."),
+    REPORT_RETRY_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "REPORT_003", "재시도 가능한 상태가 아닙니다."),
+    REPORT_INVALID_STAR_COUNT(HttpStatus.BAD_REQUEST, "REPORT_004", "선택한 심화기록 수가 올바르지 않습니다."),
+    REPORT_MINI_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "REPORT_005", "미니 리포트는 1회만 생성할 수 있습니다."),
     ;
 
     private final HttpStatus httpStatus;
