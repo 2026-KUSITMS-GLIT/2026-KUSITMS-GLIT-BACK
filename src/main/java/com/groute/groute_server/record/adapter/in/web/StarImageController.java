@@ -109,10 +109,13 @@ public class StarImageController {
                 description = "미인증"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "403",
-                description = "본인 소유가 아님 / 이미 완료된 심화기록"),
+                description = "본인 소유가 아님"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "404",
-                description = "이미지를 찾을 수 없음")
+                description = "이미지를 찾을 수 없음"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "409",
+                description = "이미 완료된 심화기록")
     })
     @DeleteMapping("/{starRecordId}/images/{imageId}")
     public ApiResponse<Void> deleteImage(
