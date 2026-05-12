@@ -16,8 +16,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * 날짜별 심화기록 모달 조회 서비스.
  *
- * <p>리포트 생성 화면에서 날짜 셀 클릭 시 해당 날짜의 완료된 심화기록 목록을 반환한다.
- * 심화기록이 없는 날짜는 빈 배열을 반환한다.
+ * <p>리포트 생성 화면에서 날짜 셀 클릭 시 해당 날짜의 완료된 심화기록 목록을 반환한다. 심화기록이 없는 날짜는 빈 배열을 반환한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,7 +37,6 @@ public class SelectableRecordsService implements GetSelectableRecordsUseCase {
                                                 sr.getScrum().getContent()))
                         .toList();
 
-        return new SelectableRecordsView(
-                date.format(DateTimeFormatter.ISO_LOCAL_DATE), items);
+        return new SelectableRecordsView(date.format(DateTimeFormatter.ISO_LOCAL_DATE), items);
     }
 }
