@@ -26,11 +26,12 @@ public interface LoadReportPort {
     Optional<Report> findLatestByUserId(Long userId);
 
     /**
-     * 유저의 미니 리포트 발행 이력이 있는지 확인한다.
+     * 유저의 SUCCESS 상태인 미니 리포트 발행 이력이 있는지 확인한다.
+     *
+     * <p>GENERATING이나 FAILED 상태의 미니는 발행 완료로 보지 않는다.
      *
      * @param userId 유저 PK
-     * @return 미니 리포트 존재 여부
+     * @return SUCCESS 상태의 미니 리포트 존재 여부
      */
     boolean existsMiniReportByUserId(Long userId);
-
 }

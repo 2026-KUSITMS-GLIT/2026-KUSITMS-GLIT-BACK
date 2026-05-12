@@ -24,8 +24,9 @@ public interface ReportJpaRepository extends JpaRepository<Report, Long> {
     /** 유저의 가장 최근 성공한 리포트를 조회한다. 게이지 계산 기준점으로 사용한다. */
     Optional<Report> findTopByUserIdAndStatusOrderByCreatedAtDesc(Long userId, ReportStatus status);
 
-    /** 유저의 미니 리포트 발행 이력이 있는지 확인한다. */
-    boolean existsByUserIdAndReportType(Long userId, ReportType reportType);
+    /** 유저의 성공한 미니 리포트 발행 이력이 있는지 확인한다. */
+    boolean existsByUserIdAndReportTypeAndStatus(
+            Long userId, ReportType reportType, ReportStatus status);
 
     /** 유저의 가장 최근 리포트를 조회한다. */
     @Query(

@@ -31,9 +31,8 @@ import lombok.RequiredArgsConstructor;
 /**
  * 리포트 생성 플로우 서비스.
  *
- * <p>미니/커리어 타입을 판단하여 사전 정보를 제공하고, 유저가 선택한 심화기록을 바탕으로
- * AI 서버에 리포트 생성을 요청한다. AI 생성은 비동기로 진행되며 프론트는 상태 폴링으로
- * 완료 여부를 확인한다. 생성 실패 시 1회에 한해 재시도를 제공한다.
+ * <p>미니/커리어 타입을 판단하여 사전 정보를 제공하고, 유저가 선택한 심화기록을 바탕으로 AI 서버에 리포트 생성을 요청한다. AI 생성은 비동기로 진행되며 프론트는 상태
+ * 폴링으로 완료 여부를 확인한다. 생성 실패 시 1회에 한해 재시도를 제공한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -57,8 +56,7 @@ public class ReportService
     // =========================================================
 
     /**
-     * 미니/커리어 타입을 판단하고 달력 렌더링에 필요한 심화기록 날짜 목록과
-     * 달력 화면 진입 시 자동으로 체크될 심화기록 ID 목록을 반환한다.
+     * 미니/커리어 타입을 판단하고 달력 렌더링에 필요한 심화기록 날짜 목록과 달력 화면 진입 시 자동으로 체크될 심화기록 ID 목록을 반환한다.
      *
      * <p>미니 발행 이력이 없으면 MINI, 있으면 CAREER 타입으로 결정한다.
      */
@@ -78,7 +76,8 @@ public class ReportService
 
         List<String> starRecordDates = loadStarRecordPort.findCompletedStarDatesByUserId(userId);
 
-        return new SelectableInfoView(reportType.name(), totalStarCount, autoSelectedIds, starRecordDates);
+        return new SelectableInfoView(
+                reportType.name(), totalStarCount, autoSelectedIds, starRecordDates);
     }
 
     // =========================================================
@@ -103,8 +102,10 @@ public class ReportService
         validateStarRecordCount(command.reportType(), command.starRecordIds().size());
 
         // 3. 유저 조회
-        User user = userRepository.findById(command.userId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        User user =
+                userRepository
+                        .findById(command.userId())
+                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 4. 전체 완료 심화기록 수 (star_count_at 기록용)
         int totalStarCount = loadStarRecordPort.countCompletedByUserId(command.userId());
@@ -117,8 +118,9 @@ public class ReportService
         List<StarRecord> starRecords = loadStarRecordPort.findAllByIds(command.starRecordIds());
 
         // 7. 선택된 심화기록 날짜의 스크럼 자동 수집
-        List<Scrum> scrums = loadStarRecordPort.findScrumsByStarRecordIds(
-                command.userId(), command.starRecordIds());
+        List<Scrum> scrums =
+                loadStarRecordPort.findScrumsByStarRecordIds(
+                        command.userId(), command.starRecordIds());
 
         // 8. AI 서버 비동기 호출 (현재 stub)
         requestAiReportPort.requestReportGeneration(savedReport.getId(), starRecords, scrums);
@@ -138,8 +140,10 @@ public class ReportService
     @Override
     @Transactional(readOnly = true)
     public ReportStatusView getReportStatus(Long userId, Long reportId) {
-        Report report = loadReportPort.findById(reportId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
+        Report report =
+                loadReportPort
+                        .findById(reportId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
 
         validateOwnership(report, userId);
 
@@ -155,13 +159,16 @@ public class ReportService
     /**
      * FAILED 상태인 리포트를 GENERATING으로 되돌리고 AI 서버에 재호출한다.
      *
-     * <p>재시도는 1회만 허용되며, 조건을 만족하지 않으면 {@link com.groute.groute_server.common.exception.BusinessException}을 던진다.
+     * <p>재시도는 1회만 허용되며, 조건을 만족하지 않으면 {@link
+     * com.groute.groute_server.common.exception.BusinessException}을 던진다.
      */
     @Override
     @Transactional
     public Long retryReport(Long userId, Long reportId) {
-        Report report = loadReportPort.findById(reportId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
+        Report report =
+                loadReportPort
+                        .findById(reportId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
 
         validateOwnership(report, userId);
 

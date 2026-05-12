@@ -3,7 +3,6 @@ package com.groute.groute_server.report.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -23,6 +22,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.report.application.port.in.CreateReportCommand;
 import com.groute.groute_server.report.application.port.in.ReportStatusView;
 import com.groute.groute_server.report.application.port.in.SelectableInfoView;
@@ -33,7 +33,6 @@ import com.groute.groute_server.report.application.port.out.SaveReportPort;
 import com.groute.groute_server.report.domain.Report;
 import com.groute.groute_server.report.domain.enums.ReportStatus;
 import com.groute.groute_server.report.domain.enums.ReportType;
-import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.user.entity.User;
 import com.groute.groute_server.user.repository.UserRepository;
 
@@ -124,11 +123,14 @@ class ReportServiceTest {
             given(saveReportPort.save(any())).willReturn(saved);
 
             // when
-            Long reportId = service.createReport(new CreateReportCommand(USER_ID, ReportType.MINI, ids));
+            Long reportId =
+                    service.createReport(new CreateReportCommand(USER_ID, ReportType.MINI, ids));
 
             // then
             assertThat(reportId).isEqualTo(REPORT_ID);
-            then(requestAiReportPort).should().requestReportGeneration(anyLong(), anyList(), anyList());
+            then(requestAiReportPort)
+                    .should()
+                    .requestReportGeneration(anyLong(), anyList(), anyList());
         }
 
         @Test
@@ -139,8 +141,10 @@ class ReportServiceTest {
 
             // when & then
             assertThatThrownBy(
-                            () -> service.createReport(
-                                    new CreateReportCommand(USER_ID, ReportType.MINI, ids(10))))
+                            () ->
+                                    service.createReport(
+                                            new CreateReportCommand(
+                                                    USER_ID, ReportType.MINI, ids(10))))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.REPORT_MINI_ALREADY_EXISTS);
@@ -154,8 +158,10 @@ class ReportServiceTest {
 
             // when & then
             assertThatThrownBy(
-                            () -> service.createReport(
-                                    new CreateReportCommand(USER_ID, ReportType.MINI, ids(9))))
+                            () ->
+                                    service.createReport(
+                                            new CreateReportCommand(
+                                                    USER_ID, ReportType.MINI, ids(9))))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.REPORT_INVALID_STAR_COUNT);
@@ -166,8 +172,10 @@ class ReportServiceTest {
         void should_throwInvalidStarCount_when_careerIdsLessThanTwenty() {
             // when & then
             assertThatThrownBy(
-                            () -> service.createReport(
-                                    new CreateReportCommand(USER_ID, ReportType.CAREER, ids(19))))
+                            () ->
+                                    service.createReport(
+                                            new CreateReportCommand(
+                                                    USER_ID, ReportType.CAREER, ids(19))))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.REPORT_INVALID_STAR_COUNT);
@@ -216,7 +224,8 @@ class ReportServiceTest {
         @DisplayName("타 유저의 리포트 조회 시 FORBIDDEN을 던진다")
         void should_throwForbidden_when_otherUserReport() {
             // given
-            Report report = report(REPORT_ID, OTHER_USER_ID, ReportType.MINI, ReportStatus.GENERATING, 0);
+            Report report =
+                    report(REPORT_ID, OTHER_USER_ID, ReportType.MINI, ReportStatus.GENERATING, 0);
             given(loadReportPort.findById(REPORT_ID)).willReturn(Optional.of(report));
 
             // when & then
@@ -261,7 +270,9 @@ class ReportServiceTest {
 
             // then
             assertThat(reportId).isEqualTo(REPORT_ID);
-            then(requestAiReportPort).should().requestReportGeneration(anyLong(), anyList(), anyList());
+            then(requestAiReportPort)
+                    .should()
+                    .requestReportGeneration(anyLong(), anyList(), anyList());
         }
 
         @Test
@@ -308,17 +319,16 @@ class ReportServiceTest {
 
     private static List<StarRecord> starRecords(int count) {
         return java.util.stream.IntStream.range(0, count)
-                .mapToObj(i -> {
-                    StarRecord sr = new StarRecord();
-                    ReflectionTestUtils.setField(sr, "id", (long) (i + 1));
-                    return sr;
-                })
+                .mapToObj(
+                        i -> {
+                            StarRecord sr = new StarRecord();
+                            ReflectionTestUtils.setField(sr, "id", (long) (i + 1));
+                            return sr;
+                        })
                 .toList();
     }
 
     private static List<Long> ids(int count) {
-        return java.util.stream.LongStream.rangeClosed(1, count)
-                .boxed()
-                .toList();
+        return java.util.stream.LongStream.rangeClosed(1, count).boxed().toList();
     }
 }
