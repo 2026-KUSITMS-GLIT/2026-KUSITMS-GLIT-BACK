@@ -28,6 +28,7 @@ public class NoOpPresignedUrlAdapter implements PresignedUrlGeneratorPort {
 
     @Override
     public void deleteObject(String imageKey) {
-        log.warn("[S3 미설정] 오브젝트 삭제 스킵 — imageKey={}", imageKey);
+        log.warn("[S3 미설정] 오브젝트 삭제 불가 — AWS_S3_BUCKET 환경변수를 확인하세요.");
+        throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
     }
 }
