@@ -24,13 +24,16 @@ public class DeleteStarImageService implements DeleteStarImageUseCase {
     private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
 
     @Override
-    public void delete(Long userId, Long imageId) {
+    public void delete(Long userId, Long starRecordId, Long imageId) {
         StarImage image =
                 starImageQueryPort
                         .findById(imageId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.STAR_IMAGE_NOT_FOUND));
 
         StarRecord starRecord = image.getStarRecord();
+        if (!starRecord.getId().equals(starRecordId)) {
+            throw new BusinessException(ErrorCode.STAR_IMAGE_NOT_FOUND);
+        }
         if (!starRecord.isOwnedBy(userId)) {
             throw new BusinessException(ErrorCode.STAR_FORBIDDEN);
         }

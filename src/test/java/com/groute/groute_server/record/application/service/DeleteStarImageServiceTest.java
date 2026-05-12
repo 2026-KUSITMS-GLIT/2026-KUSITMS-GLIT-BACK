@@ -37,6 +37,8 @@ class DeleteStarImageServiceTest {
 
     private static final Long USER_ID = 1L;
     private static final Long OTHER_USER_ID = 99L;
+    private static final Long STAR_RECORD_ID = 10L;
+    private static final Long OTHER_STAR_RECORD_ID = 999L;
     private static final Long IMAGE_ID = 200L;
     private static final String IMAGE_KEY = "star-images/1/10/uuid.jpg";
     private static final String IMAGE_URL = "https://cdn.example.com/image.jpg";
@@ -62,7 +64,7 @@ class DeleteStarImageServiceTest {
         ReflectionTestUtils.setField(scrum, "id", 50L);
 
         record = StarRecord.create(owner, scrum);
-        ReflectionTestUtils.setField(record, "id", 10L);
+        ReflectionTestUtils.setField(record, "id", STAR_RECORD_ID);
     }
 
     @Nested
@@ -77,7 +79,8 @@ class DeleteStarImageServiceTest {
             given(starImageQueryPort.findById(IMAGE_ID)).willReturn(Optional.of(image));
 
             // when
-            assertThatCode(() -> service.delete(USER_ID, IMAGE_ID)).doesNotThrowAnyException();
+            assertThatCode(() -> service.delete(USER_ID, STAR_RECORD_ID, IMAGE_ID))
+                    .doesNotThrowAnyException();
 
             // then
             verify(presignedUrlGeneratorPort).deleteObject(IMAGE_KEY);
@@ -90,11 +93,25 @@ class DeleteStarImageServiceTest {
     class Errors {
 
         @Test
+        @DisplayName("URL 경로의 starRecordId와 이미지가 속한 StarRecord가 다르면 STAR_IMAGE_NOT_FOUND를 던진다")
+        void should_throwImageNotFound_when_starRecordIdMismatch() {
+            StarImage image = starImage(IMAGE_ID, record, (short) 0);
+            given(starImageQueryPort.findById(IMAGE_ID)).willReturn(Optional.of(image));
+
+            assertThatThrownBy(() -> service.delete(USER_ID, OTHER_STAR_RECORD_ID, IMAGE_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.STAR_IMAGE_NOT_FOUND);
+            verify(presignedUrlGeneratorPort, never()).deleteObject(IMAGE_KEY);
+            verify(starImageWritePort, never()).deleteById(IMAGE_ID);
+        }
+
+        @Test
         @DisplayName("존재하지 않는 imageId면 STAR_IMAGE_NOT_FOUND를 던진다")
         void should_throwImageNotFound_when_notExist() {
             given(starImageQueryPort.findById(IMAGE_ID)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.delete(USER_ID, IMAGE_ID))
+            assertThatThrownBy(() -> service.delete(USER_ID, STAR_RECORD_ID, IMAGE_ID))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_IMAGE_NOT_FOUND);
@@ -108,7 +125,7 @@ class DeleteStarImageServiceTest {
             StarImage image = starImage(IMAGE_ID, record, (short) 0);
             given(starImageQueryPort.findById(IMAGE_ID)).willReturn(Optional.of(image));
 
-            assertThatThrownBy(() -> service.delete(OTHER_USER_ID, IMAGE_ID))
+            assertThatThrownBy(() -> service.delete(OTHER_USER_ID, STAR_RECORD_ID, IMAGE_ID))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_FORBIDDEN);
@@ -125,7 +142,7 @@ class DeleteStarImageServiceTest {
             StarImage image = starImage(IMAGE_ID, record, (short) 0);
             given(starImageQueryPort.findById(IMAGE_ID)).willReturn(Optional.of(image));
 
-            assertThatThrownBy(() -> service.delete(USER_ID, IMAGE_ID))
+            assertThatThrownBy(() -> service.delete(USER_ID, STAR_RECORD_ID, IMAGE_ID))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_WRITE_LOCKED);
