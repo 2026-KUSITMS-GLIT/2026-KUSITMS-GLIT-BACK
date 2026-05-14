@@ -67,4 +67,15 @@ public interface ScrumJpaRepository extends JpaRepository<Scrum, Long> {
                     + "AND s.isDeleted = false")
     List<Long> findDistinctUserIdsByScrumDate(
             @Param("userIds") Collection<Long> userIds, @Param("date") LocalDate date);
+
+    /**
+     * 해당 사용자가 소유한 모든 Scrum 물리 삭제(MYP-005 hard delete 배치).
+     *
+     * <p>자식(StarRecord) 정리 후 호출되어야 FK 위반을 피한다. soft-delete 여부와 무관하게 모든 row 삭제. 복구 불가.
+     *
+     * @return 삭제된 row 수 (로깅용)
+     */
+    @Modifying
+    @Query("DELETE FROM Scrum s WHERE s.user.id = :userId")
+    int hardDeleteAllByUserId(@Param("userId") Long userId);
 }

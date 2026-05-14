@@ -30,4 +30,15 @@ public interface ScrumTitleJpaRepository extends JpaRepository<ScrumTitle, Long>
             "UPDATE ScrumTitle t SET t.scrumCount = t.scrumCount + :increment "
                     + "WHERE t.id = :id AND t.isDeleted = false")
     int applyScrumCountIncrement(@Param("id") Long id, @Param("increment") int increment);
+
+    /**
+     * 해당 사용자가 소유한 모든 ScrumTitle 물리 삭제(MYP-005 hard delete 배치).
+     *
+     * <p>자식(Scrum) 정리 후, 부모(Project) 정리 전에 호출되어야 FK 위반을 피한다. soft-delete 여부와 무관하게 모든 row 삭제. 복구 불가.
+     *
+     * @return 삭제된 row 수 (로깅용)
+     */
+    @Modifying
+    @Query("DELETE FROM ScrumTitle t WHERE t.user.id = :userId")
+    int hardDeleteAllByUserId(@Param("userId") Long userId);
 }
