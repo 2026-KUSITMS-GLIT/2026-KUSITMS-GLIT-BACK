@@ -1,5 +1,6 @@
 package com.groute.groute_server.report.application.port.in.dto;
 
+import java.time.ZoneId;
 import java.util.List;
 
 import com.groute.groute_server.report.domain.Report;
@@ -27,7 +28,11 @@ public record ReportListView(List<ReportItemView> reports) {
             String competencyStatSummary) {
 
         public static ReportItemView from(Report report) {
-            String createdAt = report.getCreatedAt().toLocalDate().toString();
+            String createdAt =
+                    report.getCreatedAt()
+                            .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
+                            .toLocalDate()
+                            .toString();
 
             String previewText = null;
             String competencyStatSummary = null;
