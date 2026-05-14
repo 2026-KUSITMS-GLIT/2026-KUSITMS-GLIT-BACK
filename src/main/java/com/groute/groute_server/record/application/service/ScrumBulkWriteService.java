@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumResult;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumUseCase;
@@ -52,6 +53,7 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
     private final StarImageWritePort starImageWritePort;
     private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
     private final UserReferencePort userReferencePort;
+    private final AfterCommitExecutor afterCommitExecutor;
 
     @Override
     public BulkWriteScrumResult bulkWrite(BulkWriteScrumCommand command) {
@@ -147,7 +149,8 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
 
         List<StarImage> images = starImageQueryPort.findAllByScrumIdIn(scrumIds);
         starImageWritePort.deleteAll(images);
-        images.forEach(img -> presignedUrlGeneratorPort.deleteObject(img.getImageKey()));
+        List<String> keys = images.stream().map(StarImage::getImageKey).toList();
+        afterCommitExecutor.execute(() -> keys.forEach(presignedUrlGeneratorPort::deleteObject));
 
         starRecordRepositoryPort.softDeleteByScrumIds(scrumIds);
         scrumWritePort.softDeleteAllByIdIn(scrumIds);

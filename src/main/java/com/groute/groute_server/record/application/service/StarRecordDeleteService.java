@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarCommand;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarUseCase;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
@@ -35,6 +36,7 @@ public class StarRecordDeleteService implements DeleteStarUseCase {
     private final StarImageWritePort starImageWritePort;
     private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
     private final ScrumWritePort scrumWritePort;
+    private final AfterCommitExecutor afterCommitExecutor;
 
     /**
      * 심화기록 단독 삭제.
@@ -59,7 +61,8 @@ public class StarRecordDeleteService implements DeleteStarUseCase {
         List<StarImage> images =
                 starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(command.starRecordId());
         starImageWritePort.deleteAll(images);
-        images.forEach(img -> presignedUrlGeneratorPort.deleteObject(img.getImageKey()));
+        List<String> keys = images.stream().map(StarImage::getImageKey).toList();
+        afterCommitExecutor.execute(() -> keys.forEach(presignedUrlGeneratorPort::deleteObject));
 
         // 4. STAR soft-delete
         starRecordRepositoryPort.softDeleteById(command.starRecordId());

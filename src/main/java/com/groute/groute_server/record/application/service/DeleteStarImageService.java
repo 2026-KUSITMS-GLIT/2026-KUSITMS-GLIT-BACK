@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarImageUseCase;
 import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
 import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
@@ -22,6 +23,7 @@ public class DeleteStarImageService implements DeleteStarImageUseCase {
     private final StarImageQueryPort starImageQueryPort;
     private final StarImageWritePort starImageWritePort;
     private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
+    private final AfterCommitExecutor afterCommitExecutor;
 
     @Override
     public void delete(Long userId, Long starRecordId, Long imageId) {
@@ -42,6 +44,7 @@ public class DeleteStarImageService implements DeleteStarImageUseCase {
         }
 
         starImageWritePort.deleteById(imageId);
-        presignedUrlGeneratorPort.deleteObject(image.getImageKey());
+        String key = image.getImageKey();
+        afterCommitExecutor.execute(() -> presignedUrlGeneratorPort.deleteObject(key));
     }
 }

@@ -17,12 +17,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarCommand;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
@@ -45,6 +47,7 @@ class StarRecordDeleteServiceTest {
     @Mock StarImageWritePort starImageWritePort;
     @Mock PresignedUrlGeneratorPort presignedUrlGeneratorPort;
     @Mock ScrumWritePort scrumWritePort;
+    @Spy AfterCommitExecutor afterCommitExecutor;
 
     @InjectMocks StarRecordDeleteService service;
 

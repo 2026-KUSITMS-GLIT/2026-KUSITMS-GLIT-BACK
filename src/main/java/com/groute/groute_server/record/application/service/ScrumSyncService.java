@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumUseCase;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
@@ -54,6 +55,7 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
     private final StarImageWritePort starImageWritePort;
     private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
     private final UserReferencePort userReferencePort;
+    private final AfterCommitExecutor afterCommitExecutor;
 
     /**
      * 일자별 스크럼을 요청 payload 상태로 동기화.
@@ -158,7 +160,9 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
             Set<Long> deleteIds = toDelete.stream().map(Scrum::getId).collect(Collectors.toSet());
             List<StarImage> images = starImageQueryPort.findAllByScrumIdIn(deleteIds);
             starImageWritePort.deleteAll(images);
-            images.forEach(img -> presignedUrlGeneratorPort.deleteObject(img.getImageKey()));
+            List<String> keys = images.stream().map(StarImage::getImageKey).toList();
+            afterCommitExecutor.execute(
+                    () -> keys.forEach(presignedUrlGeneratorPort::deleteObject));
             scrumWritePort.softDeleteAllByIdIn(deleteIds);
             starRecordCascadePort.cascadeDeleteByScrumIdIn(deleteIds);
         }
