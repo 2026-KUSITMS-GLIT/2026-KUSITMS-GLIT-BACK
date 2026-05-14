@@ -49,6 +49,7 @@ class ReportServiceTest {
     @Mock LoadStarRecordPort loadStarRecordPort;
     @Mock RequestAiReportPort requestAiReportPort;
     @Mock UserRepository userRepository;
+    @Mock ReportTransactionalService reportTransactionalService;
 
     @InjectMocks ReportService service;
 
@@ -115,13 +116,10 @@ class ReportServiceTest {
         void should_returnReportId_when_miniCreatedSuccessfully() {
             // given
             List<Long> ids = ids(10);
-            given(loadReportPort.existsMiniReportByUserId(USER_ID)).willReturn(false);
-            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user(USER_ID)));
-            given(loadStarRecordPort.countCompletedByUserId(USER_ID)).willReturn(10);
-            given(loadStarRecordPort.findAllByIds(USER_ID, ids)).willReturn(starRecords(10));
-            given(loadStarRecordPort.findScrumsByStarRecordIds(USER_ID, ids)).willReturn(List.of());
-            Report saved = report(REPORT_ID, USER_ID, ReportType.MINI, ReportStatus.GENERATING, 0);
-            given(saveReportPort.save(any())).willReturn(saved);
+            given(reportTransactionalService.saveReportTx(any()))
+                    .willReturn(
+                            new ReportTransactionalService.CreateReportResult(
+                                    REPORT_ID, starRecords(10), List.of()));
 
             // when
             Long reportId =
@@ -138,7 +136,8 @@ class ReportServiceTest {
         @DisplayName("MINI 중복 요청 시 REPORT_MINI_ALREADY_EXISTS를 던진다")
         void should_throwMiniAlreadyExists_when_miniAlreadyCreated() {
             // given
-            given(loadReportPort.existsMiniReportByUserId(USER_ID)).willReturn(true);
+            given(reportTransactionalService.saveReportTx(any()))
+                    .willThrow(new BusinessException(ErrorCode.REPORT_MINI_ALREADY_EXISTS));
 
             // when & then
             assertThatThrownBy(
@@ -155,7 +154,8 @@ class ReportServiceTest {
         @DisplayName("MINI starRecordIds가 10개가 아니면 REPORT_INVALID_STAR_COUNT를 던진다")
         void should_throwInvalidStarCount_when_miniIdsNotTen() {
             // given
-            given(loadReportPort.existsMiniReportByUserId(USER_ID)).willReturn(false);
+            given(reportTransactionalService.saveReportTx(any()))
+                    .willThrow(new BusinessException(ErrorCode.REPORT_INVALID_STAR_COUNT));
 
             // when & then
             assertThatThrownBy(
@@ -171,6 +171,10 @@ class ReportServiceTest {
         @Test
         @DisplayName("CAREER starRecordIds가 20개 미만이면 REPORT_INVALID_STAR_COUNT를 던진다")
         void should_throwInvalidStarCount_when_careerIdsLessThanTwenty() {
+            // given
+            given(reportTransactionalService.saveReportTx(any()))
+                    .willThrow(new BusinessException(ErrorCode.REPORT_INVALID_STAR_COUNT));
+
             // when & then
             assertThatThrownBy(
                             () ->
@@ -261,10 +265,7 @@ class ReportServiceTest {
         @Test
         @DisplayName("FAILED 상태이고 재시도 가능하면 GENERATING으로 전환하고 reportId를 반환한다")
         void should_returnReportId_when_retrySuccessfully() {
-            // given
-            Report report = report(REPORT_ID, USER_ID, ReportType.MINI, ReportStatus.FAILED, 0);
-            given(loadReportPort.findById(REPORT_ID)).willReturn(Optional.of(report));
-            given(saveReportPort.save(any())).willReturn(report);
+            // given — retryReportTx는 void라 별도 stubbing 불필요
 
             // when
             Long reportId = service.retryReport(USER_ID, REPORT_ID);
@@ -279,9 +280,11 @@ class ReportServiceTest {
         @Test
         @DisplayName("재시도 불가 상태이면 REPORT_RETRY_NOT_AVAILABLE을 던진다")
         void should_throwRetryNotAvailable_when_alreadyRetried() {
-            // given — retryCount=1 이면 재시도 불가
-            Report report = report(REPORT_ID, USER_ID, ReportType.MINI, ReportStatus.FAILED, 1);
-            given(loadReportPort.findById(REPORT_ID)).willReturn(Optional.of(report));
+            // given
+            org.mockito.BDDMockito.willThrow(
+                            new BusinessException(ErrorCode.REPORT_RETRY_NOT_AVAILABLE))
+                    .given(reportTransactionalService)
+                    .retryReportTx(USER_ID, REPORT_ID);
 
             // when & then
             assertThatThrownBy(() -> service.retryReport(USER_ID, REPORT_ID))
