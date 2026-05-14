@@ -13,11 +13,11 @@ import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.report.application.port.in.CreateReportCommand;
 import com.groute.groute_server.report.application.port.out.LoadReportPort;
 import com.groute.groute_server.report.application.port.out.LoadStarRecordPort;
+import com.groute.groute_server.report.application.port.out.LoadUserPort;
 import com.groute.groute_server.report.application.port.out.SaveReportPort;
 import com.groute.groute_server.report.domain.Report;
 import com.groute.groute_server.report.domain.enums.ReportType;
 import com.groute.groute_server.user.entity.User;
-import com.groute.groute_server.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,7 +37,7 @@ public class ReportTransactionalService {
     private final LoadReportPort loadReportPort;
     private final SaveReportPort saveReportPort;
     private final LoadStarRecordPort loadStarRecordPort;
-    private final UserRepository userRepository;
+    private final LoadUserPort loadUserPort;
 
     /**
      * 리포트 생성 요청의 DB 작업을 수행한다.
@@ -56,10 +56,7 @@ public class ReportTransactionalService {
         validateStarRecordCount(command.reportType(), command.starRecordIds().size());
 
         // 3. 유저 조회
-        User user =
-                userRepository
-                        .findById(command.userId())
-                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        User user = loadUserPort.findUserById(command.userId());
 
         // 4. 전체 완료 심화기록 수 (star_count_at 기록용)
         int totalStarCount = loadStarRecordPort.countCompletedByUserId(command.userId());
