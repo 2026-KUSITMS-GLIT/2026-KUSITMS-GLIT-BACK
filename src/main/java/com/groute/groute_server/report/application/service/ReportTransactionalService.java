@@ -72,6 +72,11 @@ public class ReportTransactionalService {
         List<StarRecord> starRecords =
                 loadStarRecordPort.findAllByIds(command.userId(), command.starRecordIds());
 
+        // 6-1. 실제 로드된 개수 검증 (존재하지 않거나 타인 소유 ID 혼입 방지)
+        if (starRecords.size() != command.starRecordIds().size()) {
+            throw new BusinessException(ErrorCode.REPORT_INVALID_STAR_COUNT);
+        }
+
         // 7. 선택된 심화기록 날짜의 스크럼 자동 수집
         List<Scrum> scrums =
                 loadStarRecordPort.findScrumsByStarRecordIds(
