@@ -21,11 +21,8 @@ import com.groute.groute_server.report.application.port.in.SelectableInfoView;
 import com.groute.groute_server.report.application.port.out.LoadReportPort;
 import com.groute.groute_server.report.application.port.out.LoadStarRecordPort;
 import com.groute.groute_server.report.application.port.out.RequestAiReportPort;
-import com.groute.groute_server.report.application.port.out.SaveReportPort;
 import com.groute.groute_server.report.domain.Report;
 import com.groute.groute_server.report.domain.enums.ReportType;
-import com.groute.groute_server.user.entity.User;
-import com.groute.groute_server.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +31,8 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>미니/커리어 타입을 판단하여 사전 정보를 제공하고, 유저가 선택한 심화기록을 바탕으로 AI 서버에 리포트 생성을 요청한다. AI 생성은 비동기로 진행되며 프론트는 상태
  * 폴링으로 완료 여부를 확인한다. 생성 실패 시 1회에 한해 재시도를 제공한다.
+ *
+ * <p>DB 작업은 {@link ReportTransactionalService}에 위임하여 트랜잭션 커밋 후 AI 호출이 실행되도록 분리한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -47,10 +46,9 @@ public class ReportService
     private static final int CAREER_LIMIT = 20;
 
     private final LoadReportPort loadReportPort;
-    private final SaveReportPort saveReportPort;
     private final LoadStarRecordPort loadStarRecordPort;
     private final RequestAiReportPort requestAiReportPort;
-    private final UserRepository userRepository;
+    private final ReportTransactionalService reportTransactionalService;
 
     // =========================================================
     // 사전 정보 조회
@@ -91,46 +89,19 @@ public class ReportService
     /**
      * 유저가 선택한 심화기록을 검증하고 리포트 row를 생성한 뒤 AI 서버에 생성을 요청한다.
      *
-     * <p>MINI 중복 요청 및 심화기록 개수 검증 후, 선택된 심화기록 날짜의 스크럼을 자동 수집하여 AI 인풋을 구성한다.
+     * <p>DB 저장은 {@link ReportTransactionalService#saveReportTx}에 위임하여 트랜잭션 커밋 후 AI 호출이 실행된다.
      */
     @Override
-    @Transactional
     public Long createReport(CreateReportCommand command) {
-        // 1. MINI 요청인데 미니 이력이 이미 있으면 400
-        if (command.reportType() == ReportType.MINI
-                && loadReportPort.existsMiniReportByUserId(command.userId())) {
-            throw new BusinessException(ErrorCode.REPORT_MINI_ALREADY_EXISTS);
-        }
+        // 1~7. 검증 + DB 저장 (트랜잭션 커밋까지 완료)
+        ReportTransactionalService.CreateReportResult result =
+                reportTransactionalService.saveReportTx(command);
 
-        // 2. starRecordIds 개수 검증
-        validateStarRecordCount(command.reportType(), command.starRecordIds().size());
+        // 8. AI 서버 비동기 호출 (현재 stub) — 트랜잭션 밖에서 실행
+        requestAiReportPort.requestReportGeneration(
+                result.reportId(), result.starRecords(), result.scrums());
 
-        // 3. 유저 조회
-        User user =
-                userRepository
-                        .findById(command.userId())
-                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        // 4. 전체 완료 심화기록 수 (star_count_at 기록용)
-        int totalStarCount = loadStarRecordPort.countCompletedByUserId(command.userId());
-
-        // 5. reports row INSERT
-        Report report = Report.create(user, command.reportType(), totalStarCount);
-        Report savedReport = saveReportPort.save(report);
-
-        // 6. 선택된 심화기록 로드 (userId로 소유권 검증)
-        List<StarRecord> starRecords =
-                loadStarRecordPort.findAllByIds(command.userId(), command.starRecordIds());
-
-        // 7. 선택된 심화기록 날짜의 스크럼 자동 수집
-        List<Scrum> scrums =
-                loadStarRecordPort.findScrumsByStarRecordIds(
-                        command.userId(), command.starRecordIds());
-
-        // 8. AI 서버 비동기 호출 (현재 stub)
-        requestAiReportPort.requestReportGeneration(savedReport.getId(), starRecords, scrums);
-
-        return savedReport.getId();
+        return result.reportId();
     }
 
     // =========================================================
@@ -164,41 +135,22 @@ public class ReportService
     /**
      * FAILED 상태인 리포트를 GENERATING으로 되돌리고 AI 서버에 재호출한다.
      *
-     * <p>재시도는 1회만 허용되며, 조건을 만족하지 않으면 {@link
-     * com.groute.groute_server.common.exception.BusinessException}을 던진다.
+     * <p>DB 상태 변경은 {@link ReportTransactionalService#retryReportTx}에 위임하여 트랜잭션 커밋 후 AI 호출이 실행된다.
      */
     @Override
-    @Transactional
     public Long retryReport(Long userId, Long reportId) {
-        Report report =
-                loadReportPort
-                        .findById(reportId)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
+        // DB 상태 변경 (트랜잭션 커밋까지 완료)
+        reportTransactionalService.retryReportTx(userId, reportId);
 
-        validateOwnership(report, userId);
+        // AI 재호출 (stub) — 트랜잭션 밖에서 실행
+        requestAiReportPort.requestReportGeneration(reportId, List.of(), List.of());
 
-        // startRetry() 내부에서 isRetryAvailable() 검증 후 예외 처리
-        report.startRetry();
-        saveReportPort.save(report);
-
-        // AI 재호출 (stub) — 원본 starRecords/scrums 재조회 없이 reportId만 넘김
-        requestAiReportPort.requestReportGeneration(report.getId(), List.of(), List.of());
-
-        return report.getId();
+        return reportId;
     }
 
     // =========================================================
     // private
     // =========================================================
-
-    private void validateStarRecordCount(ReportType reportType, int size) {
-        if (reportType == ReportType.MINI && size != MINI_LIMIT) {
-            throw new BusinessException(ErrorCode.REPORT_INVALID_STAR_COUNT);
-        }
-        if (reportType == ReportType.CAREER && size < CAREER_LIMIT) {
-            throw new BusinessException(ErrorCode.REPORT_INVALID_STAR_COUNT);
-        }
-    }
 
     private void validateOwnership(Report report, Long userId) {
         if (!Objects.equals(report.getUser().getId(), userId)) {
