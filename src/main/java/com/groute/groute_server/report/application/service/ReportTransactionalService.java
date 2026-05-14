@@ -24,8 +24,8 @@ import lombok.RequiredArgsConstructor;
 /**
  * 리포트 DB 작업 전담 서비스.
  *
- * <p>AI 호출과 트랜잭션을 분리하기 위해 {@link ReportService}에서 분리된 클래스.
- * 트랜잭션 커밋 후 AI 호출이 실행되도록, DB 저장 로직만 여기에 위치한다.
+ * <p>AI 호출과 트랜잭션을 분리하기 위해 {@link ReportService}에서 분리된 클래스. 트랜잭션 커밋 후 AI 호출이 실행되도록, DB 저장 로직만 여기에
+ * 위치한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,8 +42,7 @@ public class ReportTransactionalService {
     /**
      * 리포트 생성 요청의 DB 작업을 수행한다.
      *
-     * <p>검증 후 reports row를 INSERT하고, AI 호출에 필요한 데이터를 반환한다.
-     * 메서드 리턴 시점에 트랜잭션이 커밋된다.
+     * <p>검증 후 reports row를 INSERT하고, AI 호출에 필요한 데이터를 반환한다. 메서드 리턴 시점에 트랜잭션이 커밋된다.
      */
     @Transactional
     public CreateReportResult saveReportTx(CreateReportCommand command) {
@@ -84,8 +83,7 @@ public class ReportTransactionalService {
     /**
      * 리포트 재시도의 DB 상태 변경을 수행한다.
      *
-     * <p>소유권 및 재시도 가능 여부 검증 후 GENERATING으로 상태를 전환한다.
-     * 메서드 리턴 시점에 트랜잭션이 커밋된다.
+     * <p>소유권 및 재시도 가능 여부 검증 후 GENERATING으로 상태를 전환한다. 메서드 리턴 시점에 트랜잭션이 커밋된다.
      */
     @Transactional
     public void retryReportTx(Long userId, Long reportId) {
