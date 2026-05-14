@@ -1,5 +1,6 @@
 package com.groute.groute_server.report.application.port.in.dto;
 
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Map;
 
@@ -15,7 +16,11 @@ public record ReportDetailView(
         Long reportId, ReportType reportType, String createdAt, Map<String, Object> content) {
 
     public static ReportDetailView from(Report report) {
-        String createdAt = report.getCreatedAt().toLocalDate().toString();
+        String createdAt =
+                report.getCreatedAt()
+                        .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
+                        .toLocalDate()
+                        .toString();
         Map<String, Object> content =
                 report.getContentJson() != null
                         ? Collections.unmodifiableMap(report.getContentJson())
