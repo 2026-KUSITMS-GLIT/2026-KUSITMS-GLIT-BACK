@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import jakarta.validation.Valid;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +15,7 @@ import com.groute.groute_server.common.response.ApiResponse;
 import com.groute.groute_server.common.util.DateTimeFormatters;
 import com.groute.groute_server.user.config.UserProperties;
 import com.groute.groute_server.user.dto.OnboardCompleteRequest;
+import com.groute.groute_server.user.dto.OnboardingStatusResponse;
 import com.groute.groute_server.user.dto.ProfileResponse;
 import com.groute.groute_server.user.entity.User;
 import com.groute.groute_server.user.service.UserService;
@@ -32,6 +34,17 @@ public class OnboardingController {
 
     private final UserService userService;
     private final UserProperties userProperties;
+
+    @Operation(summary = "온보딩 완료 여부 조회", description = "로그인한 유저의 온보딩 완료 여부를 반환한다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "조회 성공")
+    @GetMapping("/status")
+    public ApiResponse<OnboardingStatusResponse> getOnboardingStatus(@CurrentUser Long userId) {
+        return ApiResponse.ok(
+                "온보딩 상태를 조회했습니다.",
+                new OnboardingStatusResponse(userService.isOnboardingCompleted(userId)));
+    }
 
     @Operation(
             summary = "온보딩 완료",

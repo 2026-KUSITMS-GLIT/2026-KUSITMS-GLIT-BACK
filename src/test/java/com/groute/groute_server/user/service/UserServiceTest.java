@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.auth.repository.RefreshTokenRepository;
 import com.groute.groute_server.common.exception.BusinessException;
@@ -46,6 +47,38 @@ class UserServiceTest {
     @Mock private Clock clock;
 
     @InjectMocks private UserService userService;
+
+    @Nested
+    @DisplayName("온보딩 완료 여부 조회")
+    class IsOnboardingCompleted {
+
+        @Test
+        @DisplayName("닉네임이 있으면 true")
+        void returnsTrue_whenNicknameSet() {
+            User user = User.createForSocialLogin();
+            ReflectionTestUtils.setField(user, "nickname", "겨레");
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+
+            assertThat(userService.isOnboardingCompleted(USER_ID)).isTrue();
+        }
+
+        @Test
+        @DisplayName("닉네임이 null이면 false")
+        void returnsFalse_whenNicknameNull() {
+            given(userRepository.findById(USER_ID))
+                    .willReturn(Optional.of(User.createForSocialLogin()));
+
+            assertThat(userService.isOnboardingCompleted(USER_ID)).isFalse();
+        }
+
+        @Test
+        @DisplayName("유저가 없으면 false")
+        void returnsFalse_whenUserMissing() {
+            given(userRepository.findById(USER_ID)).willReturn(Optional.empty());
+
+            assertThat(userService.isOnboardingCompleted(USER_ID)).isFalse();
+        }
+    }
 
     @Nested
     @DisplayName("내 프로필 조회")
