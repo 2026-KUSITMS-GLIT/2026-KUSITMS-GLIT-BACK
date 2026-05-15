@@ -21,6 +21,7 @@ public class UserWebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/**")
                 .excludePathPatterns(
                         "/api/onboarding/complete",
+                        "/api/onboarding/status",
                         "/api/auth/**",
                         "/oauth2/**",
                         "/login/oauth2/code/**");
