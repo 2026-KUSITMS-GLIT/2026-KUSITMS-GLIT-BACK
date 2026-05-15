@@ -15,20 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
-import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
-import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumUseCase;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
-import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
-import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordCascadePort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
-import com.groute.groute_server.record.domain.StarImage;
 import com.groute.groute_server.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
@@ -51,11 +46,8 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
     private final ScrumQueryPort scrumQueryPort;
     private final ScrumWritePort scrumWritePort;
     private final StarRecordCascadePort starRecordCascadePort;
-    private final StarImageQueryPort starImageQueryPort;
-    private final StarImageWritePort starImageWritePort;
-    private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
+    private final StarImageCascadeCleaner starImageCascadeCleaner;
     private final UserReferencePort userReferencePort;
-    private final AfterCommitExecutor afterCommitExecutor;
 
     /**
      * 일자별 스크럼을 요청 payload 상태로 동기화.
@@ -158,11 +150,7 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
         }
         if (!toDelete.isEmpty()) {
             Set<Long> deleteIds = toDelete.stream().map(Scrum::getId).collect(Collectors.toSet());
-            List<StarImage> images = starImageQueryPort.findAllByScrumIdIn(deleteIds);
-            starImageWritePort.deleteAll(images);
-            List<String> keys = images.stream().map(StarImage::getImageKey).toList();
-            afterCommitExecutor.execute(
-                    () -> keys.forEach(presignedUrlGeneratorPort::deleteObject));
+            starImageCascadeCleaner.cleanupByScrumIds(deleteIds);
             scrumWritePort.softDeleteAllByIdIn(deleteIds);
             starRecordCascadePort.cascadeDeleteByScrumIdIn(deleteIds);
         }

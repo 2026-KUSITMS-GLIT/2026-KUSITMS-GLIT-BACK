@@ -20,22 +20,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
-import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
-import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumResult;
 import com.groute.groute_server.record.application.port.out.ProjectPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
-import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
-import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
 import com.groute.groute_server.record.domain.Project;
@@ -55,11 +50,8 @@ class ScrumBulkWriteServiceTest {
     @Mock ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     @Mock ScrumWritePort scrumWritePort;
     @Mock StarRecordRepositoryPort starRecordRepositoryPort;
-    @Mock StarImageQueryPort starImageQueryPort;
-    @Mock StarImageWritePort starImageWritePort;
-    @Mock PresignedUrlGeneratorPort presignedUrlGeneratorPort;
+    @Mock StarImageCascadeCleaner starImageCascadeCleaner;
     @Mock UserReferencePort userReferencePort;
-    @Spy AfterCommitExecutor afterCommitExecutor;
 
     @InjectMocks ScrumBulkWriteService service;
 

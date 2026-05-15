@@ -10,8 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
-import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
-import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumResult;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumUseCase;
@@ -19,14 +17,11 @@ import com.groute.groute_server.record.application.port.out.ProjectPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
-import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
-import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
 import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
-import com.groute.groute_server.record.domain.StarImage;
 import com.groute.groute_server.record.domain.enums.ScrumTitleStatus;
 import com.groute.groute_server.user.entity.User;
 
@@ -49,11 +44,8 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
     private final ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     private final ScrumWritePort scrumWritePort;
     private final StarRecordRepositoryPort starRecordRepositoryPort;
-    private final StarImageQueryPort starImageQueryPort;
-    private final StarImageWritePort starImageWritePort;
-    private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
+    private final StarImageCascadeCleaner starImageCascadeCleaner;
     private final UserReferencePort userReferencePort;
-    private final AfterCommitExecutor afterCommitExecutor;
 
     @Override
     public BulkWriteScrumResult bulkWrite(BulkWriteScrumCommand command) {
@@ -147,10 +139,7 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
         List<Long> scrumIds = scrums.stream().map(Scrum::getId).toList();
         List<Long> titleIds = scrums.stream().map(s -> s.getTitle().getId()).distinct().toList();
 
-        List<StarImage> images = starImageQueryPort.findAllByScrumIdIn(scrumIds);
-        starImageWritePort.deleteAll(images);
-        List<String> keys = images.stream().map(StarImage::getImageKey).toList();
-        afterCommitExecutor.execute(() -> keys.forEach(presignedUrlGeneratorPort::deleteObject));
+        starImageCascadeCleaner.cleanupByScrumIds(scrumIds);
 
         starRecordRepositoryPort.softDeleteByScrumIds(scrumIds);
         scrumWritePort.softDeleteAllByIdIn(scrumIds);

@@ -1,6 +1,5 @@
 package com.groute.groute_server.record.application.service;
 
-import java.util.List;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
@@ -8,15 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
-import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
-import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarCommand;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarUseCase;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
-import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
-import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
-import com.groute.groute_server.record.domain.StarImage;
 import com.groute.groute_server.record.domain.StarRecord;
 
 import lombok.RequiredArgsConstructor;
@@ -32,11 +26,8 @@ import lombok.RequiredArgsConstructor;
 public class StarRecordDeleteService implements DeleteStarUseCase {
 
     private final StarRecordRepositoryPort starRecordRepositoryPort;
-    private final StarImageQueryPort starImageQueryPort;
-    private final StarImageWritePort starImageWritePort;
-    private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
+    private final StarImageCascadeCleaner starImageCascadeCleaner;
     private final ScrumWritePort scrumWritePort;
-    private final AfterCommitExecutor afterCommitExecutor;
 
     /**
      * 심화기록 단독 삭제.
@@ -58,11 +49,7 @@ public class StarRecordDeleteService implements DeleteStarUseCase {
         }
 
         // 3. StarImage S3+DB 정리
-        List<StarImage> images =
-                starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(command.starRecordId());
-        starImageWritePort.deleteAll(images);
-        List<String> keys = images.stream().map(StarImage::getImageKey).toList();
-        afterCommitExecutor.execute(() -> keys.forEach(presignedUrlGeneratorPort::deleteObject));
+        starImageCascadeCleaner.cleanupByStarRecordId(command.starRecordId());
 
         // 4. STAR soft-delete
         starRecordRepositoryPort.softDeleteById(command.starRecordId());
