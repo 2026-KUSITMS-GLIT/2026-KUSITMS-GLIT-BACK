@@ -1,10 +1,10 @@
 package com.groute.groute_server.common.transaction;
 
-import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 트랜잭션 커밋 이후에 작업을 실행하는 유틸리티.
