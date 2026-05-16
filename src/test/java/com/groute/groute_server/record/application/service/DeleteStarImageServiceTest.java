@@ -75,8 +75,8 @@ class DeleteStarImageServiceTest {
     class HappyPath {
 
         @Test
-        @DisplayName("S3 오브젝트 삭제 후 DB 레코드를 삭제한다")
-        void should_deleteS3ThenDb_when_validRequest() {
+        @DisplayName("DB 레코드 삭제 후 트랜잭션 커밋 시점에 S3 오브젝트를 삭제한다")
+        void should_deleteDbThenScheduleS3Deletion_when_validRequest() {
             // given
             StarImage image = starImage(IMAGE_ID, record, (short) 0);
             given(starImageQueryPort.findById(IMAGE_ID)).willReturn(Optional.of(image));
