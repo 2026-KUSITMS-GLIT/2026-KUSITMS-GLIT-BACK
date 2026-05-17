@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.adapter.out.persistence;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,4 +22,7 @@ public interface StarImageJpaRepository extends JpaRepository<StarImage, Long> {
                     + "ORDER BY i.sortOrder ASC")
     List<StarImage> findAllByStarRecordIdOrderBySortOrderAsc(
             @Param("starRecordId") Long starRecordId);
+
+    @Query("SELECT i FROM StarImage i WHERE i.starRecord.scrum.id IN :scrumIds")
+    List<StarImage> findAllByStarRecordScrumIdIn(@Param("scrumIds") Collection<Long> scrumIds);
 }

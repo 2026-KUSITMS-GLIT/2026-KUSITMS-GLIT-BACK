@@ -37,6 +37,7 @@ class StarRecordDeleteServiceTest {
     private static final Long SCRUM_ID = 50L;
 
     @Mock StarRecordRepositoryPort starRecordRepositoryPort;
+    @Mock StarImageCascadeCleaner starImageCascadeCleaner;
     @Mock ScrumWritePort scrumWritePort;
 
     @InjectMocks StarRecordDeleteService service;
@@ -52,7 +53,6 @@ class StarRecordDeleteServiceTest {
             StarRecord star = star(STAR_ID, USER_ID, SCRUM_ID);
             given(starRecordRepositoryPort.findByIdWithScrum(STAR_ID))
                     .willReturn(Optional.of(star));
-
             // when
             assertThatCode(() -> service.deleteStar(new DeleteStarCommand(USER_ID, STAR_ID)))
                     .doesNotThrowAnyException();

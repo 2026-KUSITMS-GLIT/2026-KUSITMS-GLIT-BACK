@@ -53,6 +53,7 @@ class ScrumSyncServiceTest {
     @Mock ScrumQueryPort scrumQueryPort;
     @Mock ScrumWritePort scrumWritePort;
     @Mock StarRecordCascadePort starRecordCascadePort;
+    @Mock StarImageCascadeCleaner starImageCascadeCleaner;
     @Mock UserReferencePort userReferencePort;
 
     @InjectMocks ScrumSyncService service;

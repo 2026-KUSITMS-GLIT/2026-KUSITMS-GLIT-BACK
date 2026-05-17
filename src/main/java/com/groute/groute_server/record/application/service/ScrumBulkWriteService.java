@@ -44,6 +44,7 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
     private final ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     private final ScrumWritePort scrumWritePort;
     private final StarRecordRepositoryPort starRecordRepositoryPort;
+    private final StarImageCascadeCleaner starImageCascadeCleaner;
     private final UserReferencePort userReferencePort;
 
     @Override
@@ -137,6 +138,8 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
     private void cleanupPendingSession(List<Scrum> scrums) {
         List<Long> scrumIds = scrums.stream().map(Scrum::getId).toList();
         List<Long> titleIds = scrums.stream().map(s -> s.getTitle().getId()).distinct().toList();
+
+        starImageCascadeCleaner.cleanupByScrumIds(scrumIds);
 
         starRecordRepositoryPort.softDeleteByScrumIds(scrumIds);
         scrumWritePort.softDeleteAllByIdIn(scrumIds);

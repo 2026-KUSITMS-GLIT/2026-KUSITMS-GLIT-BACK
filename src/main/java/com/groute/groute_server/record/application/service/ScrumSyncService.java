@@ -46,6 +46,7 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
     private final ScrumQueryPort scrumQueryPort;
     private final ScrumWritePort scrumWritePort;
     private final StarRecordCascadePort starRecordCascadePort;
+    private final StarImageCascadeCleaner starImageCascadeCleaner;
     private final UserReferencePort userReferencePort;
 
     /**
@@ -149,6 +150,7 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
         }
         if (!toDelete.isEmpty()) {
             Set<Long> deleteIds = toDelete.stream().map(Scrum::getId).collect(Collectors.toSet());
+            starImageCascadeCleaner.cleanupByScrumIds(deleteIds);
             scrumWritePort.softDeleteAllByIdIn(deleteIds);
             starRecordCascadePort.cascadeDeleteByScrumIdIn(deleteIds);
         }

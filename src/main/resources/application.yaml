@@ -132,6 +132,13 @@ app:
     # env 오버라이드는 인시던트 대응·테스트 단축 목적의 안전장치이며 평소엔 default(30) 그대로 사용.
     hard-delete-grace-days: ${USER_HARD_DELETE_GRACE_DAYS:30}
 
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_S3_REGION:ap-northeast-2}
+    presigned-url-expiration-minutes: ${AWS_S3_PRESIGNED_URL_EXPIRATION_MINUTES:10}
+    cdn-base-url: ${AWS_S3_CDN_BASE_URL}
+
 discord:
   webhook:
     enabled: false
@@ -171,6 +178,11 @@ auth:
   callback:
     local: ${AUTH_CALLBACK_LOCAL:http://localhost:3000/auth/callback}
   default-env: ${AUTH_DEFAULT_ENV:local}
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET:}
+    cdn-base-url: ${AWS_S3_CDN_BASE_URL:}
 
 firebase:
   credentials-json: ${FIREBASE_CREDENTIALS_JSON:}

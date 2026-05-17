@@ -50,6 +50,7 @@ class ScrumBulkWriteServiceTest {
     @Mock ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     @Mock ScrumWritePort scrumWritePort;
     @Mock StarRecordRepositoryPort starRecordRepositoryPort;
+    @Mock StarImageCascadeCleaner starImageCascadeCleaner;
     @Mock UserReferencePort userReferencePort;
 
     @InjectMocks ScrumBulkWriteService service;
