@@ -153,6 +153,23 @@ class ConfirmStarImageServiceTest {
         }
 
         @Test
+        @DisplayName("imageKey 경로가 요청자 userId·starRecordId와 불일치하면 STAR_FORBIDDEN을 던진다")
+        void should_throwForbidden_when_imageKeyPrefixMismatch() {
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
+                    .willReturn(Optional.of(record));
+            given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
+                    .willReturn(List.of());
+            ConfirmStarImageCommand tamperedCommand =
+                    new ConfirmStarImageCommand(USER_ID, STAR_ID, "star-images/999/999/hack.jpg");
+
+            assertThatThrownBy(() -> service.confirm(tamperedCommand))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.STAR_FORBIDDEN);
+            verify(starImageWritePort, never()).save(any());
+        }
+
+        @Test
         @DisplayName("이미 2장 존재하면 STAR_IMAGE_LIMIT_EXCEEDED를 던진다")
         void should_throwLimitExceeded_when_alreadyTwoImages() {
             StarImage img1 =
