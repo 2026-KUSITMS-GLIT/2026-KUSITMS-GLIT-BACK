@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.report.application.port.in.CreateReportCommand;
 import com.groute.groute_server.report.application.port.in.CreateReportUseCase;
@@ -20,10 +21,13 @@ import com.groute.groute_server.report.application.port.in.SelectableInfoView;
 import com.groute.groute_server.report.application.port.out.LoadReportPort;
 import com.groute.groute_server.report.application.port.out.LoadStarRecordPort;
 import com.groute.groute_server.report.application.port.out.RequestAiReportPort;
+import com.groute.groute_server.report.application.port.out.RequestAiReportPort.AiReportResult;
+import com.groute.groute_server.report.application.port.out.SaveReportPort;
 import com.groute.groute_server.report.domain.Report;
 import com.groute.groute_server.report.domain.enums.ReportType;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 리포트 생성 플로우 서비스.
@@ -33,6 +37,7 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>DB 작업은 {@link ReportTransactionalService}에 위임하여 트랜잭션 커밋 후 AI 호출이 실행되도록 분리한다.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReportService
@@ -47,6 +52,7 @@ public class ReportService
     private final LoadReportPort loadReportPort;
     private final LoadStarRecordPort loadStarRecordPort;
     private final RequestAiReportPort requestAiReportPort;
+    private final SaveReportPort saveReportPort;
     private final ReportTransactionalService reportTransactionalService;
 
     // =========================================================
@@ -96,9 +102,21 @@ public class ReportService
         ReportTransactionalService.CreateReportResult result =
                 reportTransactionalService.saveReportTx(command);
 
-        // 8. AI 서버 비동기 호출 (현재 stub) — 트랜잭션 밖에서 실행
-        requestAiReportPort.requestReportGeneration(
-                result.reportId(), result.starRecords(), result.scrums());
+        // 8. AI 서버 호출 — 트랜잭션 밖에서 실행
+        Report report =
+                loadReportPort
+                        .findById(result.reportId())
+                        .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
+        try {
+            AiReportResult aiResult =
+                    requestAiReportPort.requestReportGeneration(
+                            result.reportId(), result.starRecords(), result.scrums());
+            report.complete(aiResult.title(), aiResult.contentJson());
+        } catch (Exception e) {
+            log.error("[AI Report] 생성 실패 — reportId={}, error={}", result.reportId(), e.getMessage(), e);
+            report.fail();
+        }
+        saveReportPort.save(report);
 
         return result.reportId();
     }
@@ -141,8 +159,32 @@ public class ReportService
         // DB 상태 변경 (트랜잭션 커밋까지 완료)
         reportTransactionalService.retryReportTx(userId, reportId);
 
-        // AI 재호출 (stub) — 트랜잭션 밖에서 실행
-        requestAiReportPort.requestReportGeneration(reportId, List.of(), List.of());
+        // AI 재호출 — 트랜잭션 밖에서 실행
+        Report report =
+                loadReportPort
+                        .findById(reportId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
+
+        List<StarRecord> starRecords =
+                report.getSelectedStarRecordIds() != null
+                        ? loadStarRecordPort.findAllByIds(
+                                userId, report.getSelectedStarRecordIds())
+                        : List.of();
+        List<Scrum> scrums =
+                report.getSelectedStarRecordIds() != null
+                        ? loadStarRecordPort.findScrumsByStarRecordIds(
+                                userId, report.getSelectedStarRecordIds())
+                        : List.of();
+
+        try {
+            AiReportResult aiResult =
+                    requestAiReportPort.requestReportGeneration(reportId, starRecords, scrums);
+            report.complete(aiResult.title(), aiResult.contentJson());
+        } catch (Exception e) {
+            log.error("[AI Report] 재시도 실패 — reportId={}, error={}", reportId, e.getMessage(), e);
+            report.fail();
+        }
+        saveReportPort.save(report);
 
         return reportId;
     }
