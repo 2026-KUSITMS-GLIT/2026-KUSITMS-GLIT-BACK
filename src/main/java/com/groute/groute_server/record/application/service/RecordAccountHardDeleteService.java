@@ -1,29 +1,50 @@
 package com.groute.groute_server.record.application.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
+import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
 import com.groute.groute_server.record.application.port.in.RecordAccountHardDeleteUseCase;
 import com.groute.groute_server.record.application.port.out.RecordHardDeletePort;
-import com.groute.groute_server.record.application.port.out.star.StarImageStoragePort;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * {@link RecordAccountHardDeleteUseCase} 구현(MYP-005).
  *
- * <p>외부 도메인이 record 내부 port/out에 직접 결합하지 않도록 use case로 한 단계 추상화한다. 본 service는 자체 비즈니스 로직 없이 두
- * port/out 호출을 1:1로 위임한다.
+ * <p>외부 도메인이 record 내부 port/out에 직접 결합하지 않도록 use case로 한 단계 추상화한다. 외부 스토리지 삭제는 키 수집 → S3
+ * best-effort 삭제 → DB row hard delete 순서로 진행된다.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RecordAccountHardDeleteService implements RecordAccountHardDeleteUseCase {
 
-    private final StarImageStoragePort starImageStoragePort;
     private final RecordHardDeletePort recordHardDeletePort;
+    private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
 
     @Override
     public void purgeExternalStorage(Long userId) {
-        starImageStoragePort.deleteAllByUserId(userId);
+        List<String> keys = recordHardDeletePort.findStarImageKeysByUserId(userId);
+        if (keys.isEmpty()) {
+            return;
+        }
+        int failed = 0;
+        for (String key : keys) {
+            try {
+                presignedUrlGeneratorPort.deleteObject(key);
+            } catch (RuntimeException e) {
+                failed++;
+                log.warn("S3 오브젝트 삭제 실패 (userId={}, key={})", userId, key, e);
+            }
+        }
+        log.info(
+                "StarImage 외부 스토리지 정리 완료 (userId={}, total={}, failed={})",
+                userId,
+                keys.size(),
+                failed);
     }
 
     @Override

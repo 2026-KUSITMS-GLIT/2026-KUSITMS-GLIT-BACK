@@ -1,5 +1,7 @@
 package com.groute.groute_server.record.adapter.out.persistence;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import com.groute.groute_server.record.application.port.out.RecordHardDeletePort;
@@ -41,6 +43,11 @@ class RecordHardDeleteAdapter implements RecordHardDeletePort {
     private final ScrumTitleJpaRepository scrumTitleJpaRepository;
     private final ProjectJpaRepository projectJpaRepository;
     private final DailyCompetencyStatJpaRepository dailyCompetencyStatJpaRepository;
+
+    @Override
+    public List<String> findStarImageKeysByUserId(Long userId) {
+        return starImageJpaRepository.findAllImageKeysByUserId(userId);
+    }
 
     @Override
     public void hardDeleteAllByUserId(Long userId) {
