@@ -271,8 +271,14 @@ class ReportServiceTest {
         @DisplayName("FAILED 상태이고 재시도 가능하면 GENERATING으로 전환하고 reportId를 반환한다")
         void should_returnReportId_when_retrySuccessfully() {
             // given
+            List<Long> selectedIds = ids(10);
             Report report = report(REPORT_ID, USER_ID, ReportType.MINI, ReportStatus.FAILED, 0);
+            ReflectionTestUtils.setField(report, "selectedStarRecordIds", selectedIds);
             given(loadReportPort.findById(REPORT_ID)).willReturn(Optional.of(report));
+            given(loadStarRecordPort.findAllByIds(USER_ID, selectedIds))
+                    .willReturn(starRecords(10));
+            given(loadStarRecordPort.findScrumsByStarRecordIds(USER_ID, selectedIds))
+                    .willReturn(List.of());
             given(requestAiReportPort.requestReportGeneration(anyLong(), anyList(), anyList()))
                     .willReturn(new RequestAiReportPort.AiReportResult(null, java.util.Map.of()));
             given(saveReportPort.save(any())).willReturn(report);

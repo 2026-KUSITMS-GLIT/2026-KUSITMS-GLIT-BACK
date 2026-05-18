@@ -140,7 +140,7 @@ aws:
     cdn-base-url: ${AWS_S3_CDN_BASE_URL}
 
 ai:
-  base-url: https://ai.glit.today
+  base-url: ${AI_BASE_URL:https://ai.glit.today}
   internal-token: ${INTERNAL_API_TOKEN:}
   timeout:
     connect: 5000
@@ -187,6 +187,7 @@ auth:
   default-env: ${AUTH_DEFAULT_ENV:local}
 
 ai:
+  base-url: ${AI_BASE_URL:http://localhost:8000}
   internal-token: ${INTERNAL_API_TOKEN:}
 
 aws:
