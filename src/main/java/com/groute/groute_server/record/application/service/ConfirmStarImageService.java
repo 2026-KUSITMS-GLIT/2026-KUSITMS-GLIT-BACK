@@ -55,13 +55,6 @@ public class ConfirmStarImageService implements ConfirmStarImageUseCase {
         short sortOrder = (short) existing.size();
         String imageUrl = presignedUrlGeneratorPort.toImageUrl(command.imageKey());
 
-        starImageWritePort.save(
-                StarImage.create(
-                        record,
-                        command.imageKey(),
-                        imageUrl,
-                        command.mimeType(),
-                        command.sizeBytes(),
-                        sortOrder));
+        starImageWritePort.save(StarImage.create(record, command.imageKey(), imageUrl, sortOrder));
     }
 }

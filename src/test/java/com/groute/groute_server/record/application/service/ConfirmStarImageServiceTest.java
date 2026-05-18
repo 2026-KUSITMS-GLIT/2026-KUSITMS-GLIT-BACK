@@ -42,8 +42,6 @@ class ConfirmStarImageServiceTest {
     private static final Long OTHER_USER_ID = 99L;
     private static final Long STAR_ID = 10L;
     private static final String IMAGE_KEY = "star-images/1/10/uuid.jpg";
-    private static final String MIME_TYPE = "image/jpeg";
-    private static final int SIZE_BYTES = 1024;
     private static final String IMAGE_URL = "https://cdn.example.com/" + IMAGE_KEY;
 
     @Mock StarRecordRepositoryPort starRecordRepositoryPort;
@@ -94,13 +92,7 @@ class ConfirmStarImageServiceTest {
         @DisplayName("두 번째 이미지 confirm 시 sortOrder=1로 DB에 저장된다")
         void should_saveSecondImage_with_sortOrder1() {
             StarImage firstImage =
-                    StarImage.create(
-                            record,
-                            "star-images/1/10/first.jpg",
-                            IMAGE_URL,
-                            MIME_TYPE,
-                            SIZE_BYTES,
-                            (short) 0);
+                    StarImage.create(record, "star-images/1/10/first.jpg", IMAGE_URL, (short) 0);
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
@@ -164,21 +156,9 @@ class ConfirmStarImageServiceTest {
         @DisplayName("이미 2장 존재하면 STAR_IMAGE_LIMIT_EXCEEDED를 던진다")
         void should_throwLimitExceeded_when_alreadyTwoImages() {
             StarImage img1 =
-                    StarImage.create(
-                            record,
-                            "star-images/1/10/a.jpg",
-                            IMAGE_URL,
-                            MIME_TYPE,
-                            SIZE_BYTES,
-                            (short) 0);
+                    StarImage.create(record, "star-images/1/10/a.jpg", IMAGE_URL, (short) 0);
             StarImage img2 =
-                    StarImage.create(
-                            record,
-                            "star-images/1/10/b.jpg",
-                            IMAGE_URL,
-                            MIME_TYPE,
-                            SIZE_BYTES,
-                            (short) 1);
+                    StarImage.create(record, "star-images/1/10/b.jpg", IMAGE_URL, (short) 1);
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
@@ -196,6 +176,6 @@ class ConfirmStarImageServiceTest {
     // ============== helpers ==============
 
     private ConfirmStarImageCommand command(Long userId) {
-        return new ConfirmStarImageCommand(userId, STAR_ID, IMAGE_KEY, MIME_TYPE, SIZE_BYTES);
+        return new ConfirmStarImageCommand(userId, STAR_ID, IMAGE_KEY);
     }
 }

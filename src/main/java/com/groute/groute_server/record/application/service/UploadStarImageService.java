@@ -71,7 +71,6 @@ public class UploadStarImageService implements UploadStarImageUseCase {
         return switch (mimeType) {
             case "image/jpeg" -> "jpg";
             case "image/png" -> "png";
-            case "image/webp" -> "webp";
             default -> throw new BusinessException(ErrorCode.INVALID_INPUT);
         };
     }

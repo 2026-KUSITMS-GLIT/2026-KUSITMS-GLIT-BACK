@@ -157,8 +157,7 @@ class DeleteStarImageServiceTest {
     // ============== helpers ==============
 
     private static StarImage starImage(Long id, StarRecord record, short sortOrder) {
-        StarImage image =
-                StarImage.create(record, IMAGE_KEY, IMAGE_URL, "image/jpeg", 1024, sortOrder);
+        StarImage image = StarImage.create(record, IMAGE_KEY, IMAGE_URL, sortOrder);
         ReflectionTestUtils.setField(image, "id", id);
         return image;
     }
