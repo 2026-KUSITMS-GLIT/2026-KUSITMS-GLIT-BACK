@@ -50,8 +50,8 @@ public class AiReportClientAdapter implements RequestAiReportPort {
     private final LoadStarRecordPort loadStarRecordPort;
 
     public AiReportClientAdapter(
-            @Value("${ai.base-url}") String baseUrl,
-            @Value("${ai.internal-token}") String internalToken,
+            @Value("${ai.base-url:https://ai.glit.today}") String baseUrl,
+            @Value("${ai.internal-token:}") String internalToken,
             LoadStarRecordPort loadStarRecordPort) {
         this.restClient =
                 RestClient.builder()
