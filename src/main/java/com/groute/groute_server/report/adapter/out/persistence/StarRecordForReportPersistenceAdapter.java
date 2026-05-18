@@ -2,11 +2,14 @@ package com.groute.groute_server.report.adapter.out.persistence;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
+import com.groute.groute_server.record.domain.StarTag;
 import com.groute.groute_server.report.application.port.out.LoadStarRecordPort;
 
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ class StarRecordForReportPersistenceAdapter implements LoadStarRecordPort {
 
     private final StarRecordForReportJpaRepository starRecordJpaRepository;
     private final ScrumForReportJpaRepository scrumJpaRepository;
+    private final StarTagForReportJpaRepository starTagJpaRepository;
 
     @Override
     public int countCompletedByUserId(Long userId) {
@@ -51,5 +55,15 @@ class StarRecordForReportPersistenceAdapter implements LoadStarRecordPort {
     @Override
     public List<StarRecord> findCompletedByUserIdAndDate(Long userId, LocalDate date) {
         return starRecordJpaRepository.findCompletedByUserIdAndDate(userId, date);
+    }
+
+    @Override
+    public Map<Long, List<String>> findDetailTagsByStarRecordIds(List<Long> starRecordIds) {
+        List<StarTag> tags = starTagJpaRepository.findAllByStarRecordIds(starRecordIds);
+        return tags.stream()
+                .collect(
+                        Collectors.groupingBy(
+                                t -> t.getStarRecord().getId(),
+                                Collectors.mapping(StarTag::getDetailTag, Collectors.toList())));
     }
 }
