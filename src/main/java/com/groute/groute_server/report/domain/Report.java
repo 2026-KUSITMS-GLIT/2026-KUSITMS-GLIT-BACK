@@ -1,5 +1,6 @@
 package com.groute.groute_server.report.domain;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.persistence.*;
@@ -54,6 +55,11 @@ public class Report extends BaseTimeEntity {
     @Column(name = "selected_star_count")
     private Integer selectedStarCount;
 
+    /** 리포트 생성 시 선택된 심화기록 ID 목록. 재시도 시 AI 재호출에 사용. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "selected_star_record_ids", columnDefinition = "jsonb")
+    private List<Long> selectedStarRecordIds;
+
     /** 커리어 브랜딩 문장. 리포트 목록 카드에 노출(RPT001). */
     @Column(name = "title", length = 200)
     private String title;
@@ -79,13 +85,14 @@ public class Report extends BaseTimeEntity {
      * @param starCountAt 발행 시점 누적 STAR 수
      */
     public static Report create(
-            User user, ReportType reportType, int starCountAt, int selectedStarCount) {
+            User user, ReportType reportType, int starCountAt, int selectedStarCount, List<Long> selectedStarRecordIds) {
         Report report = new Report();
         report.user = user;
         report.reportType = reportType;
         report.status = ReportStatus.GENERATING;
         report.starCountAt = starCountAt;
         report.selectedStarCount = selectedStarCount;
+        report.selectedStarRecordIds = selectedStarRecordIds;
         report.retryCount = 0;
         return report;
     }
@@ -110,6 +117,23 @@ public class Report extends BaseTimeEntity {
     // =========================================================
     // 도메인 규칙
     // =========================================================
+
+    /**
+     * AI 생성 완료 처리. status를 SUCCESS로 전환하고 title, contentJson을 저장한다.
+     *
+     * @param title 커리어 브랜딩 문장 (MINI는 null)
+     * @param contentJson AI 응답 본문
+     */
+    public void complete(String title, Map<String, Object> contentJson) {
+        this.status = ReportStatus.SUCCESS;
+        this.title = title;
+        this.contentJson = contentJson;
+    }
+
+    /** AI 생성 실패 처리. status를 FAILED로 전환한다. */
+    public void fail() {
+        this.status = ReportStatus.FAILED;
+    }
 
     /** 재시도 가능 여부. FAILED 상태이고 아직 재시도를 1회도 하지 않은 경우에만 true. */
     public boolean isRetryAvailable() {
