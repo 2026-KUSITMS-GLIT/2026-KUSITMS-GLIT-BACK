@@ -116,10 +116,15 @@ class ReportServiceTest {
         void should_returnReportId_when_miniCreatedSuccessfully() {
             // given
             List<Long> ids = ids(10);
+            Report report = report(REPORT_ID, USER_ID, ReportType.MINI, ReportStatus.GENERATING, 0);
             given(reportTransactionalService.saveReportTx(any()))
                     .willReturn(
                             new ReportTransactionalService.CreateReportResult(
                                     REPORT_ID, starRecords(10), List.of()));
+            given(loadReportPort.findById(REPORT_ID)).willReturn(Optional.of(report));
+            given(requestAiReportPort.requestReportGeneration(anyLong(), anyList(), anyList()))
+                    .willReturn(new RequestAiReportPort.AiReportResult(null, java.util.Map.of()));
+            given(saveReportPort.save(any())).willReturn(report);
 
             // when
             Long reportId =
@@ -265,7 +270,12 @@ class ReportServiceTest {
         @Test
         @DisplayName("FAILED 상태이고 재시도 가능하면 GENERATING으로 전환하고 reportId를 반환한다")
         void should_returnReportId_when_retrySuccessfully() {
-            // given — retryReportTx는 void라 별도 stubbing 불필요
+            // given
+            Report report = report(REPORT_ID, USER_ID, ReportType.MINI, ReportStatus.FAILED, 0);
+            given(loadReportPort.findById(REPORT_ID)).willReturn(Optional.of(report));
+            given(requestAiReportPort.requestReportGeneration(anyLong(), anyList(), anyList()))
+                    .willReturn(new RequestAiReportPort.AiReportResult(null, java.util.Map.of()));
+            given(saveReportPort.save(any())).willReturn(report);
 
             // when
             Long reportId = service.retryReport(USER_ID, REPORT_ID);
