@@ -87,6 +87,10 @@ public enum ErrorCode {
     REPORT_RETRY_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "REPORT_003", "재시도 가능한 상태가 아닙니다."),
     REPORT_INVALID_STAR_COUNT(HttpStatus.BAD_REQUEST, "REPORT_004", "선택한 심화기록 수가 올바르지 않습니다."),
     REPORT_MINI_ALREADY_EXISTS(HttpStatus.CONFLICT, "REPORT_005", "미니 리포트는 1회만 생성할 수 있습니다."),
+
+    // AI Server
+    AI_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "AI_001", "AI 서버 호출 중 오류가 발생했습니다."),
+    AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI_002", "AI 서버 응답 시간이 초과되었습니다."),
     ;
 
     private final HttpStatus httpStatus;

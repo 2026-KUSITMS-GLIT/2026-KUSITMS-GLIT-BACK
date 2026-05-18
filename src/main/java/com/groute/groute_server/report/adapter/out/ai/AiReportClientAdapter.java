@@ -1,5 +1,6 @@
 package com.groute.groute_server.report.adapter.out.ai;
 
+import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -11,12 +12,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.ClientHttpRequestFactories;
-import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+import com.groute.groute_server.common.exception.BusinessException;
+import com.groute.groute_server.common.exception.ErrorCode;
 
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
@@ -59,11 +63,9 @@ public class AiReportClientAdapter implements RequestAiReportPort {
             @Value("${ai.timeout.connect:5000}") int connectTimeoutMs,
             @Value("${ai.timeout.read:30000}") int readTimeoutMs,
             LoadStarRecordPort loadStarRecordPort) {
-        ClientHttpRequestFactory factory =
-                ClientHttpRequestFactories.get(
-                        ClientHttpRequestFactorySettings.DEFAULTS
-                                .withConnectTimeout(Duration.ofMillis(connectTimeoutMs))
-                                .withReadTimeout(Duration.ofMillis(readTimeoutMs)));
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofMillis(connectTimeoutMs));
+        factory.setReadTimeout(Duration.ofMillis(readTimeoutMs));
         this.restClient =
                 RestClient.builder()
                         .baseUrl(baseUrl)
@@ -105,21 +107,33 @@ public class AiReportClientAdapter implements RequestAiReportPort {
     // =========================================================
 
     private AiReportResult callMini(AiReportRequest request) {
-        AiMiniReportResponse response =
-                restClient
-                        .post()
-                        .uri("/api/reports/mini")
-                        .body(request)
-                        .retrieve()
-                        .body(AiMiniReportResponse.class);
+        try {
+            AiMiniReportResponse response =
+                    restClient
+                            .post()
+                            .uri("/api/reports/mini")
+                            .body(request)
+                            .retrieve()
+                            .body(AiMiniReportResponse.class);
 
-        Map<String, Object> contentJson = new HashMap<>();
-        contentJson.put("activity_summary", response.activitySummary());
-        contentJson.put("next_focus_point", response.nextFocusPoint());
-        contentJson.put("competency_frequency", response.competencyFrequency());
-        contentJson.put("top_detail_tags", response.topDetailTags());
+            Map<String, Object> contentJson = new HashMap<>();
+            contentJson.put("activity_summary", response.activitySummary());
+            contentJson.put("next_focus_point", response.nextFocusPoint());
+            contentJson.put("competency_frequency", response.competencyFrequency());
+            contentJson.put("top_detail_tags", response.topDetailTags());
 
-        return new AiReportResult(null, contentJson);
+            return new AiReportResult(null, contentJson);
+        } catch (ResourceAccessException e) {
+            if (e.getCause() instanceof SocketTimeoutException) {
+                log.error("[AI Report] MINI 타임아웃 발생", e);
+                throw new BusinessException(ErrorCode.AI_SERVER_TIMEOUT);
+            }
+            log.error("[AI Report] MINI 네트워크 오류", e);
+            throw new BusinessException(ErrorCode.AI_SERVER_ERROR);
+        } catch (RestClientException e) {
+            log.error("[AI Report] MINI 호출 실패 — status={}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.AI_SERVER_ERROR);
+        }
     }
 
     // =========================================================
@@ -127,48 +141,60 @@ public class AiReportClientAdapter implements RequestAiReportPort {
     // =========================================================
 
     private AiReportResult callCareer(AiReportRequest request) {
-        AiCareerBrandingResponse branding =
-                restClient
-                        .post()
-                        .uri("/api/reports/career/branding")
-                        .body(request)
-                        .retrieve()
-                        .body(AiCareerBrandingResponse.class);
+        try {
+            AiCareerBrandingResponse branding =
+                    restClient
+                            .post()
+                            .uri("/api/reports/career/branding")
+                            .body(request)
+                            .retrieve()
+                            .body(AiCareerBrandingResponse.class);
 
-        AiCareerNarrativeResponse narrative =
-                restClient
-                        .post()
-                        .uri("/api/reports/career/narrative")
-                        .body(request)
-                        .retrieve()
-                        .body(AiCareerNarrativeResponse.class);
+            AiCareerNarrativeResponse narrative =
+                    restClient
+                            .post()
+                            .uri("/api/reports/career/narrative")
+                            .body(request)
+                            .retrieve()
+                            .body(AiCareerNarrativeResponse.class);
 
-        AiCareerHighlightsResponse highlights =
-                restClient
-                        .post()
-                        .uri("/api/reports/career/highlights")
-                        .body(request)
-                        .retrieve()
-                        .body(AiCareerHighlightsResponse.class);
+            AiCareerHighlightsResponse highlights =
+                    restClient
+                            .post()
+                            .uri("/api/reports/career/highlights")
+                            .body(request)
+                            .retrieve()
+                            .body(AiCareerHighlightsResponse.class);
 
-        AiCareerStrengthsAndInterviewResponse strengthsAndInterview =
-                restClient
-                        .post()
-                        .uri("/api/reports/career/strengths-and-interview")
-                        .body(request)
-                        .retrieve()
-                        .body(AiCareerStrengthsAndInterviewResponse.class);
+            AiCareerStrengthsAndInterviewResponse strengthsAndInterview =
+                    restClient
+                            .post()
+                            .uri("/api/reports/career/strengths-and-interview")
+                            .body(request)
+                            .retrieve()
+                            .body(AiCareerStrengthsAndInterviewResponse.class);
 
-        Map<String, Object> contentJson = new HashMap<>();
-        contentJson.put("branding_statement", branding.brandingStatement());
-        contentJson.put("branding_pattern", branding.brandingPattern());
-        contentJson.put("top_detail_tags", branding.topDetailTags());
-        contentJson.put("narrative_summary", narrative.narrativeSummary());
-        contentJson.put("experience_highlights", highlights.experienceHighlights());
-        contentJson.put("strengths", strengthsAndInterview.strengths());
-        contentJson.put("interview_questions", strengthsAndInterview.interviewQuestions());
+            Map<String, Object> contentJson = new HashMap<>();
+            contentJson.put("branding_statement", branding.brandingStatement());
+            contentJson.put("branding_pattern", branding.brandingPattern());
+            contentJson.put("top_detail_tags", branding.topDetailTags());
+            contentJson.put("narrative_summary", narrative.narrativeSummary());
+            contentJson.put("experience_highlights", highlights.experienceHighlights());
+            contentJson.put("strengths", strengthsAndInterview.strengths());
+            contentJson.put("interview_questions", strengthsAndInterview.interviewQuestions());
 
-        return new AiReportResult(branding.brandingStatement(), contentJson);
+            return new AiReportResult(branding.brandingStatement(), contentJson);
+        } catch (ResourceAccessException e) {
+            if (e.getCause() instanceof SocketTimeoutException) {
+                log.error("[AI Report] CAREER 타임아웃 발생", e);
+                throw new BusinessException(ErrorCode.AI_SERVER_TIMEOUT);
+            }
+            log.error("[AI Report] CAREER 네트워크 오류", e);
+            throw new BusinessException(ErrorCode.AI_SERVER_ERROR);
+        } catch (RestClientException e) {
+            log.error("[AI Report] CAREER 호출 실패 — status={}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.AI_SERVER_ERROR);
+        }
     }
 
     // =========================================================
