@@ -1,5 +1,6 @@
 package com.groute.groute_server.report.adapter.out.ai;
 
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -10,7 +11,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.ClientHttpRequestFactories;
+import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -52,10 +56,18 @@ public class AiReportClientAdapter implements RequestAiReportPort {
     public AiReportClientAdapter(
             @Value("${ai.base-url:https://ai.glit.today}") String baseUrl,
             @Value("${ai.internal-token:}") String internalToken,
+            @Value("${ai.timeout.connect:5000}") int connectTimeoutMs,
+            @Value("${ai.timeout.read:30000}") int readTimeoutMs,
             LoadStarRecordPort loadStarRecordPort) {
+        ClientHttpRequestFactory factory =
+                ClientHttpRequestFactories.get(
+                        ClientHttpRequestFactorySettings.DEFAULTS
+                                .withConnectTimeout(Duration.ofMillis(connectTimeoutMs))
+                                .withReadTimeout(Duration.ofMillis(readTimeoutMs)));
         this.restClient =
                 RestClient.builder()
                         .baseUrl(baseUrl)
+                        .requestFactory(factory)
                         .defaultHeader("X-Internal-Token", internalToken)
                         .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                         .build();
