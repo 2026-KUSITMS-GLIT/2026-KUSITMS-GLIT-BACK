@@ -47,7 +47,7 @@ import com.groute.groute_server.user.entity.User;
 class ScrumSyncServiceTest {
 
     private static final Long USER_ID = 1L;
-    private static final LocalDate DATE = LocalDate.now();
+    private static final LocalDate DATE = LocalDate.of(2026, 5, 4);
     private static final LocalDate YESTERDAY = DATE.minusDays(1);
 
     @Mock ScrumTitleRepositoryPort scrumTitleRepositoryPort;
