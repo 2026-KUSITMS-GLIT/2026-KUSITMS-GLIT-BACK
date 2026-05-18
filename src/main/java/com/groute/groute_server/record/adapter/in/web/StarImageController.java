@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.groute.groute_server.common.annotation.CurrentUser;
 import com.groute.groute_server.common.response.ApiResponse;
+import com.groute.groute_server.record.adapter.in.web.dto.ConfirmStarImageRequest;
 import com.groute.groute_server.record.adapter.in.web.dto.StarImageListItemResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.UploadStarImageRequest;
 import com.groute.groute_server.record.adapter.in.web.dto.UploadStarImageResponse;
+import com.groute.groute_server.record.application.port.in.star.ConfirmStarImageUseCase;
 import com.groute.groute_server.record.application.port.in.star.DeleteStarImageUseCase;
 import com.groute.groute_server.record.application.port.in.star.QueryStarImagesUseCase;
 import com.groute.groute_server.record.application.port.in.star.UploadStarImageUseCase;
@@ -33,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 public class StarImageController {
 
     private final UploadStarImageUseCase uploadStarImageUseCase;
+    private final ConfirmStarImageUseCase confirmStarImageUseCase;
     private final DeleteStarImageUseCase deleteStarImageUseCase;
     private final QueryStarImagesUseCase queryStarImagesUseCase;
 
@@ -65,7 +68,8 @@ public class StarImageController {
             summary = "이미지 업로드 Presigned URL 발급",
             description =
                     "STAR R 단계 이미지 업로드용 S3 Presigned PUT URL을 발급한다."
-                            + " 응답의 presignedUrl로 직접 PUT 요청해 업로드한다. STAR당 최대 2장.")
+                            + " 응답의 presignedUrl로 직접 PUT 요청해 S3에 업로드한 뒤,"
+                            + " 반드시 /confirm API를 호출해야 DB에 이미지가 등록된다. STAR당 최대 2장.")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
@@ -95,6 +99,39 @@ public class StarImageController {
                 "이미지 업로드 URL 발급 성공",
                 UploadStarImageResponse.from(
                         uploadStarImageUseCase.upload(request.toCommand(userId, starRecordId))));
+    }
+
+    @Operation(
+            summary = "이미지 업로드 완료 확인",
+            description =
+                    "S3 업로드 성공 후 호출. presigned-url 발급 시 응답받은 imageKey와 함께 요청하면 DB에 이미지가 등록된다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "등록 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "mimeType 형식 오류 / sizeBytes 초과 / 이미지 2장 초과"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "403",
+                description = "본인 소유가 아님"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "심화기록을 찾을 수 없음"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "409",
+                description = "이미 완료된 심화기록")
+    })
+    @PostMapping("/{starRecordId}/images/confirm")
+    public ApiResponse<Void> confirmImage(
+            @CurrentUser Long userId,
+            @PathVariable Long starRecordId,
+            @Valid @RequestBody ConfirmStarImageRequest request) {
+        confirmStarImageUseCase.confirm(request.toCommand(userId, starRecordId));
+        return ApiResponse.ok("이미지 등록 성공", null);
     }
 
     @Operation(
