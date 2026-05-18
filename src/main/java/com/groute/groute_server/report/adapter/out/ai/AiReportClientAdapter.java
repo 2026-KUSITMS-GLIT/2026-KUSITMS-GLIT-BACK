@@ -21,7 +21,6 @@ import org.springframework.web.client.RestClientException;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
-
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.report.adapter.out.ai.dto.AiCareerBrandingResponse;
