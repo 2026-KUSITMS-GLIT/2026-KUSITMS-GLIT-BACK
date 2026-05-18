@@ -111,7 +111,7 @@ public class StarImageController {
                 description = "등록 성공"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "400",
-                description = "mimeType 형식 오류 / 이미지 2장 초과"),
+                description = "imageKey 누락 / 이미지 2장 초과"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "401",
                 description = "미인증"),
