@@ -179,6 +179,14 @@ public class ReportService
                                 userId, report.getSelectedStarRecordIds())
                         : List.of();
 
+        if (starRecords.isEmpty()) {
+            log.error(
+                    "[AI Report] 재시도 실패 — selectedStarRecordIds 없음, reportId={}", reportId);
+            report.fail();
+            saveReportPort.save(report);
+            return reportId;
+        }
+
         try {
             AiReportResult aiResult =
                     requestAiReportPort.requestReportGeneration(reportId, starRecords, scrums);

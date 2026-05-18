@@ -59,6 +59,9 @@ class StarRecordForReportPersistenceAdapter implements LoadStarRecordPort {
 
     @Override
     public Map<Long, List<String>> findDetailTagsByStarRecordIds(List<Long> starRecordIds) {
+        if (starRecordIds == null || starRecordIds.isEmpty()) {
+            return Map.of();
+        }
         List<StarTag> tags = starTagJpaRepository.findAllByStarRecordIds(starRecordIds);
         return tags.stream()
                 .collect(
