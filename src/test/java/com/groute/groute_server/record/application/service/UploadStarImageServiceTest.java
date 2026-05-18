@@ -44,7 +44,6 @@ class UploadStarImageServiceTest {
     private static final Long OTHER_USER_ID = 99L;
     private static final Long STAR_ID = 10L;
     private static final String MIME_TYPE = "image/jpeg";
-    private static final int SIZE_BYTES = 1024;
     private static final String PRESIGNED_URL = "https://s3.example.com/presigned";
     private static final String IMAGE_URL = "https://cdn.example.com/image.jpg";
 
@@ -96,13 +95,7 @@ class UploadStarImageServiceTest {
         @DisplayName("두 번째 이미지도 presigned URL을 정상 반환한다")
         void should_returnPresignedUrl_for_secondImage() {
             StarImage firstImage =
-                    StarImage.create(
-                            record,
-                            "star-images/1/10/uuid.jpg",
-                            IMAGE_URL,
-                            MIME_TYPE,
-                            SIZE_BYTES,
-                            (short) 0);
+                    StarImage.create(record, "star-images/1/10/uuid.jpg", IMAGE_URL, (short) 0);
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
@@ -126,26 +119,10 @@ class UploadStarImageServiceTest {
             given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
                     .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
 
-            service.upload(new UploadStarImageCommand(USER_ID, STAR_ID, "image/png", SIZE_BYTES));
+            service.upload(new UploadStarImageCommand(USER_ID, STAR_ID, "image/png"));
 
             verify(presignedUrlGeneratorPort)
                     .generate(argThat(key -> key.endsWith(".png")), anyString());
-        }
-
-        @Test
-        @DisplayName("image/webp mimeType이면 S3 키 확장자가 webp다")
-        void should_generateWebpKey_when_mimeTypeIsWebp() {
-            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
-                    .willReturn(Optional.of(record));
-            given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
-                    .willReturn(List.of());
-            given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
-                    .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
-
-            service.upload(new UploadStarImageCommand(USER_ID, STAR_ID, "image/webp", SIZE_BYTES));
-
-            verify(presignedUrlGeneratorPort)
-                    .generate(argThat(key -> key.endsWith(".webp")), anyString());
         }
     }
 
@@ -198,21 +175,9 @@ class UploadStarImageServiceTest {
         @DisplayName("이미 2장 존재하면 STAR_IMAGE_LIMIT_EXCEEDED를 던진다")
         void should_throwLimitExceeded_when_alreadyTwoImages() {
             StarImage img1 =
-                    StarImage.create(
-                            record,
-                            "star-images/1/10/a.jpg",
-                            IMAGE_URL,
-                            MIME_TYPE,
-                            SIZE_BYTES,
-                            (short) 0);
+                    StarImage.create(record, "star-images/1/10/a.jpg", IMAGE_URL, (short) 0);
             StarImage img2 =
-                    StarImage.create(
-                            record,
-                            "star-images/1/10/b.jpg",
-                            IMAGE_URL,
-                            MIME_TYPE,
-                            SIZE_BYTES,
-                            (short) 1);
+                    StarImage.create(record, "star-images/1/10/b.jpg", IMAGE_URL, (short) 1);
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
@@ -229,6 +194,6 @@ class UploadStarImageServiceTest {
     // ============== helpers ==============
 
     private UploadStarImageCommand command(Long userId) {
-        return new UploadStarImageCommand(userId, STAR_ID, MIME_TYPE, SIZE_BYTES);
+        return new UploadStarImageCommand(userId, STAR_ID, MIME_TYPE);
     }
 }

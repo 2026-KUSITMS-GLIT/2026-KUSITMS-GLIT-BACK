@@ -126,13 +126,7 @@ class QueryStarImagesServiceTest {
     private static StarImage starImage(
             Long id, StarRecord record, short sortOrder, String imageUrl) {
         StarImage image =
-                StarImage.create(
-                        record,
-                        "star-images/1/10/uuid.jpg",
-                        imageUrl,
-                        "image/jpeg",
-                        1024,
-                        sortOrder);
+                StarImage.create(record, "star-images/1/10/uuid.jpg", imageUrl, sortOrder);
         ReflectionTestUtils.setField(image, "id", id);
         return image;
     }

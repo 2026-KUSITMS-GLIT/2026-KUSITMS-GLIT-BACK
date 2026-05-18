@@ -36,31 +36,16 @@ public class StarImage extends BaseTimeEntity {
     @Column(name = "image_url", nullable = false, length = 500)
     private String imageUrl;
 
-    /** MIME 타입. image/jpeg, image/png, image/webp만 허용(REC005). */
-    @Column(name = "mime_type", nullable = false, length = 20)
-    private String mimeType;
-
-    /** 장당 최대 10MB = 10,485,760 bytes(REC005). */
-    @Column(name = "size_bytes", nullable = false)
-    private Integer sizeBytes;
-
     /** 표시 순서(0~1). N/2장 표시 UI에서 사용. */
     @Column(name = "sort_order", nullable = false)
     private Short sortOrder = 0;
 
     public static StarImage create(
-            StarRecord starRecord,
-            String imageKey,
-            String imageUrl,
-            String mimeType,
-            Integer sizeBytes,
-            Short sortOrder) {
+            StarRecord starRecord, String imageKey, String imageUrl, Short sortOrder) {
         StarImage image = new StarImage();
         image.starRecord = Objects.requireNonNull(starRecord, "starRecord");
         image.imageKey = Objects.requireNonNull(imageKey, "imageKey");
         image.imageUrl = Objects.requireNonNull(imageUrl, "imageUrl");
-        image.mimeType = Objects.requireNonNull(mimeType, "mimeType");
-        image.sizeBytes = Objects.requireNonNull(sizeBytes, "sizeBytes");
         image.sortOrder = Objects.requireNonNull(sortOrder, "sortOrder");
         return image;
     }
