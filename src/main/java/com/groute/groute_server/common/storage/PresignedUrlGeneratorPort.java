@@ -5,5 +5,7 @@ public interface PresignedUrlGeneratorPort {
 
     PresignedUrlResult generate(String imageKey, String mimeType);
 
+    String toImageUrl(String imageKey);
+
     void deleteObject(String imageKey);
 }
