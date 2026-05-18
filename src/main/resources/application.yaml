@@ -139,6 +139,10 @@ aws:
     presigned-url-expiration-minutes: ${AWS_S3_PRESIGNED_URL_EXPIRATION_MINUTES:10}
     cdn-base-url: ${AWS_S3_CDN_BASE_URL}
 
+ai:
+  base-url: https://ai.glit.today
+  internal-token: ${INTERNAL_API_TOKEN}
+
 discord:
   webhook:
     enabled: false
@@ -178,6 +182,9 @@ auth:
   callback:
     local: ${AUTH_CALLBACK_LOCAL:http://localhost:3000/auth/callback}
   default-env: ${AUTH_DEFAULT_ENV:local}
+
+ai:
+  internal-token: ${INTERNAL_API_TOKEN:}
 
 aws:
   s3:
