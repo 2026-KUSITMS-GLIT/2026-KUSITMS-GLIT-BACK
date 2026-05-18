@@ -1,6 +1,5 @@
 package com.groute.groute_server.record.application.service;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -14,9 +13,7 @@ import com.groute.groute_server.record.application.port.in.star.UploadStarImageC
 import com.groute.groute_server.record.application.port.in.star.UploadStarImageResult;
 import com.groute.groute_server.record.application.port.in.star.UploadStarImageUseCase;
 import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
-import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
-import com.groute.groute_server.record.domain.StarImage;
 import com.groute.groute_server.record.domain.StarRecord;
 
 import lombok.RequiredArgsConstructor;
@@ -31,7 +28,6 @@ public class UploadStarImageService implements UploadStarImageUseCase {
 
     private final StarRecordRepositoryPort starRecordRepositoryPort;
     private final StarImageQueryPort starImageQueryPort;
-    private final StarImageWritePort starImageWritePort;
     private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
 
     @Override
@@ -49,14 +45,14 @@ public class UploadStarImageService implements UploadStarImageUseCase {
             throw new BusinessException(ErrorCode.STAR_WRITE_LOCKED);
         }
 
-        // sortOrder 결정을 위해 전체 목록 조회 (개수 체크 겸용)
-        List<StarImage> existing =
-                starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(command.starRecordId());
-        if (existing.size() >= MAX_IMAGES_PER_STAR) {
+        int imageCount =
+                starImageQueryPort
+                        .findAllByStarRecordIdOrderBySortOrder(command.starRecordId())
+                        .size();
+        if (imageCount >= MAX_IMAGES_PER_STAR) {
             throw new BusinessException(ErrorCode.STAR_IMAGE_LIMIT_EXCEEDED);
         }
 
-        short sortOrder = (short) existing.size(); // 0 또는 1 (두 번째 이미지)
         String imageKey =
                 String.format(
                         "star-images/%d/%d/%s.%s",
@@ -68,18 +64,7 @@ public class UploadStarImageService implements UploadStarImageUseCase {
         PresignedUrlResult presigned =
                 presignedUrlGeneratorPort.generate(imageKey, command.mimeType());
 
-        StarImage saved =
-                starImageWritePort.save(
-                        StarImage.create(
-                                record,
-                                imageKey,
-                                presigned.imageUrl(),
-                                command.mimeType(),
-                                command.sizeBytes(),
-                                sortOrder));
-
-        return new UploadStarImageResult(
-                saved.getId(), presigned.presignedUrl(), presigned.imageUrl());
+        return new UploadStarImageResult(imageKey, presigned.presignedUrl(), presigned.imageUrl());
     }
 
     private String toExtension(String mimeType) {

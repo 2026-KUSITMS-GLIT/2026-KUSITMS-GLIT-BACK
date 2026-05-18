@@ -55,6 +55,11 @@ public class S3PresignedUrlAdapter implements PresignedUrlGeneratorPort {
     }
 
     @Override
+    public String toImageUrl(String imageKey) {
+        return properties.cdnBaseUrl() + "/" + imageKey;
+    }
+
+    @Override
     public void deleteObject(String imageKey) {
         s3Client.deleteObject(
                 DeleteObjectRequest.builder().bucket(properties.bucket()).key(imageKey).build());
