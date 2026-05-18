@@ -53,6 +53,11 @@ public class ConfirmStarImageService implements ConfirmStarImageUseCase {
         }
 
         short sortOrder = (short) existing.size();
+        String expectedPrefix =
+                String.format("star-images/%d/%d/", command.userId(), command.starRecordId());
+        if (!command.imageKey().startsWith(expectedPrefix)) {
+            throw new BusinessException(ErrorCode.STAR_FORBIDDEN);
+        }
         String imageUrl = presignedUrlGeneratorPort.toImageUrl(command.imageKey());
 
         starImageWritePort.save(StarImage.create(record, command.imageKey(), imageUrl, sortOrder));
