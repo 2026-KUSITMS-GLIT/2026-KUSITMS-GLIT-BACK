@@ -1,9 +1,8 @@
 package com.groute.groute_server.record.application.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -25,10 +24,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.common.storage.PresignedUrlGeneratorPort;
-import com.groute.groute_server.common.storage.PresignedUrlResult;
-import com.groute.groute_server.record.application.port.in.star.UploadStarImageCommand;
-import com.groute.groute_server.record.application.port.in.star.UploadStarImageResult;
+import com.groute.groute_server.record.application.port.in.star.ConfirmStarImageCommand;
 import com.groute.groute_server.record.application.port.out.star.StarImageQueryPort;
+import com.groute.groute_server.record.application.port.out.star.StarImageWritePort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
@@ -38,21 +36,22 @@ import com.groute.groute_server.record.domain.enums.StarStep;
 import com.groute.groute_server.user.entity.User;
 
 @ExtendWith(MockitoExtension.class)
-class UploadStarImageServiceTest {
+class ConfirmStarImageServiceTest {
 
     private static final Long USER_ID = 1L;
     private static final Long OTHER_USER_ID = 99L;
     private static final Long STAR_ID = 10L;
+    private static final String IMAGE_KEY = "star-images/1/10/uuid.jpg";
     private static final String MIME_TYPE = "image/jpeg";
     private static final int SIZE_BYTES = 1024;
-    private static final String PRESIGNED_URL = "https://s3.example.com/presigned";
-    private static final String IMAGE_URL = "https://cdn.example.com/image.jpg";
+    private static final String IMAGE_URL = "https://cdn.example.com/" + IMAGE_KEY;
 
     @Mock StarRecordRepositoryPort starRecordRepositoryPort;
     @Mock StarImageQueryPort starImageQueryPort;
+    @Mock StarImageWritePort starImageWritePort;
     @Mock PresignedUrlGeneratorPort presignedUrlGeneratorPort;
 
-    @InjectMocks UploadStarImageService service;
+    @InjectMocks ConfirmStarImageService service;
 
     private StarRecord record;
 
@@ -72,33 +71,32 @@ class UploadStarImageServiceTest {
     }
 
     @Nested
-    @DisplayName("정상 발급")
+    @DisplayName("정상 등록")
     class HappyPath {
 
         @Test
-        @DisplayName("첫 번째 이미지 presigned URL 발급 시 imageKey·presignedUrl·imageUrl을 반환한다")
-        void should_returnPresignedUrl_for_firstImage() {
+        @DisplayName("첫 번째 이미지 confirm 시 sortOrder=0으로 DB에 저장된다")
+        void should_saveFirstImage_with_sortOrder0() {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of());
-            given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
-                    .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
+            given(presignedUrlGeneratorPort.toImageUrl(IMAGE_KEY)).willReturn(IMAGE_URL);
+            given(starImageWritePort.save(any(StarImage.class)))
+                    .willAnswer(inv -> inv.getArgument(0));
 
-            UploadStarImageResult result = service.upload(command(USER_ID));
+            service.confirm(command(USER_ID));
 
-            assertThat(result.imageKey()).isNotBlank();
-            assertThat(result.presignedUrl()).isEqualTo(PRESIGNED_URL);
-            assertThat(result.imageUrl()).isEqualTo(IMAGE_URL);
+            verify(starImageWritePort).save(any(StarImage.class));
         }
 
         @Test
-        @DisplayName("두 번째 이미지도 presigned URL을 정상 반환한다")
-        void should_returnPresignedUrl_for_secondImage() {
+        @DisplayName("두 번째 이미지 confirm 시 sortOrder=1로 DB에 저장된다")
+        void should_saveSecondImage_with_sortOrder1() {
             StarImage firstImage =
                     StarImage.create(
                             record,
-                            "star-images/1/10/uuid.jpg",
+                            "star-images/1/10/first.jpg",
                             IMAGE_URL,
                             MIME_TYPE,
                             SIZE_BYTES,
@@ -107,45 +105,13 @@ class UploadStarImageServiceTest {
                     .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of(firstImage));
-            given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
-                    .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
+            given(presignedUrlGeneratorPort.toImageUrl(IMAGE_KEY)).willReturn(IMAGE_URL);
+            given(starImageWritePort.save(any(StarImage.class)))
+                    .willAnswer(inv -> inv.getArgument(0));
 
-            UploadStarImageResult result = service.upload(command(USER_ID));
+            service.confirm(command(USER_ID));
 
-            assertThat(result.imageKey()).isNotBlank();
-            assertThat(result.presignedUrl()).isEqualTo(PRESIGNED_URL);
-        }
-
-        @Test
-        @DisplayName("image/png mimeType이면 S3 키 확장자가 png다")
-        void should_generatePngKey_when_mimeTypeIsPng() {
-            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
-                    .willReturn(Optional.of(record));
-            given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
-                    .willReturn(List.of());
-            given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
-                    .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
-
-            service.upload(new UploadStarImageCommand(USER_ID, STAR_ID, "image/png", SIZE_BYTES));
-
-            verify(presignedUrlGeneratorPort)
-                    .generate(argThat(key -> key.endsWith(".png")), anyString());
-        }
-
-        @Test
-        @DisplayName("image/webp mimeType이면 S3 키 확장자가 webp다")
-        void should_generateWebpKey_when_mimeTypeIsWebp() {
-            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
-                    .willReturn(Optional.of(record));
-            given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
-                    .willReturn(List.of());
-            given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
-                    .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
-
-            service.upload(new UploadStarImageCommand(USER_ID, STAR_ID, "image/webp", SIZE_BYTES));
-
-            verify(presignedUrlGeneratorPort)
-                    .generate(argThat(key -> key.endsWith(".webp")), anyString());
+            verify(starImageWritePort).save(any(StarImage.class));
         }
     }
 
@@ -158,11 +124,11 @@ class UploadStarImageServiceTest {
         void should_throwStarNotFound_when_notExist() {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.upload(command(USER_ID)))
+            assertThatThrownBy(() -> service.confirm(command(USER_ID)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_NOT_FOUND);
-            verify(presignedUrlGeneratorPort, never()).generate(anyString(), anyString());
+            verify(starImageWritePort, never()).save(any());
         }
 
         @Test
@@ -171,11 +137,11 @@ class UploadStarImageServiceTest {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
 
-            assertThatThrownBy(() -> service.upload(command(OTHER_USER_ID)))
+            assertThatThrownBy(() -> service.confirm(command(OTHER_USER_ID)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_FORBIDDEN);
-            verify(presignedUrlGeneratorPort, never()).generate(anyString(), anyString());
+            verify(starImageWritePort, never()).save(any());
         }
 
         @Test
@@ -187,11 +153,11 @@ class UploadStarImageServiceTest {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
 
-            assertThatThrownBy(() -> service.upload(command(USER_ID)))
+            assertThatThrownBy(() -> service.confirm(command(USER_ID)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_WRITE_LOCKED);
-            verify(presignedUrlGeneratorPort, never()).generate(anyString(), anyString());
+            verify(starImageWritePort, never()).save(any());
         }
 
         @Test
@@ -218,17 +184,18 @@ class UploadStarImageServiceTest {
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of(img1, img2));
 
-            assertThatThrownBy(() -> service.upload(command(USER_ID)))
+            assertThatThrownBy(() -> service.confirm(command(USER_ID)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_IMAGE_LIMIT_EXCEEDED);
-            verify(presignedUrlGeneratorPort, never()).generate(anyString(), anyString());
+            verify(presignedUrlGeneratorPort, never()).toImageUrl(anyString());
+            verify(starImageWritePort, never()).save(any());
         }
     }
 
     // ============== helpers ==============
 
-    private UploadStarImageCommand command(Long userId) {
-        return new UploadStarImageCommand(userId, STAR_ID, MIME_TYPE, SIZE_BYTES);
+    private ConfirmStarImageCommand command(Long userId) {
+        return new ConfirmStarImageCommand(userId, STAR_ID, IMAGE_KEY, MIME_TYPE, SIZE_BYTES);
     }
 }
