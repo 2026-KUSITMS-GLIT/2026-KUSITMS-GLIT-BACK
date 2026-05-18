@@ -2,6 +2,7 @@ package com.groute.groute_server.report.application.port.out;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
@@ -70,4 +71,13 @@ public interface LoadStarRecordPort {
      * @return 해당 날짜에 완료된 심화기록 목록
      */
     List<StarRecord> findCompletedByUserIdAndDate(Long userId, LocalDate date);
+    /**
+     * 심화기록 ID 목록에 해당하는 detailTags를 starRecordId 기준으로 그룹핑하여 반환한다.
+     *
+     * <p>AI 리포트 요청 body 구성 시 사용한다.
+     *
+     * @param starRecordIds 심화기록 ID 목록
+     * @return starRecordId → detailTag 목록 맵
+     */
+    Map<Long, List<String>> findDetailTagsByStarRecordIds(List<Long> starRecordIds);
 }
