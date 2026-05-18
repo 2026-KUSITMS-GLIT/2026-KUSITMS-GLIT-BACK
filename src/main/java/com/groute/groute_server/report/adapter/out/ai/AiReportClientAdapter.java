@@ -170,9 +170,7 @@ public class AiReportClientAdapter implements RequestAiReportPort {
             Map<Long, List<String>> detailTagsMap) {
 
         List<StarRecordItem> records =
-                starRecords.stream()
-                        .map(sr -> toStarRecordItem(sr, detailTagsMap))
-                        .toList();
+                starRecords.stream().map(sr -> toStarRecordItem(sr, detailTagsMap)).toList();
 
         List<ScrumsByDate> scrumsByDate = groupScrumsByDate(scrums, starRecords);
 
@@ -188,8 +186,7 @@ public class AiReportClientAdapter implements RequestAiReportPort {
                 starRecords.size());
     }
 
-    private StarRecordItem toStarRecordItem(
-            StarRecord sr, Map<Long, List<String>> detailTagsMap) {
+    private StarRecordItem toStarRecordItem(StarRecord sr, Map<Long, List<String>> detailTagsMap) {
         String completedAt =
                 sr.getCompletedAt() != null
                         ? sr.getCompletedAt()
@@ -215,14 +212,11 @@ public class AiReportClientAdapter implements RequestAiReportPort {
                 detailTags);
     }
 
-    private List<ScrumsByDate> groupScrumsByDate(
-            List<Scrum> scrums, List<StarRecord> starRecords) {
+    private List<ScrumsByDate> groupScrumsByDate(List<Scrum> scrums, List<StarRecord> starRecords) {
         // starRecordId → scrumId 맵 (스크럼에 연결된 STAR 기록 ID 역조회용)
         Map<Long, Long> scrumIdToStarRecordId =
                 starRecords.stream()
-                        .collect(
-                                Collectors.toMap(
-                                        sr -> sr.getScrum().getId(), StarRecord::getId));
+                        .collect(Collectors.toMap(sr -> sr.getScrum().getId(), StarRecord::getId));
 
         Map<String, List<ScrumItem>> byDate = new HashMap<>();
         for (Scrum scrum : scrums) {

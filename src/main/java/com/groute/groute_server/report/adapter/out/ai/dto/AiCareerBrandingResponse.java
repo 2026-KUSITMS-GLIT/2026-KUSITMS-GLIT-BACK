@@ -10,7 +10,5 @@ public record AiCareerBrandingResponse(
         @JsonProperty("branding_pattern") String brandingPattern,
         @JsonProperty("top_detail_tags") List<DetailTagStat> topDetailTags) {
 
-    public record DetailTagStat(
-            String tag,
-            int count) {}
+    public record DetailTagStat(String tag, int count) {}
 }

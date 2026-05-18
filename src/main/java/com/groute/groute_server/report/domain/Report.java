@@ -85,7 +85,11 @@ public class Report extends BaseTimeEntity {
      * @param starCountAt 발행 시점 누적 STAR 수
      */
     public static Report create(
-            User user, ReportType reportType, int starCountAt, int selectedStarCount, List<Long> selectedStarRecordIds) {
+            User user,
+            ReportType reportType,
+            int starCountAt,
+            int selectedStarCount,
+            List<Long> selectedStarRecordIds) {
         Report report = new Report();
         report.user = user;
         report.reportType = reportType;

@@ -9,14 +9,9 @@ public record AiCareerStrengthsAndInterviewResponse(
         List<StrengthItem> strengths,
         @JsonProperty("interview_questions") List<InterviewQuestion> interviewQuestions) {
 
-    public record StrengthItem(
-            String title,
-            String description,
-            List<EvidenceItem> evidences) {}
+    public record StrengthItem(String title, String description, List<EvidenceItem> evidences) {}
 
-    public record InterviewQuestion(
-            String question,
-            List<EvidenceItem> evidences) {}
+    public record InterviewQuestion(String question, List<EvidenceItem> evidences) {}
 
     public record EvidenceItem(
             int id,
