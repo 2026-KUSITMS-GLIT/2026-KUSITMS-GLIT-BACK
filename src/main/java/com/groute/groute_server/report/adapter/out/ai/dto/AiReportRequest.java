@@ -23,9 +23,7 @@ public record AiReportRequest(
             String competency,
             @JsonProperty("detail_tags") List<String> detailTags) {}
 
-    public record ScrumsByDate(
-            String date,
-            List<ScrumItem> scrums) {
+    public record ScrumsByDate(String date, List<ScrumItem> scrums) {
 
         public record ScrumItem(
                 @JsonProperty("project_name") String projectName,
@@ -34,7 +32,5 @@ public record AiReportRequest(
                 @JsonProperty("star_record_id") Long starRecordId) {}
     }
 
-    public record RecordPeriod(
-            @JsonProperty("from") String from,
-            String to) {}
+    public record RecordPeriod(@JsonProperty("from") String from, String to) {}
 }

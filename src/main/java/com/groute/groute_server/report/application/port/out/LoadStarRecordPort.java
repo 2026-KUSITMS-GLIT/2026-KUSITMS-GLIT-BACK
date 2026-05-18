@@ -71,6 +71,7 @@ public interface LoadStarRecordPort {
      * @return 해당 날짜에 완료된 심화기록 목록
      */
     List<StarRecord> findCompletedByUserIdAndDate(Long userId, LocalDate date);
+
     /**
      * 심화기록 ID 목록에 해당하는 detailTags를 starRecordId 기준으로 그룹핑하여 반환한다.
      *

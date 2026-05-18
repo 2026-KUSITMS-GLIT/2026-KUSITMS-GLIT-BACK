@@ -11,7 +11,5 @@ public record AiMiniReportResponse(
         @JsonProperty("competency_frequency") List<CompetencyCount> competencyFrequency,
         @JsonProperty("top_detail_tags") List<String> topDetailTags) {
 
-    public record CompetencyCount(
-            String competency,
-            int count) {}
+    public record CompetencyCount(String competency, int count) {}
 }

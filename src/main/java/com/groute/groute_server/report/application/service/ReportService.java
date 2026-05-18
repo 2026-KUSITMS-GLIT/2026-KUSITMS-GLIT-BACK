@@ -113,7 +113,11 @@ public class ReportService
                             result.reportId(), result.starRecords(), result.scrums());
             report.complete(aiResult.title(), aiResult.contentJson());
         } catch (Exception e) {
-            log.error("[AI Report] 생성 실패 — reportId={}, error={}", result.reportId(), e.getMessage(), e);
+            log.error(
+                    "[AI Report] 생성 실패 — reportId={}, error={}",
+                    result.reportId(),
+                    e.getMessage(),
+                    e);
             report.fail();
         }
         saveReportPort.save(report);
@@ -167,8 +171,7 @@ public class ReportService
 
         List<StarRecord> starRecords =
                 report.getSelectedStarRecordIds() != null
-                        ? loadStarRecordPort.findAllByIds(
-                                userId, report.getSelectedStarRecordIds())
+                        ? loadStarRecordPort.findAllByIds(userId, report.getSelectedStarRecordIds())
                         : List.of();
         List<Scrum> scrums =
                 report.getSelectedStarRecordIds() != null
