@@ -12,6 +12,7 @@ public record StarDetailResponse(
         @Schema(description = "심화기록 식별자", example = "1") Long starRecordId,
         @Schema(description = "프로젝트 태그명 (최대 15자)", example = "밋업 프로젝트") String projectTag,
         @Schema(description = "제목 자유작성 (최대 20자)", example = "기획 작업") String freeText,
+        @Schema(description = "스크럼 본문 (최대 50자)", example = "어드민 페이지 기능명세서 작성") String scrumContent,
         @Schema(description = "대표 역량 (5대 역량 enum)", example = "PLANNING_EXECUTION")
                 String primaryCategory,
         @Schema(description = "세부 역량 태그 목록 (최대 3개, 빈 배열 가능)", example = "[\"UX 설계\", \"품질 관리\"]")
@@ -27,6 +28,7 @@ public record StarDetailResponse(
                 view.starRecordId(),
                 view.projectTag(),
                 view.freeText(),
+                view.scrumContent(),
                 view.primaryCategory(),
                 view.detailTags(),
                 view.situationTask(),

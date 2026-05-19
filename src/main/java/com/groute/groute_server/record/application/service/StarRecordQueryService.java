@@ -73,6 +73,7 @@ public class StarRecordQueryService implements GetStarDetailUseCase {
                 starRecord.getId(),
                 title.getProject().getName(),
                 title.getFreeText(),
+                starRecord.getScrum().getContent(),
                 primaryCategory,
                 detailTags,
                 starRecord.getSituationTask(),
