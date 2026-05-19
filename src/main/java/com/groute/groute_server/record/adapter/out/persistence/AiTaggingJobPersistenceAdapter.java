@@ -30,4 +30,9 @@ public class AiTaggingJobPersistenceAdapter implements AiTaggingJobPort {
     public AiTaggingJob save(StarRecord starRecord) {
         return aiTaggingJobRepository.save(new AiTaggingJob(starRecord));
     }
+
+    @Override
+    public AiTaggingJob saveJob(AiTaggingJob job) {
+        return aiTaggingJobRepository.save(job);
+    }
 }

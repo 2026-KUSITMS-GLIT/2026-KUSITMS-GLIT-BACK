@@ -29,4 +29,14 @@ public interface AiTaggingJobPort {
      * @return 저장된 잡
      */
     AiTaggingJob save(StarRecord starRecord);
+
+    /**
+     * 직접 존재하는 잡을 저장(update)한다.
+     *
+     * <p>상태 전환 이후 변경된 잡을 DB에 반영할 때 사용한다.
+     *
+     * @param job 저장할 잡
+     * @return 저장된 잡
+     */
+    AiTaggingJob saveJob(AiTaggingJob job);
 }
