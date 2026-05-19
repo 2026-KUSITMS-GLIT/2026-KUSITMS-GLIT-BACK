@@ -100,19 +100,24 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
 
         try {
             AiTaggingResponse response = callFastApi(request);
-
-            Map<String, Object> responsePayload =
-                    Map.of(
-                            "primaryCategory", response.primaryCategory(),
-                            "detailTags", response.detailTags());
-            job.succeed(responsePayload);
+            job.succeed(toResponsePayload(response));
             aiTaggingJobPort.saveJob(job);
-
-            completeAiTaggingUseCase.completeTagging(starRecord.getId());
-
         } catch (BusinessException e) {
             handleFailure(job, e.getMessage(), request);
+            return;
         }
+        completeAiTaggingUseCase.completeTagging(starRecord.getId());
+    }
+
+    private Map<String, Object> toResponsePayload(AiTaggingResponse response) {
+        String primaryCategory =
+                response.primaryCategory() != null ? response.primaryCategory() : "";
+        java.util.List<String> detailTags =
+                response.detailTags() != null ? response.detailTags() : java.util.List.of();
+        Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("primaryCategory", primaryCategory);
+        payload.put("detailTags", detailTags);
+        return payload;
     }
 
     private AiTaggingResponse callFastApi(AiTaggingRequest request) {
@@ -146,13 +151,8 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
             aiTaggingJobPort.saveJob(job);
             try {
                 AiTaggingResponse response = callFastApi(request);
-                Map<String, Object> responsePayload =
-                        Map.of(
-                                "primaryCategory", response.primaryCategory(),
-                                "detailTags", response.detailTags());
-                job.succeed(responsePayload);
+                job.succeed(toResponsePayload(response));
                 aiTaggingJobPort.saveJob(job);
-                completeAiTaggingUseCase.completeTagging(job.getStarRecord().getId());
             } catch (BusinessException retryEx) {
                 log.error(
                         "[AI Tagging] 재시도 실패 확정 — jobId={}, error={}",
@@ -160,7 +160,9 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
                         retryEx.getMessage());
                 job.fail(retryEx.getMessage());
                 aiTaggingJobPort.saveJob(job);
+                return;
             }
+            completeAiTaggingUseCase.completeTagging(job.getStarRecord().getId());
         } else {
             log.error("[AI Tagging] 최종 실패 — jobId={}, error={}", job.getId(), errorMessage);
             job.fail(errorMessage);
