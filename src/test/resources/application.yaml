@@ -107,6 +107,7 @@ app:
     server-description: Test
   user:
     default-profile-image-url: ""
+    hard-delete-grace-days: 30
 
 discord:
   webhook:
