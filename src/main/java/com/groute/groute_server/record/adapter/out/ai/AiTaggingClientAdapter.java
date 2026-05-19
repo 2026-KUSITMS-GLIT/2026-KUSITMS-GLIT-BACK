@@ -20,17 +20,17 @@ import com.groute.groute_server.record.application.port.in.CompleteAiTaggingUseC
 import com.groute.groute_server.record.application.port.out.AiTaggingClient;
 import com.groute.groute_server.record.application.port.out.AiTaggingJobPort;
 import com.groute.groute_server.record.domain.AiTaggingJob;
-import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.record.domain.Scrum;
+import com.groute.groute_server.record.domain.StarRecord;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * {@link AiTaggingClient}의 FastAPI 실 구현체.
  *
- * <p>STAR 기록의 ST/A/R 텍스트와 직군, 선택 역량을 FastAPI {@code POST /api/tagging}에 전송하고,
- * 응답으로 받은 primaryCategory + detailTags를 {@link CompleteAiTaggingUseCase}에 전달한다.
- * 실패 시 최대 1회 재시도하며, 재시도 후에도 실패 시 FAILED로 확정한다.
+ * <p>STAR 기록의 ST/A/R 텍스트와 직군, 선택 역량을 FastAPI {@code POST /api/tagging}에 전송하고, 응답으로 받은
+ * primaryCategory + detailTags를 {@link CompleteAiTaggingUseCase}에 전달한다. 실패 시 최대 1회 재시도하며, 재시도 후에도
+ * 실패 시 FAILED로 확정한다.
  */
 @Slf4j
 @Component
@@ -162,10 +162,7 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
                 aiTaggingJobPort.saveJob(job);
             }
         } else {
-            log.error(
-                    "[AI Tagging] 최종 실패 — jobId={}, error={}",
-                    job.getId(),
-                    errorMessage);
+            log.error("[AI Tagging] 최종 실패 — jobId={}, error={}", job.getId(), errorMessage);
             job.fail(errorMessage);
             aiTaggingJobPort.saveJob(job);
         }
