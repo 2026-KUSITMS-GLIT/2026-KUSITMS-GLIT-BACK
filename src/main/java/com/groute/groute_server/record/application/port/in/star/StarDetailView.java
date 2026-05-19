@@ -11,6 +11,7 @@ public record StarDetailView(
         Long starRecordId,
         String projectTag,
         String freeText,
+        String scrumContent,
         String primaryCategory,
         List<String> detailTags,
         String situationTask,
