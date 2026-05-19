@@ -99,6 +99,13 @@ jwt:
 auth:
   refresh-token:
     cookie-enabled: false
+  # 프론트 콜백 URL은 env 키 → URL 맵으로 등록.
+  # 프론트가 OAuth2 시작 시 ?env=local|production 으로 어느 콜백을 쓸지 지정.
+  # 환경별 등록 키는 각 프로파일에서 채우며 stg/prod는 SSM 주입 필수(fail-fast).
+  callback: {}
+  # default-env는 프론트가 env를 보내지 않거나 등록되지 않은 값을 보냈을 때 fallback.
+  # stg/prod는 SSM AUTH_DEFAULT_ENV 주입 필수, 로컬은 하단 local 프로파일에서 'local' fallback.
+  default-env: ${AUTH_DEFAULT_ENV}
 
 springdoc:
   swagger-ui:
@@ -117,11 +124,45 @@ app:
   swagger:
     server-url: http://localhost:8080
     server-description: Local
+  user:
+    # stg/prod는 SSM에서 USER_DEFAULT_PROFILE_IMAGE_URL 주입 필수 — 누락 시 부팅 실패(fail-fast)로 설정 오류 즉시 노출.
+    # 로컬은 하단 local 프로파일에서 빈 문자열 fallback 허용
+    default-profile-image-url: ${USER_DEFAULT_PROFILE_IMAGE_URL}
+    # 회원 탈퇴 후 물리 삭제까지의 grace period(MYP-005). 기획상 30일 고정.
+    # env 오버라이드는 인시던트 대응·테스트 단축 목적의 안전장치이며 평소엔 default(30) 그대로 사용.
+    hard-delete-grace-days: ${USER_HARD_DELETE_GRACE_DAYS:30}
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_S3_REGION:ap-northeast-2}
+    presigned-url-expiration-minutes: ${AWS_S3_PRESIGNED_URL_EXPIRATION_MINUTES:10}
+    cdn-base-url: ${AWS_S3_CDN_BASE_URL}
+
+ai:
+  base-url: ${AI_BASE_URL:https://ai.glit.today}
+  internal-token: ${INTERNAL_API_TOKEN:}
+  timeout:
+    connect: 5000
+    read: 30000
 
 discord:
   webhook:
     enabled: false
     url: ${DISCORD_WEBHOOK_URL:}
+
+firebase:
+  # service account JSON 통째로 주입. project_id는 JSON 내부에서 SDK가 자동 추출.
+  # stg/prod는 SSM에서 FIREBASE_CREDENTIALS_JSON 주입 필수 — 누락 시 부팅 실패(fail-fast)로 설정 오류 즉시 노출.
+  # 로컬은 하단 local 프로파일에서 빈 문자열 fallback 허용 (FCM 발송 비활성).
+  credentials-json: ${FIREBASE_CREDENTIALS_JSON}
+
+notification:
+  # 카피 풀 JSON. SSM Parameter Store /groute/{env}/NOTIFICATION_COPY_JSON에서 주입.
+  # 형식: {"copies":[{"title":"...","body":"..."},...]}  (title/body에 {닉네임} 토큰 가능)
+  copy-json: ${NOTIFICATION_COPY_JSON}
+  # 알림 클릭 시 이동할 절대 URL (스킴+도메인+path 일체, REC-002 스크럼 작성 화면).
+  deep-link-url: ${NOTIFICATION_DEEP_LINK_URL}
 
 ---
 # ===== 로컬 개발 환경 =====
@@ -135,6 +176,31 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+app:
+  user:
+    default-profile-image-url: ${USER_DEFAULT_PROFILE_IMAGE_URL:}
+
+auth:
+  callback:
+    local: ${AUTH_CALLBACK_LOCAL:http://localhost:3000/auth/callback}
+  default-env: ${AUTH_DEFAULT_ENV:local}
+
+ai:
+  base-url: ${AI_BASE_URL:http://localhost:8000}
+  internal-token: ${INTERNAL_API_TOKEN:}
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET:}
+    cdn-base-url: ${AWS_S3_CDN_BASE_URL:}
+
+firebase:
+  credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
+
+notification:
+  copy-json: ${NOTIFICATION_COPY_JSON:}
+  deep-link-url: ${NOTIFICATION_DEEP_LINK_URL:}
 
 logging:
   level:
@@ -159,6 +225,12 @@ app:
   swagger:
     server-url: https://stg-api.glit.today
     server-description: Staging
+
+# stg는 프론트 로컬·운영 둘 다 콜백을 허용한다. 프론트가 ?env=local|production 으로 선택.
+auth:
+  callback:
+    local: ${AUTH_CALLBACK_LOCAL}
+    production: ${AUTH_CALLBACK_PRODUCTION}
 
 discord:
   webhook:
@@ -197,6 +269,9 @@ app:
 auth:
   refresh-token:
     cookie-enabled: true
+  # prod는 운영 프론트 콜백 하나만 허용. local 키는 의도적으로 미등록.
+  callback:
+    production: ${AUTH_CALLBACK_PRODUCTION}
 
 discord:
   webhook:

@@ -35,9 +35,18 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build -x test
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Docker 이미지 빌드 검증 (PR용)
         if: github.event_name == 'pull_request'
-        run: docker build -t test-image .
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: test-image:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Set Role ARN by branch
         if: github.event_name == 'push'
@@ -62,14 +71,13 @@ jobs:
 
       - name: Build and Push Docker image
         if: github.event_name == 'push'
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: groute-ecr
-          IMAGE_TAG: sha-${{ github.sha }}
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "Pushed → $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/groute-ecr:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: docker-compose.yml을 S3에 업로드
         if: github.event_name == 'push'

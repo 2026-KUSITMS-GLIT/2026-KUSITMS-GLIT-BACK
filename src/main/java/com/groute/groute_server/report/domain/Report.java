@@ -1,5 +1,6 @@
 package com.groute.groute_server.report.domain;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.persistence.*;
@@ -8,6 +9,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import com.groute.groute_server.common.entity.BaseTimeEntity;
+import com.groute.groute_server.common.exception.BusinessException;
+import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.report.domain.enums.ReportStatus;
 import com.groute.groute_server.report.domain.enums.ReportType;
 import com.groute.groute_server.user.entity.User;
@@ -48,6 +51,15 @@ public class Report extends BaseTimeEntity {
     @Column(name = "star_count_at", nullable = false)
     private Integer starCountAt;
 
+    /** 리포트 생성 시 유저가 선택한 심화기록 수. 커리어 리포트 상세 서브텍스트용(RPT003). 기존 리포트는 NULL. */
+    @Column(name = "selected_star_count")
+    private Integer selectedStarCount;
+
+    /** 리포트 생성 시 선택된 심화기록 ID 목록. 재시도 시 AI 재호출에 사용. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "selected_star_record_ids", columnDefinition = "jsonb")
+    private List<Long> selectedStarRecordIds;
+
     /** 커리어 브랜딩 문장. 리포트 목록 카드에 노출(RPT001). */
     @Column(name = "title", length = 200)
     private String title;
@@ -60,4 +72,75 @@ public class Report extends BaseTimeEntity {
     /** AI 실패 시 1회 재시도 제공(RPT003). */
     @Column(name = "retry_count", nullable = false)
     private Short retryCount = 0;
+
+    // =========================================================
+    // 팩토리 메서드
+    // =========================================================
+
+    /**
+     * 리포트 생성 요청 시 호출. status는 GENERATING으로 초기화된다.
+     *
+     * @param user 요청 유저
+     * @param reportType MINI / CAREER
+     * @param starCountAt 발행 시점 누적 STAR 수
+     */
+    public static Report create(
+            User user,
+            ReportType reportType,
+            int starCountAt,
+            int selectedStarCount,
+            List<Long> selectedStarRecordIds) {
+        Report report = new Report();
+        report.user = user;
+        report.reportType = reportType;
+        report.status = ReportStatus.GENERATING;
+        report.starCountAt = starCountAt;
+        report.selectedStarCount = selectedStarCount;
+        report.selectedStarRecordIds = selectedStarRecordIds;
+        report.retryCount = 0;
+        return report;
+    }
+
+    // =========================================================
+    // 상태 전환
+    // =========================================================
+
+    /**
+     * AI 실패 후 재시도 요청 시 호출. status를 GENERATING으로 되돌리고 retryCount를 1로 올린다.
+     *
+     * <p>재시도 가능 여부는 {@link #isRetryAvailable()}로 먼저 확인해야 한다.
+     */
+    public void startRetry() {
+        if (!isRetryAvailable()) {
+            throw new BusinessException(ErrorCode.REPORT_RETRY_NOT_AVAILABLE);
+        }
+        this.status = ReportStatus.GENERATING;
+        this.retryCount = 1;
+    }
+
+    // =========================================================
+    // 도메인 규칙
+    // =========================================================
+
+    /**
+     * AI 생성 완료 처리. status를 SUCCESS로 전환하고 title, contentJson을 저장한다.
+     *
+     * @param title 커리어 브랜딩 문장 (MINI는 null)
+     * @param contentJson AI 응답 본문
+     */
+    public void complete(String title, Map<String, Object> contentJson) {
+        this.status = ReportStatus.SUCCESS;
+        this.title = title;
+        this.contentJson = contentJson;
+    }
+
+    /** AI 생성 실패 처리. status를 FAILED로 전환한다. */
+    public void fail() {
+        this.status = ReportStatus.FAILED;
+    }
+
+    /** 재시도 가능 여부. FAILED 상태이고 아직 재시도를 1회도 하지 않은 경우에만 true. */
+    public boolean isRetryAvailable() {
+        return this.status == ReportStatus.FAILED && this.retryCount < 1;
+    }
 }

@@ -9,5 +9,15 @@ public enum StarStep {
     /** Result 작성 중. */
     R,
     /** 3단계 모두 완료. AI 태깅 호출 가능. */
-    DONE
+    DONE;
+
+    /** URL 경로 세그먼트를 StarStep으로 변환한다. 알 수 없는 값이면 IllegalArgumentException. */
+    public static StarStep fromUrlPath(String path) {
+        return switch (path) {
+            case "situation-task" -> ST;
+            case "action" -> A;
+            case "result" -> R;
+            default -> throw new IllegalArgumentException("Unknown step path: " + path);
+        };
+    }
 }

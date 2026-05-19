@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import com.groute.groute_server.common.entity.BaseTimeEntity;
 import com.groute.groute_server.user.enums.DayOfWeek;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -17,7 +18,7 @@ import lombok.NoArgsConstructor;
  * (day_of_week, notify_time) 기준으로 발송 대상 유저를 역조회한다.
  */
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "notification_settings")
 public class NotificationSetting extends BaseTimeEntity {
@@ -42,4 +43,18 @@ public class NotificationSetting extends BaseTimeEntity {
     /** 활성 여부. OS 알림 권한 비활성 시 false 처리(권한 필요 안내 노출, MYP003). */
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
+
+    /**
+     * 신규 알림 슬롯 생성용 정적 팩토리. PATCH "전체 교체" 흐름에서 기존 슬롯을 일괄 삭제 후 본 팩토리로 재생성한다. {@code active}는 요청 본문의
+     * {@code isActive} 플래그가 그대로 전달돼 모든 슬롯이 동일한 활성 여부를 갖는다(이슈 본문 "슬롯 유지" 정책).
+     */
+    public static NotificationSetting create(
+            User user, DayOfWeek dayOfWeek, LocalTime notifyTime, boolean active) {
+        NotificationSetting setting = new NotificationSetting();
+        setting.user = user;
+        setting.dayOfWeek = dayOfWeek;
+        setting.notifyTime = notifyTime;
+        setting.isActive = active;
+        return setting;
+    }
 }
