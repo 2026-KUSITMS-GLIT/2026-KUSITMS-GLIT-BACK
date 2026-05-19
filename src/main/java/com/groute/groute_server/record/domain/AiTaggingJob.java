@@ -76,4 +76,31 @@ public class AiTaggingJob extends BaseTimeEntity {
         this.status = JobStatus.QUEUED;
         this.retryCount = 0;
     }
+
+    /** 워커가 잡을 집어가 처리 시작. RUNNING으로 전환하고 요청 페이로드를 저장한다. */
+    public void start(Map<String, Object> requestPayload) {
+        this.status = JobStatus.RUNNING;
+        this.requestPayload = requestPayload;
+        this.startedAt = OffsetDateTime.now();
+    }
+
+    /** AI 태깅 성공. SUCCESS로 전환하고 응답 페이로드를 저장한다. */
+    public void succeed(Map<String, Object> responsePayload) {
+        this.status = JobStatus.SUCCESS;
+        this.responsePayload = responsePayload;
+        this.finishedAt = OffsetDateTime.now();
+    }
+
+    /** AI 태깅 실패. FAILED로 전환하고 retryCount를 증가시킨다. */
+    public void fail(String errorMessage) {
+        this.status = JobStatus.FAILED;
+        this.errorMessage = errorMessage;
+        this.finishedAt = OffsetDateTime.now();
+        this.retryCount++;
+    }
+
+    /** 재시도 가능 여부. 최대 1회 재시도 허용(REC006). */
+    public boolean isRetryable() {
+        return this.retryCount < 1;
+    }
 }
