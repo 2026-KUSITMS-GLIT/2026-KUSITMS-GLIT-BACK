@@ -171,6 +171,25 @@ class ConfirmStarImageServiceTest {
         }
 
         @Test
+        @DisplayName("중복 imageKey가 있으면 INVALID_INPUT을 던진다")
+        void should_throwInvalidInput_when_duplicateImageKeys() {
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
+                    .willReturn(Optional.of(record));
+
+            assertThatThrownBy(
+                            () ->
+                                    service.confirm(
+                                            new ConfirmStarImageCommand(
+                                                    USER_ID,
+                                                    STAR_ID,
+                                                    List.of(IMAGE_KEY_1, IMAGE_KEY_1))))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INVALID_INPUT);
+            verify(starImageWritePort, never()).save(any());
+        }
+
+        @Test
         @DisplayName("이미 2장 존재하면 STAR_IMAGE_LIMIT_EXCEEDED를 던진다")
         void should_throwLimitExceeded_when_alreadyTwoImages() {
             StarImage img1 =
