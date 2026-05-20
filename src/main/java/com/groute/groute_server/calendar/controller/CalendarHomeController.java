@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>월별 잔디(스크럼/STAR 작성 + 대표 역량) 데이터와 날짜 클릭 시 노출되는 프리뷰 목록을 반환한다. 인증된 사용자(JWT) 본인 데이터만 조회.
  */
-@Tag(name = "Calendar", description = "캘린더 조회 (메인 홈 월/일 프리뷰 + 일자별 스크럼)")
+@Tag(name = "Calendar", description = "캘린더 조회 (메인 홈 월별 + 일자별 작업(title) 단위 프리뷰)")
 @RestController
 @RequestMapping("/api/calendar")
 @RequiredArgsConstructor
@@ -59,7 +59,8 @@ public class CalendarHomeController {
     @Operation(
             summary = "날짜 프리뷰 조회",
             description =
-                    "지정한 일자(yyyy-MM-dd)의 스크럼 목록을 반환한다. STAR 완료 시에만 대표 역량/세부 태그가 채워지며 그 외 null.")
+                    "지정한 일자(yyyy-MM-dd)의 작업(ScrumTitle) 단위 프리뷰 목록을 반환한다. 같은 freeText에 속한 스크럼들을 하나의 카드로 묶고, "
+                            + "카드 내 STAR 완료된 스크럼들의 대표 역량을 distinct 배열로 노출한다. STAR 완료가 없으면 primaryCategories는 빈 배열, hasStarAny는 false.")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
