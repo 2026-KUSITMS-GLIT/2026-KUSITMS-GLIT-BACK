@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.time.LocalDate;
@@ -43,7 +44,8 @@ class UploadStarImageServiceTest {
     private static final Long USER_ID = 1L;
     private static final Long OTHER_USER_ID = 99L;
     private static final Long STAR_ID = 10L;
-    private static final String MIME_TYPE = "image/jpeg";
+    private static final String MIME_JPEG = "image/jpeg";
+    private static final String MIME_PNG = "image/png";
     private static final String PRESIGNED_URL = "https://s3.example.com/presigned";
     private static final String IMAGE_URL = "https://cdn.example.com/image.jpg";
 
@@ -75,8 +77,8 @@ class UploadStarImageServiceTest {
     class HappyPath {
 
         @Test
-        @DisplayName("첫 번째 이미지 presigned URL 발급 시 imageKey·presignedUrl·imageUrl을 반환한다")
-        void should_returnPresignedUrl_for_firstImage() {
+        @DisplayName("1장 요청 시 presigned URL 1개를 반환한다")
+        void should_returnOnePresignedUrl_when_oneMimeType() {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
@@ -84,16 +86,34 @@ class UploadStarImageServiceTest {
             given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
                     .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
 
-            UploadStarImageResult result = service.upload(command(USER_ID));
+            List<UploadStarImageResult> results = service.upload(command(USER_ID, MIME_JPEG));
 
-            assertThat(result.imageKey()).isNotBlank();
-            assertThat(result.presignedUrl()).isEqualTo(PRESIGNED_URL);
-            assertThat(result.imageUrl()).isEqualTo(IMAGE_URL);
+            assertThat(results).hasSize(1);
+            assertThat(results.get(0).imageKey()).isNotBlank();
+            assertThat(results.get(0).presignedUrl()).isEqualTo(PRESIGNED_URL);
+            assertThat(results.get(0).imageUrl()).isEqualTo(IMAGE_URL);
         }
 
         @Test
-        @DisplayName("두 번째 이미지도 presigned URL을 정상 반환한다")
-        void should_returnPresignedUrl_for_secondImage() {
+        @DisplayName("2장 동시 요청 시 presigned URL 2개를 반환한다")
+        void should_returnTwoPresignedUrls_when_twoMimeTypes() {
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
+                    .willReturn(Optional.of(record));
+            given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
+                    .willReturn(List.of());
+            given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
+                    .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
+
+            List<UploadStarImageResult> results =
+                    service.upload(command(USER_ID, MIME_JPEG, MIME_PNG));
+
+            assertThat(results).hasSize(2);
+            verify(presignedUrlGeneratorPort, times(2)).generate(anyString(), anyString());
+        }
+
+        @Test
+        @DisplayName("기존 1장 있을 때 1장 추가 요청은 정상 발급된다")
+        void should_returnPresignedUrl_when_oneExistingAndOneRequested() {
             StarImage firstImage =
                     StarImage.create(record, "star-images/1/10/uuid.jpg", IMAGE_URL, (short) 0);
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
@@ -103,10 +123,9 @@ class UploadStarImageServiceTest {
             given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
                     .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
 
-            UploadStarImageResult result = service.upload(command(USER_ID));
+            List<UploadStarImageResult> results = service.upload(command(USER_ID, MIME_JPEG));
 
-            assertThat(result.imageKey()).isNotBlank();
-            assertThat(result.presignedUrl()).isEqualTo(PRESIGNED_URL);
+            assertThat(results).hasSize(1);
         }
 
         @Test
@@ -119,7 +138,7 @@ class UploadStarImageServiceTest {
             given(presignedUrlGeneratorPort.generate(anyString(), anyString()))
                     .willReturn(new PresignedUrlResult(PRESIGNED_URL, IMAGE_URL));
 
-            service.upload(new UploadStarImageCommand(USER_ID, STAR_ID, "image/png"));
+            service.upload(command(USER_ID, MIME_PNG));
 
             verify(presignedUrlGeneratorPort)
                     .generate(argThat(key -> key.endsWith(".png")), anyString());
@@ -135,7 +154,7 @@ class UploadStarImageServiceTest {
         void should_throwStarNotFound_when_notExist() {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.upload(command(USER_ID)))
+            assertThatThrownBy(() -> service.upload(command(USER_ID, MIME_JPEG)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_NOT_FOUND);
@@ -148,7 +167,7 @@ class UploadStarImageServiceTest {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
 
-            assertThatThrownBy(() -> service.upload(command(OTHER_USER_ID)))
+            assertThatThrownBy(() -> service.upload(command(OTHER_USER_ID, MIME_JPEG)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_FORBIDDEN);
@@ -164,7 +183,7 @@ class UploadStarImageServiceTest {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
 
-            assertThatThrownBy(() -> service.upload(command(USER_ID)))
+            assertThatThrownBy(() -> service.upload(command(USER_ID, MIME_JPEG)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_WRITE_LOCKED);
@@ -183,7 +202,24 @@ class UploadStarImageServiceTest {
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of(img1, img2));
 
-            assertThatThrownBy(() -> service.upload(command(USER_ID)))
+            assertThatThrownBy(() -> service.upload(command(USER_ID, MIME_JPEG)))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.STAR_IMAGE_LIMIT_EXCEEDED);
+            verify(presignedUrlGeneratorPort, never()).generate(anyString(), anyString());
+        }
+
+        @Test
+        @DisplayName("기존 1장 + 요청 2장이면 합계 초과로 STAR_IMAGE_LIMIT_EXCEEDED를 던진다")
+        void should_throwLimitExceeded_when_existingPlusRequestedExceedsMax() {
+            StarImage img1 =
+                    StarImage.create(record, "star-images/1/10/a.jpg", IMAGE_URL, (short) 0);
+            given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
+                    .willReturn(Optional.of(record));
+            given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
+                    .willReturn(List.of(img1));
+
+            assertThatThrownBy(() -> service.upload(command(USER_ID, MIME_JPEG, MIME_PNG)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_IMAGE_LIMIT_EXCEEDED);
@@ -193,7 +229,7 @@ class UploadStarImageServiceTest {
 
     // ============== helpers ==============
 
-    private UploadStarImageCommand command(Long userId) {
-        return new UploadStarImageCommand(userId, STAR_ID, MIME_TYPE);
+    private UploadStarImageCommand command(Long userId, String... mimeTypes) {
+        return new UploadStarImageCommand(userId, STAR_ID, List.of(mimeTypes));
     }
 }
