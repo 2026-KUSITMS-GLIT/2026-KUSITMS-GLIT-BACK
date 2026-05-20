@@ -159,59 +159,113 @@ class CalendarHomeServiceTest {
     class DailyPreviewHappyPath {
 
         @Test
-        @DisplayName("STAR가 완료된 스크럼은 primaryCategory와 detailTags가 채워진다")
-        void should_fillStarFields_when_starCompleted() {
+        @DisplayName("같은 title의 스크럼들은 하나의 카드로 묶이고 primaryCategory는 distinct로 모인다")
+        void should_groupScrumsByTitle_when_multipleScrumsSameTitle() {
             // given
-            Scrum scrum = scrum(7L, "어드민 페이지 기능명세서 작성", true, 50L, "밋업프로젝트", "기획 작업");
+            Scrum scrum1 = scrum(7L, "본문 A", true, 50L, "밋업프로젝트", "기획 작업");
+            Scrum scrum2 = scrum(8L, "본문 B", true, 50L, "밋업프로젝트", "기획 작업");
             given(calendarHomeRepository.findScrumsByUserAndDate(USER_ID, DATE))
-                    .willReturn(List.of(scrum));
-            given(calendarHomeRepository.findCompletedStarTagsByScrumIds(USER_ID, List.of(7L)))
+                    .willReturn(List.of(scrum1, scrum2));
+            given(calendarHomeRepository.findCompletedStarTagsByScrumIds(USER_ID, List.of(7L, 8L)))
                     .willReturn(
                             List.of(
                                     new ScrumStarTagRow(
                                             7L, CompetencyCategory.PLANNING_EXECUTION, "UX 설계"),
                                     new ScrumStarTagRow(
-                                            7L, CompetencyCategory.PLANNING_EXECUTION, "품질 관리")));
+                                            8L, CompetencyCategory.COLLABORATION, "협업")));
 
             // when
             CalendarDailyPreviewView view = service.getDailyPreview(USER_ID, DATE);
 
             // then
             assertThat(view.date()).isEqualTo(DATE);
-            assertThat(view.scrums()).hasSize(1);
-            CalendarDailyPreviewView.ScrumItem item = view.scrums().get(0);
-            assertThat(item.scrumId()).isEqualTo(7L);
-            assertThat(item.projectName()).isEqualTo("밋업프로젝트");
-            assertThat(item.freeText()).isEqualTo("기획 작업");
-            assertThat(item.content()).isEqualTo("어드민 페이지 기능명세서 작성");
-            assertThat(item.primaryCategory()).isEqualTo(CompetencyCategory.PLANNING_EXECUTION);
-            assertThat(item.detailTags()).containsExactly("UX 설계", "품질 관리");
-            assertThat(item.hasStar()).isTrue();
+            assertThat(view.titles()).hasSize(1);
+            CalendarDailyPreviewView.TitlePreview preview = view.titles().get(0);
+            assertThat(preview.titleId()).isEqualTo(50L);
+            assertThat(preview.projectName()).isEqualTo("밋업프로젝트");
+            assertThat(preview.freeText()).isEqualTo("기획 작업");
+            assertThat(preview.primaryCategories())
+                    .containsExactly(
+                            CompetencyCategory.PLANNING_EXECUTION,
+                            CompetencyCategory.COLLABORATION);
+            assertThat(preview.scrumCount()).isEqualTo(2);
+            assertThat(preview.hasStarAny()).isTrue();
         }
 
         @Test
-        @DisplayName("STAR가 미완료/미작성인 스크럼은 primaryCategory와 detailTags가 null")
-        void should_returnNullStarFields_when_noCompletedStar() {
-            // given — 스크럼은 있으나 완료된 STAR row 없음
-            Scrum scrum = scrum(7L, "본문", false, 50L, "밋업프로젝트", "기획 작업");
+        @DisplayName("그룹 내 일부 스크럼만 STAR 완료 시 완료된 것만 primaryCategories에 모인다")
+        void should_includeOnlyCompletedPrimaryCategories_when_partialStarCompleted() {
+            // given — scrum1만 STAR 완료, scrum2는 미완료
+            Scrum scrum1 = scrum(7L, "본문 A", true, 50L, "밋업프로젝트", "기획 작업");
+            Scrum scrum2 = scrum(8L, "본문 B", false, 50L, "밋업프로젝트", "기획 작업");
             given(calendarHomeRepository.findScrumsByUserAndDate(USER_ID, DATE))
-                    .willReturn(List.of(scrum));
-            given(calendarHomeRepository.findCompletedStarTagsByScrumIds(USER_ID, List.of(7L)))
+                    .willReturn(List.of(scrum1, scrum2));
+            given(calendarHomeRepository.findCompletedStarTagsByScrumIds(USER_ID, List.of(7L, 8L)))
+                    .willReturn(
+                            List.of(
+                                    new ScrumStarTagRow(
+                                            7L, CompetencyCategory.PLANNING_EXECUTION, "UX 설계")));
+
+            // when
+            CalendarDailyPreviewView view = service.getDailyPreview(USER_ID, DATE);
+
+            // then
+            CalendarDailyPreviewView.TitlePreview preview = view.titles().get(0);
+            assertThat(preview.primaryCategories())
+                    .containsExactly(CompetencyCategory.PLANNING_EXECUTION);
+            assertThat(preview.scrumCount()).isEqualTo(2);
+            assertThat(preview.hasStarAny()).isTrue();
+        }
+
+        @Test
+        @DisplayName("그룹 전체 STAR 미완료 시 primaryCategories는 빈 배열, hasStarAny는 false")
+        void should_returnEmptyPrimaryCategories_when_noStarCompleted() {
+            // given
+            Scrum scrum1 = scrum(7L, "본문 A", false, 50L, "밋업프로젝트", "기획 작업");
+            Scrum scrum2 = scrum(8L, "본문 B", false, 50L, "밋업프로젝트", "기획 작업");
+            given(calendarHomeRepository.findScrumsByUserAndDate(USER_ID, DATE))
+                    .willReturn(List.of(scrum1, scrum2));
+            given(calendarHomeRepository.findCompletedStarTagsByScrumIds(USER_ID, List.of(7L, 8L)))
                     .willReturn(List.of());
 
             // when
             CalendarDailyPreviewView view = service.getDailyPreview(USER_ID, DATE);
 
             // then
-            CalendarDailyPreviewView.ScrumItem item = view.scrums().get(0);
-            assertThat(item.primaryCategory()).isNull();
-            assertThat(item.detailTags()).isNull();
-            assertThat(item.hasStar()).isFalse();
+            CalendarDailyPreviewView.TitlePreview preview = view.titles().get(0);
+            assertThat(preview.primaryCategories()).isEmpty();
+            assertThat(preview.scrumCount()).isEqualTo(2);
+            assertThat(preview.hasStarAny()).isFalse();
+        }
+
+        @Test
+        @DisplayName("서로 다른 title은 별도 카드로 분리되며 첫 발견(scrum.id ASC) 순서를 따른다")
+        void should_separateCardsByTitle_when_differentTitles() {
+            // given — titleId 50의 scrum이 먼저(id=7), titleId 60의 scrum이 나중(id=8)
+            Scrum scrum1 = scrum(7L, "본문 A", true, 50L, "밋업프로젝트", "기획 작업");
+            Scrum scrum2 = scrum(8L, "본문 B", true, 60L, "디자인프로젝트", "디자인 작업");
+            given(calendarHomeRepository.findScrumsByUserAndDate(USER_ID, DATE))
+                    .willReturn(List.of(scrum1, scrum2));
+            given(calendarHomeRepository.findCompletedStarTagsByScrumIds(USER_ID, List.of(7L, 8L)))
+                    .willReturn(
+                            List.of(
+                                    new ScrumStarTagRow(
+                                            7L, CompetencyCategory.PLANNING_EXECUTION, "UX 설계"),
+                                    new ScrumStarTagRow(
+                                            8L, CompetencyCategory.COLLABORATION, "협업")));
+
+            // when
+            CalendarDailyPreviewView view = service.getDailyPreview(USER_ID, DATE);
+
+            // then
+            assertThat(view.titles()).hasSize(2);
+            assertThat(view.titles().get(0).titleId()).isEqualTo(50L);
+            assertThat(view.titles().get(1).titleId()).isEqualTo(60L);
         }
 
         @Test
         @DisplayName("스크럼이 없으면 빈 배열을 반환한다")
-        void should_returnEmptyScrums_when_noScrums() {
+        void should_returnEmptyTitles_when_noScrums() {
             // given
             given(calendarHomeRepository.findScrumsByUserAndDate(USER_ID, DATE))
                     .willReturn(List.of());
@@ -220,7 +274,7 @@ class CalendarHomeServiceTest {
             CalendarDailyPreviewView view = service.getDailyPreview(USER_ID, DATE);
 
             // then
-            assertThat(view.scrums()).isEmpty();
+            assertThat(view.titles()).isEmpty();
         }
     }
 

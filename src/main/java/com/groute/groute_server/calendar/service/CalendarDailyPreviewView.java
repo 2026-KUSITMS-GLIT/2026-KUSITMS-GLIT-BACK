@@ -16,8 +16,8 @@ public record CalendarDailyPreviewView(LocalDate date, List<TitlePreview> titles
     /**
      * 작업(ScrumTitle) 단위 프리뷰 항목.
      *
-     * <p>{@code primaryCategories}는 카드 내 STAR 완료된 스크럼들의 distinct primaryCategory 집합으로, scrum.id 오름차순
-     * 첫 발견 순서를 따른다. STAR 완료된 스크럼이 한 건도 없으면 빈 배열이고 {@code hasStarAny}는 false다.
+     * <p>{@code primaryCategories}는 카드 내 STAR 완료된 스크럼들의 distinct primaryCategory 집합으로, scrum.id
+     * 오름차순 첫 발견 순서를 따른다. STAR 완료된 스크럼이 한 건도 없으면 빈 배열이고 {@code hasStarAny}는 false다.
      */
     public record TitlePreview(
             Long titleId,
