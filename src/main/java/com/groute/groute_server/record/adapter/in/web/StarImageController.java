@@ -91,14 +91,15 @@ public class StarImageController {
                 description = "이미 완료된 심화기록")
     })
     @PostMapping("/{starRecordId}/images/presigned-url")
-    public ApiResponse<UploadStarImageResponse> uploadImage(
+    public ApiResponse<List<UploadStarImageResponse>> uploadImage(
             @CurrentUser Long userId,
             @PathVariable Long starRecordId,
             @Valid @RequestBody UploadStarImageRequest request) {
-        return ApiResponse.ok(
-                "이미지 업로드 URL 발급 성공",
-                UploadStarImageResponse.from(
-                        uploadStarImageUseCase.upload(request.toCommand(userId, starRecordId))));
+        List<UploadStarImageResponse> responses =
+                uploadStarImageUseCase.upload(request.toCommand(userId, starRecordId)).stream()
+                        .map(UploadStarImageResponse::from)
+                        .toList();
+        return ApiResponse.ok("이미지 업로드 URL 발급 성공", responses);
     }
 
     @Operation(
