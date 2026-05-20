@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.time.LocalDate;
@@ -41,8 +42,9 @@ class ConfirmStarImageServiceTest {
     private static final Long USER_ID = 1L;
     private static final Long OTHER_USER_ID = 99L;
     private static final Long STAR_ID = 10L;
-    private static final String IMAGE_KEY = "star-images/1/10/uuid.jpg";
-    private static final String IMAGE_URL = "https://cdn.example.com/" + IMAGE_KEY;
+    private static final String IMAGE_KEY_1 = "star-images/1/10/uuid1.jpg";
+    private static final String IMAGE_KEY_2 = "star-images/1/10/uuid2.png";
+    private static final String IMAGE_URL = "https://cdn.example.com/star-images/1/10/uuid1.jpg";
 
     @Mock StarRecordRepositoryPort starRecordRepositoryPort;
     @Mock StarImageQueryPort starImageQueryPort;
@@ -73,37 +75,35 @@ class ConfirmStarImageServiceTest {
     class HappyPath {
 
         @Test
-        @DisplayName("첫 번째 이미지 confirm 시 sortOrder=0으로 DB에 저장된다")
-        void should_saveFirstImage_with_sortOrder0() {
+        @DisplayName("1장 confirm 시 sortOrder=0으로 DB에 저장된다")
+        void should_saveOneImage_with_sortOrder0() {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of());
-            given(presignedUrlGeneratorPort.toImageUrl(IMAGE_KEY)).willReturn(IMAGE_URL);
+            given(presignedUrlGeneratorPort.toImageUrl(IMAGE_KEY_1)).willReturn(IMAGE_URL);
             given(starImageWritePort.save(any(StarImage.class)))
                     .willAnswer(inv -> inv.getArgument(0));
 
-            service.confirm(command(USER_ID));
+            service.confirm(command(USER_ID, IMAGE_KEY_1));
 
-            verify(starImageWritePort).save(any(StarImage.class));
+            verify(starImageWritePort, times(1)).save(any(StarImage.class));
         }
 
         @Test
-        @DisplayName("두 번째 이미지 confirm 시 sortOrder=1로 DB에 저장된다")
-        void should_saveSecondImage_with_sortOrder1() {
-            StarImage firstImage =
-                    StarImage.create(record, "star-images/1/10/first.jpg", IMAGE_URL, (short) 0);
+        @DisplayName("2장 동시 confirm 시 sortOrder=0,1로 각각 DB에 저장된다")
+        void should_saveTwoImages_with_sortOrder0And1() {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
-                    .willReturn(List.of(firstImage));
-            given(presignedUrlGeneratorPort.toImageUrl(IMAGE_KEY)).willReturn(IMAGE_URL);
+                    .willReturn(List.of());
+            given(presignedUrlGeneratorPort.toImageUrl(anyString())).willReturn(IMAGE_URL);
             given(starImageWritePort.save(any(StarImage.class)))
                     .willAnswer(inv -> inv.getArgument(0));
 
-            service.confirm(command(USER_ID));
+            service.confirm(command(USER_ID, IMAGE_KEY_1, IMAGE_KEY_2));
 
-            verify(starImageWritePort).save(any(StarImage.class));
+            verify(starImageWritePort, times(2)).save(any(StarImage.class));
         }
     }
 
@@ -116,7 +116,7 @@ class ConfirmStarImageServiceTest {
         void should_throwStarNotFound_when_notExist() {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.confirm(command(USER_ID)))
+            assertThatThrownBy(() -> service.confirm(command(USER_ID, IMAGE_KEY_1)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_NOT_FOUND);
@@ -129,7 +129,7 @@ class ConfirmStarImageServiceTest {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
 
-            assertThatThrownBy(() -> service.confirm(command(OTHER_USER_ID)))
+            assertThatThrownBy(() -> service.confirm(command(OTHER_USER_ID, IMAGE_KEY_1)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_FORBIDDEN);
@@ -145,7 +145,7 @@ class ConfirmStarImageServiceTest {
             given(starRecordRepositoryPort.findByIdWithLock(STAR_ID))
                     .willReturn(Optional.of(record));
 
-            assertThatThrownBy(() -> service.confirm(command(USER_ID)))
+            assertThatThrownBy(() -> service.confirm(command(USER_ID, IMAGE_KEY_1)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_WRITE_LOCKED);
@@ -160,7 +160,8 @@ class ConfirmStarImageServiceTest {
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of());
             ConfirmStarImageCommand tamperedCommand =
-                    new ConfirmStarImageCommand(USER_ID, STAR_ID, "star-images/999/999/hack.jpg");
+                    new ConfirmStarImageCommand(
+                            USER_ID, STAR_ID, List.of("star-images/999/999/hack.jpg"));
 
             assertThatThrownBy(() -> service.confirm(tamperedCommand))
                     .isInstanceOf(BusinessException.class)
@@ -181,7 +182,7 @@ class ConfirmStarImageServiceTest {
             given(starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(STAR_ID))
                     .willReturn(List.of(img1, img2));
 
-            assertThatThrownBy(() -> service.confirm(command(USER_ID)))
+            assertThatThrownBy(() -> service.confirm(command(USER_ID, IMAGE_KEY_1)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.STAR_IMAGE_LIMIT_EXCEEDED);
@@ -192,7 +193,7 @@ class ConfirmStarImageServiceTest {
 
     // ============== helpers ==============
 
-    private ConfirmStarImageCommand command(Long userId) {
-        return new ConfirmStarImageCommand(userId, STAR_ID, IMAGE_KEY);
+    private ConfirmStarImageCommand command(Long userId, String... imageKeys) {
+        return new ConfirmStarImageCommand(userId, STAR_ID, List.of(imageKeys));
     }
 }
