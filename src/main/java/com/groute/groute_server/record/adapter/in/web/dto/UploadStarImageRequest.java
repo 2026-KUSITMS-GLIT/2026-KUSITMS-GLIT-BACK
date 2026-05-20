@@ -1,14 +1,19 @@
 package com.groute.groute_server.record.adapter.in.web.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import java.util.List;
+
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import com.groute.groute_server.record.application.port.in.star.UploadStarImageCommand;
 
 public record UploadStarImageRequest(
-        @NotBlank @Pattern(regexp = "image/jpeg|image/png") String mimeType) {
+        @NotEmpty
+                @Size(max = 2)
+                List<@Pattern(regexp = "image/jpeg|image/png") String> mimeTypes) {
 
     public UploadStarImageCommand toCommand(Long userId, Long starRecordId) {
-        return new UploadStarImageCommand(userId, starRecordId, mimeType);
+        return new UploadStarImageCommand(userId, starRecordId, mimeTypes);
     }
 }
