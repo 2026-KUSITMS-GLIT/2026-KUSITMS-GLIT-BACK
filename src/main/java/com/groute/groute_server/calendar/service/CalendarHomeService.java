@@ -71,9 +71,9 @@ public class CalendarHomeService {
     /**
      * 지정 일자의 작업(ScrumTitle) 단위 프리뷰 목록을 반환한다. 본인 데이터만 포함되며 빈 결과는 {@code titles=[]}.
      *
-     * <p>같은 freeText에 속한 스크럼들을 하나의 카드로 묶고, 카드 단위로 STAR 완료된 스크럼들의 {@code primaryCategory}를 distinct 집합으로
-     * 노출한다. STAR 완료된 스크럼이 한 건도 없으면 {@code primaryCategories=[]}이고 {@code hasStarAny=false}다. 정렬은 그룹
-     * 첫 발견 순서(scrum.id ASC) 를 따른다.
+     * <p>같은 freeText에 속한 스크럼들을 하나의 카드로 묶고, 카드 단위로 STAR 완료된 스크럼들의 {@code primaryCategory}를 distinct
+     * 집합으로 노출한다. STAR 완료된 스크럼이 한 건도 없으면 {@code primaryCategories=[]}이고 {@code hasStarAny=false}다.
+     * 정렬은 그룹 첫 발견 순서(scrum.id ASC) 를 따른다.
      */
     public CalendarDailyPreviewView getDailyPreview(Long userId, LocalDate date) {
         List<Scrum> scrums = calendarHomeRepository.findScrumsByUserAndDate(userId, date);
