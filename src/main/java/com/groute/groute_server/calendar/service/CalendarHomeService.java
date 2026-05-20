@@ -5,8 +5,10 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -14,9 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.calendar.repository.CalendarHomeRepository;
-import com.groute.groute_server.calendar.repository.ScrumStarTagRow;
 import com.groute.groute_server.calendar.repository.StarDailyRow;
 import com.groute.groute_server.record.domain.Scrum;
+import com.groute.groute_server.record.domain.ScrumTitle;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 
 import lombok.RequiredArgsConstructor;
@@ -67,11 +69,11 @@ public class CalendarHomeService {
     }
 
     /**
-     * 지정 일자의 스크럼 프리뷰 목록을 반환한다. 본인 데이터만 포함되며 빈 결과는 {@code scrums=[]}.
+     * 지정 일자의 작업(ScrumTitle) 단위 프리뷰 목록을 반환한다. 본인 데이터만 포함되며 빈 결과는 {@code titles=[]}.
      *
-     * <p>각 스크럼의 {@code primaryCategory}/{@code detailTags}는 STAR가 완료된 경우에만
-     * 채워진다(`isCompleted=true`). 미완료/미작성이면 두 필드 모두 {@code null}이며, {@code detailTags}는 안전 차원에서 최대
-     * 3개로 제한.
+     * <p>같은 freeText에 속한 스크럼들을 하나의 카드로 묶고, 카드 단위로 STAR 완료된 스크럼들의 {@code primaryCategory}를 distinct 집합으로
+     * 노출한다. STAR 완료된 스크럼이 한 건도 없으면 {@code primaryCategories=[]}이고 {@code hasStarAny=false}다. 정렬은 그룹
+     * 첫 발견 순서(scrum.id ASC) 를 따른다.
      */
     public CalendarDailyPreviewView getDailyPreview(Long userId, LocalDate date) {
         List<Scrum> scrums = calendarHomeRepository.findScrumsByUserAndDate(userId, date);
@@ -80,30 +82,43 @@ public class CalendarHomeService {
         }
 
         List<Long> scrumIds = scrums.stream().map(Scrum::getId).toList();
-        Map<Long, List<ScrumStarTagRow>> tagsByScrumId =
+        Map<Long, CompetencyCategory> primaryByScrumId =
                 calendarHomeRepository.findCompletedStarTagsByScrumIds(userId, scrumIds).stream()
-                        .collect(Collectors.groupingBy(ScrumStarTagRow::scrumId));
+                        .collect(
+                                Collectors.toMap(
+                                        row -> row.scrumId(),
+                                        row -> row.primaryCategory(),
+                                        (a, b) -> a));
 
-        List<CalendarDailyPreviewView.ScrumItem> items = new ArrayList<>();
-        for (Scrum scrum : scrums) {
-            List<ScrumStarTagRow> tagRows = tagsByScrumId.get(scrum.getId());
-            CompetencyCategory primary = null;
-            List<String> detailTags = null;
-            if (tagRows != null && !tagRows.isEmpty()) {
-                primary = tagRows.get(0).primaryCategory();
-                detailTags = tagRows.stream().map(ScrumStarTagRow::detailTag).limit(3).toList();
-            }
-            items.add(
-                    new CalendarDailyPreviewView.ScrumItem(
-                            scrum.getId(),
-                            scrum.getTitle().getProject().getName(),
-                            scrum.getTitle().getFreeText(),
-                            scrum.getContent(),
-                            primary,
-                            detailTags,
-                            scrum.isHasStar()));
+        // scrums 는 repository에서 s.id ASC 정렬되어 들어오므로 LinkedHashMap이 그룹 첫 발견 순서를 보존한다.
+        Map<Long, List<Scrum>> scrumsByTitleId =
+                scrums.stream()
+                        .collect(
+                                Collectors.groupingBy(
+                                        s -> s.getTitle().getId(),
+                                        LinkedHashMap::new,
+                                        Collectors.toList()));
+
+        List<CalendarDailyPreviewView.TitlePreview> titles = new ArrayList<>();
+        for (List<Scrum> group : scrumsByTitleId.values()) {
+            ScrumTitle title = group.get(0).getTitle();
+            List<CompetencyCategory> primaryCategories =
+                    group.stream()
+                            .map(Scrum::getId)
+                            .map(primaryByScrumId::get)
+                            .filter(Objects::nonNull)
+                            .distinct()
+                            .toList();
+            titles.add(
+                    new CalendarDailyPreviewView.TitlePreview(
+                            title.getId(),
+                            title.getProject().getName(),
+                            title.getFreeText(),
+                            primaryCategories,
+                            group.size(),
+                            !primaryCategories.isEmpty()));
         }
-        return new CalendarDailyPreviewView(date, items);
+        return new CalendarDailyPreviewView(date, titles);
     }
 
     /** 그날 STAR 행 중 가장 최근 완료된 row의 primaryCategory. 비어 있으면 {@code null}. */
