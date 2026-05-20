@@ -10,9 +10,7 @@ import com.groute.groute_server.record.application.port.in.star.ConfirmStarImage
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ConfirmStarImageRequest(
-        @Schema(description = "Presigned URL 발급 시 반환된 imageKey 목록")
-                @NotEmpty
-                @Size(max = 2)
+        @Schema(description = "Presigned URL 발급 시 반환된 imageKey 목록") @NotEmpty @Size(max = 2)
                 List<String> imageKeys) {
 
     public ConfirmStarImageCommand toCommand(Long userId, Long starRecordId) {
