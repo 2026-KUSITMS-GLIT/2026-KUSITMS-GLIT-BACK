@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.application.service;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -31,7 +32,7 @@ public class UploadStarImageService implements UploadStarImageUseCase {
     private final PresignedUrlGeneratorPort presignedUrlGeneratorPort;
 
     @Override
-    public UploadStarImageResult upload(UploadStarImageCommand command) {
+    public List<UploadStarImageResult> upload(UploadStarImageCommand command) {
         StarRecord record =
                 starRecordRepositoryPort
                         .findByIdWithLock(command.starRecordId())
@@ -45,26 +46,30 @@ public class UploadStarImageService implements UploadStarImageUseCase {
             throw new BusinessException(ErrorCode.STAR_WRITE_LOCKED);
         }
 
-        int imageCount =
+        int existingCount =
                 starImageQueryPort
                         .findAllByStarRecordIdOrderBySortOrder(command.starRecordId())
                         .size();
-        if (imageCount >= MAX_IMAGES_PER_STAR) {
+        if (existingCount + command.mimeTypes().size() > MAX_IMAGES_PER_STAR) {
             throw new BusinessException(ErrorCode.STAR_IMAGE_LIMIT_EXCEEDED);
         }
 
-        String imageKey =
-                String.format(
-                        "star-images/%d/%d/%s.%s",
-                        command.userId(),
-                        command.starRecordId(),
-                        UUID.randomUUID(),
-                        toExtension(command.mimeType()));
-
-        PresignedUrlResult presigned =
-                presignedUrlGeneratorPort.generate(imageKey, command.mimeType());
-
-        return new UploadStarImageResult(imageKey, presigned.presignedUrl(), presigned.imageUrl());
+        return command.mimeTypes().stream()
+                .map(
+                        mimeType -> {
+                            String imageKey =
+                                    String.format(
+                                            "star-images/%d/%d/%s.%s",
+                                            command.userId(),
+                                            command.starRecordId(),
+                                            UUID.randomUUID(),
+                                            toExtension(mimeType));
+                            PresignedUrlResult presigned =
+                                    presignedUrlGeneratorPort.generate(imageKey, mimeType);
+                            return new UploadStarImageResult(
+                                    imageKey, presigned.presignedUrl(), presigned.imageUrl());
+                        })
+                .toList();
     }
 
     private String toExtension(String mimeType) {
