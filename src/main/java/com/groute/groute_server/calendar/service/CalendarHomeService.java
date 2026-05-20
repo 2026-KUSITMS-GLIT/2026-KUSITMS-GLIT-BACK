@@ -90,9 +90,10 @@ public class CalendarHomeService {
                                         row -> row.primaryCategory(),
                                         (a, b) -> a));
 
-        // scrums 는 repository에서 s.id ASC 정렬되어 들어오므로 LinkedHashMap이 그룹 첫 발견 순서를 보존한다.
+        // 카드 정렬 규칙(scrum.id ASC 첫 발견 순서)을 repository 쿼리 변경에 의존하지 않도록 서비스에서 명시적으로 정렬한다.
         Map<Long, List<Scrum>> scrumsByTitleId =
                 scrums.stream()
+                        .sorted(Comparator.comparing(Scrum::getId))
                         .collect(
                                 Collectors.groupingBy(
                                         s -> s.getTitle().getId(),
