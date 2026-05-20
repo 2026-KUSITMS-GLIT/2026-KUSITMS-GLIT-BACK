@@ -48,18 +48,22 @@ public class ConfirmStarImageService implements ConfirmStarImageUseCase {
 
         List<StarImage> existing =
                 starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(command.starRecordId());
-        if (existing.size() >= MAX_IMAGES_PER_STAR) {
+        if (existing.size() + command.imageKeys().size() > MAX_IMAGES_PER_STAR) {
             throw new BusinessException(ErrorCode.STAR_IMAGE_LIMIT_EXCEEDED);
         }
 
-        short sortOrder = (short) existing.size();
         String expectedPrefix =
                 String.format("star-images/%d/%d/", command.userId(), command.starRecordId());
-        if (!command.imageKey().startsWith(expectedPrefix)) {
-            throw new BusinessException(ErrorCode.STAR_FORBIDDEN);
+        for (String imageKey : command.imageKeys()) {
+            if (!imageKey.startsWith(expectedPrefix)) {
+                throw new BusinessException(ErrorCode.STAR_FORBIDDEN);
+            }
         }
-        String imageUrl = presignedUrlGeneratorPort.toImageUrl(command.imageKey());
 
-        starImageWritePort.save(StarImage.create(record, command.imageKey(), imageUrl, sortOrder));
+        short sortOrder = (short) existing.size();
+        for (String imageKey : command.imageKeys()) {
+            String imageUrl = presignedUrlGeneratorPort.toImageUrl(imageKey);
+            starImageWritePort.save(StarImage.create(record, imageKey, imageUrl, sortOrder++));
+        }
     }
 }
