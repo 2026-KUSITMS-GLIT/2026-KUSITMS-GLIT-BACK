@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.application.service;
 
+import java.util.HashSet;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -46,22 +47,27 @@ public class ConfirmStarImageService implements ConfirmStarImageUseCase {
             throw new BusinessException(ErrorCode.STAR_WRITE_LOCKED);
         }
 
+        List<String> imageKeys = command.imageKeys();
+        if (new HashSet<>(imageKeys).size() != imageKeys.size()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+
         List<StarImage> existing =
                 starImageQueryPort.findAllByStarRecordIdOrderBySortOrder(command.starRecordId());
-        if (existing.size() + command.imageKeys().size() > MAX_IMAGES_PER_STAR) {
+        if (existing.size() + imageKeys.size() > MAX_IMAGES_PER_STAR) {
             throw new BusinessException(ErrorCode.STAR_IMAGE_LIMIT_EXCEEDED);
         }
 
         String expectedPrefix =
                 String.format("star-images/%d/%d/", command.userId(), command.starRecordId());
-        for (String imageKey : command.imageKeys()) {
+        for (String imageKey : imageKeys) {
             if (!imageKey.startsWith(expectedPrefix)) {
                 throw new BusinessException(ErrorCode.STAR_FORBIDDEN);
             }
         }
 
         short sortOrder = (short) existing.size();
-        for (String imageKey : command.imageKeys()) {
+        for (String imageKey : imageKeys) {
             String imageUrl = presignedUrlGeneratorPort.toImageUrl(imageKey);
             starImageWritePort.save(StarImage.create(record, imageKey, imageUrl, sortOrder++));
         }
