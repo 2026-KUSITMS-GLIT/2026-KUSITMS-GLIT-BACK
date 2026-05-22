@@ -51,6 +51,7 @@ public class AiTaggingService
     private final ScrumQueryPort scrumQueryPort;
     private final ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     private final UserPort userPort;
+    private final AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
 
     /**
      * REC-005: AI 태깅 트리거.
@@ -97,8 +98,11 @@ public class AiTaggingService
                         });
 
         // 5. 새 잡 생성 (QUEUED)
-        aiTaggingJobPort.save(starRecord);
+        AiTaggingJob job = aiTaggingJobPort.save(starRecord);
         log.debug("AI 태깅 잡 생성: starRecordId={}, userId={}", starRecordId, userId);
+
+        // 6. 비동기 FastAPI 호출
+        aiTaggingAsyncExecutor.execute(job.getId());
     }
 
     /**

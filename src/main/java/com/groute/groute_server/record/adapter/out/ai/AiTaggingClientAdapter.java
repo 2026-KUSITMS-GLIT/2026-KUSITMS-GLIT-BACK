@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -47,7 +48,7 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
             @Value("${ai.timeout.connect:5000}") int connectTimeoutMs,
             @Value("${ai.timeout.read:30000}") int readTimeoutMs,
             AiTaggingJobPort aiTaggingJobPort,
-            CompleteAiTaggingUseCase completeAiTaggingUseCase) {
+            @Lazy CompleteAiTaggingUseCase completeAiTaggingUseCase) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(java.time.Duration.ofMillis(connectTimeoutMs));
         factory.setReadTimeout(java.time.Duration.ofMillis(readTimeoutMs));
