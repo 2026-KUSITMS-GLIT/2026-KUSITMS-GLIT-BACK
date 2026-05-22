@@ -30,11 +30,11 @@ import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingResultRespons
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingStatusResponse;
 import com.groute.groute_server.record.application.port.out.AiTaggingJobPort;
 import com.groute.groute_server.record.application.port.out.UserPort;
-import com.groute.groute_server.record.application.service.AiTaggingAsyncExecutor;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
+import com.groute.groute_server.record.application.service.AiTaggingAsyncExecutor;
 import com.groute.groute_server.record.application.service.AiTaggingService;
 import com.groute.groute_server.record.domain.AiTaggingJob;
 import com.groute.groute_server.record.domain.Scrum;
