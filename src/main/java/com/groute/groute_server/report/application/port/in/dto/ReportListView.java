@@ -16,7 +16,11 @@ import com.groute.groute_server.user.entity.User;
 public record ReportListView(List<ReportItemView> reports) {
 
     public static ReportListView from(List<Report> reports, User user) {
-        return new ReportListView(reports.stream().map(r -> ReportItemView.from(r, user)).toList());
+        return new ReportListView(
+                reports.stream()
+                        .filter(r -> r.getStatus() == ReportStatus.SUCCESS)
+                        .map(r -> ReportItemView.from(r, user))
+                        .toList());
     }
 
     public record ReportItemView(
