@@ -38,6 +38,13 @@ public interface ScrumJpaRepository extends JpaRepository<Scrum, Long> {
     List<Scrum> findAllByIdInAndUserId(
             @Param("ids") Collection<Long> ids, @Param("userId") Long userId);
 
+    /** 특정 ScrumTitle 산하 본인 소유 Scrum 전체. 제목 단위 일괄 삭제 cascade 수집용. */
+    @Query(
+            "SELECT s FROM Scrum s "
+                    + "WHERE s.title.id = :titleId AND s.user.id = :userId AND s.isDeleted = false")
+    List<Scrum> findAllByTitleIdAndUserId(
+            @Param("titleId") Long titleId, @Param("userId") Long userId);
+
     boolean existsByUserIdAndScrumDateAndIsDeletedFalse(Long userId, LocalDate scrumDate);
 
     /** 본문 변경. 호출자가 14일·hasStar 검증 선행. */
