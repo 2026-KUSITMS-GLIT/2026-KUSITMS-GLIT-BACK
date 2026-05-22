@@ -23,6 +23,14 @@ public interface AiTaggingJobPort {
     Optional<AiTaggingJob> findLatestByStarRecordId(Long starRecordId);
 
     /**
+     * 잡 ID로 단건 조회한다.
+     *
+     * @param jobId 조회할 잡 ID
+     * @return 잡 (없으면 empty)
+     */
+    Optional<AiTaggingJob> findById(Long jobId);
+
+    /**
      * 새 잡을 저장한다.
      *
      * @param starRecord 잡을 생성할 STAR 기록
