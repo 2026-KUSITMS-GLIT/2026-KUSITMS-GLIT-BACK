@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
@@ -27,6 +30,7 @@ import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingResultRespons
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingStatusResponse;
 import com.groute.groute_server.record.application.port.out.AiTaggingJobPort;
 import com.groute.groute_server.record.application.port.out.UserPort;
+import com.groute.groute_server.record.application.service.AiTaggingAsyncExecutor;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
@@ -58,8 +62,23 @@ class AiTaggingServiceTest {
     @Mock private ScrumQueryPort scrumQueryPort;
     @Mock private ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     @Mock private UserPort userPort;
+    @Mock private AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
 
     @InjectMocks private AiTaggingService aiTaggingService;
+
+    // =========================================================
+    // 트랜잭션 동기화 설정 (TransactionSynchronizationManager 사용하는 trigger() 테스트용)
+    // =========================================================
+
+    @BeforeEach
+    void initTransactionSync() {
+        TransactionSynchronizationManager.initSynchronization();
+    }
+
+    @AfterEach
+    void clearTransactionSync() {
+        TransactionSynchronizationManager.clearSynchronization();
+    }
 
     // =========================================================
     // 테스트 픽스처 헬퍼
@@ -124,9 +143,12 @@ class AiTaggingServiceTest {
         @DisplayName("성공 — 잡 없을 때 새 잡 생성")
         void createsNewJob_whenNoJobExists() {
             StarRecord record = makeStarRecord(USER_ID, StarStep.DONE);
+            AiTaggingJob savedJob = makeJob(JobStatus.QUEUED, 0);
+            ReflectionTestUtils.setField(savedJob, "id", 99L);
             given(starRecordPort.findById(STAR_RECORD_ID)).willReturn(Optional.of(record));
             given(aiTaggingJobPort.findLatestByStarRecordId(STAR_RECORD_ID))
                     .willReturn(Optional.empty());
+            given(aiTaggingJobPort.save(record)).willReturn(savedJob);
 
             aiTaggingService.trigger(STAR_RECORD_ID, USER_ID);
 
@@ -138,9 +160,12 @@ class AiTaggingServiceTest {
         void createsNewJob_whenPreviousJobFailedWithRetryCount0() {
             StarRecord record = makeStarRecord(USER_ID, StarStep.DONE);
             AiTaggingJob failedJob = makeJob(JobStatus.FAILED, 0);
+            AiTaggingJob savedJob = makeJob(JobStatus.QUEUED, 0);
+            ReflectionTestUtils.setField(savedJob, "id", 99L);
             given(starRecordPort.findById(STAR_RECORD_ID)).willReturn(Optional.of(record));
             given(aiTaggingJobPort.findLatestByStarRecordId(STAR_RECORD_ID))
                     .willReturn(Optional.of(failedJob));
+            given(aiTaggingJobPort.save(record)).willReturn(savedJob);
 
             aiTaggingService.trigger(STAR_RECORD_ID, USER_ID);
 
