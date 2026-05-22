@@ -99,15 +99,17 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
         job.start(requestPayload);
         aiTaggingJobPort.saveJob(job);
 
+        AiTaggingResponse response;
         try {
-            AiTaggingResponse response = callFastApi(request);
+            response = callFastApi(request);
             job.succeed(toResponsePayload(response));
             aiTaggingJobPort.saveJob(job);
         } catch (BusinessException e) {
             handleFailure(job, e.getMessage(), request);
             return;
         }
-        completeAiTaggingUseCase.completeTagging(starRecord.getId());
+        completeAiTaggingUseCase.completeTagging(
+                starRecord.getId(), response.primaryCategory(), response.detailTags());
     }
 
     private Map<String, Object> toResponsePayload(AiTaggingResponse response) {
@@ -150,8 +152,9 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
                     job.getStarRecord().getId());
             job.fail(errorMessage);
             aiTaggingJobPort.saveJob(job);
+            AiTaggingResponse response;
             try {
-                AiTaggingResponse response = callFastApi(request);
+                response = callFastApi(request);
                 job.succeed(toResponsePayload(response));
                 aiTaggingJobPort.saveJob(job);
             } catch (BusinessException retryEx) {
@@ -163,7 +166,8 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
                 aiTaggingJobPort.saveJob(job);
                 return;
             }
-            completeAiTaggingUseCase.completeTagging(job.getStarRecord().getId());
+            completeAiTaggingUseCase.completeTagging(
+                    job.getStarRecord().getId(), response.primaryCategory(), response.detailTags());
         } else {
             log.error("[AI Tagging] 최종 실패 — jobId={}, error={}", job.getId(), errorMessage);
             job.fail(errorMessage);

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
+import com.groute.groute_server.record.application.port.out.star.StarTagSavePort;
 import com.groute.groute_server.record.domain.StarTag;
 
 import lombok.RequiredArgsConstructor;
@@ -16,12 +17,17 @@ import lombok.RequiredArgsConstructor;
  */
 @Component
 @RequiredArgsConstructor
-class StarTagPersistenceAdapter implements StarTagQueryPort {
+class StarTagPersistenceAdapter implements StarTagQueryPort, StarTagSavePort {
 
     private final StarTagJpaRepository jpaRepository;
 
     @Override
     public List<StarTag> findAllByStarRecordId(Long starRecordId) {
         return jpaRepository.findAllByStarRecordId(starRecordId);
+    }
+
+    @Override
+    public void saveAll(List<StarTag> tags) {
+        jpaRepository.saveAll(tags);
     }
 }
