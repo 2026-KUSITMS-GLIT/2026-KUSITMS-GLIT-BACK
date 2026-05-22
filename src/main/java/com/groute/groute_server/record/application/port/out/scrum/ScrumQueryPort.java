@@ -14,4 +14,7 @@ public interface ScrumQueryPort {
 
     /** 요청 scrumId 중 본인 소유인 것만 반환. 결과 크기로 미존재/타인 소유 판별. */
     List<Scrum> findAllByIdInAndUserId(Collection<Long> ids, Long userId);
+
+    /** 특정 ScrumTitle 산하의 본인 소유 Scrum 전체. 제목 단위 일괄 삭제 시 cascade 대상 수집용. */
+    List<Scrum> findAllByTitleIdAndUserId(Long titleId, Long userId);
 }
