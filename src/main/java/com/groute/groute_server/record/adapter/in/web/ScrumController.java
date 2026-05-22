@@ -26,6 +26,8 @@ import com.groute.groute_server.record.application.port.in.scrum.DeleteScrumComm
 import com.groute.groute_server.record.application.port.in.scrum.DeleteScrumUseCase;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumUseCase;
 import com.groute.groute_server.record.application.port.in.scrum.UpdateScrumCompetencyUseCase;
+import com.groute.groute_server.record.application.port.in.scrumtitle.DeleteScrumTitleCommand;
+import com.groute.groute_server.record.application.port.in.scrumtitle.DeleteScrumTitleUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -42,6 +44,7 @@ public class ScrumController {
     private final BulkWriteScrumUseCase bulkWriteScrumUseCase;
     private final UpdateScrumCompetencyUseCase updateScrumCompetencyUseCase;
     private final DeleteScrumUseCase deleteScrumUseCase;
+    private final DeleteScrumTitleUseCase deleteScrumTitleUseCase;
 
     @Operation(
             summary = "스크럼 일괄 저장",
@@ -146,5 +149,29 @@ public class ScrumController {
     public ApiResponse<Void> deleteScrum(@CurrentUser Long userId, @PathVariable Long scrumId) {
         deleteScrumUseCase.deleteScrum(new DeleteScrumCommand(userId, scrumId));
         return ApiResponse.ok("스크럼 삭제 성공");
+    }
+
+    @Operation(
+            summary = "스크럼 제목(freeText) 단위 일괄 삭제",
+            description =
+                    "지정 titleId 산하의 모든 Scrum을 soft-delete 하고 연결된 STAR 기록·첨부 이미지도 함께 cascade 삭제한다."
+                            + " ScrumTitle 자체도 soft-delete 된다. 14일 편집 윈도우와 hasStar 거부 정책은 적용하지 않으며,"
+                            + " 빈 산하(Scrum 0개) ScrumTitle도 정상 처리된다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "삭제 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증 또는 만료된 액세스 토큰"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "titleId가 본인 소유가 아니거나 존재하지 않음")
+    })
+    @DeleteMapping("/titles/{titleId}")
+    public ApiResponse<Void> deleteScrumTitle(
+            @CurrentUser Long userId, @PathVariable Long titleId) {
+        deleteScrumTitleUseCase.deleteScrumTitle(new DeleteScrumTitleCommand(userId, titleId));
+        return ApiResponse.ok("freeText 삭제 성공");
     }
 }
