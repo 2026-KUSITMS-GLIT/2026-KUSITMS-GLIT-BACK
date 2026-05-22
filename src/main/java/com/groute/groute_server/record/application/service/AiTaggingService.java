@@ -197,12 +197,30 @@ public class AiTaggingService
         record.tag();
 
         // star_tags 저장
-        CompetencyCategory category = CompetencyCategory.valueOf(primaryCategory);
-        List<StarTag> tags =
-                detailTags.stream()
-                        .map(detailTag -> StarTag.of(record, category, detailTag))
-                        .toList();
-        starTagSavePort.saveAll(tags);
+        if (primaryCategory == null || primaryCategory.isBlank()) {
+            log.warn(
+                    "[AI Tagging] primaryCategory가 비어있어 star_tags 저장 생략 — starRecordId={}",
+                    starRecordId);
+        } else {
+            CompetencyCategory category;
+            try {
+                category = CompetencyCategory.valueOf(primaryCategory);
+            } catch (IllegalArgumentException e) {
+                log.warn(
+                        "[AI Tagging] primaryCategory 값 불일치 — value={}, starRecordId={}",
+                        primaryCategory,
+                        starRecordId);
+                category = null;
+            }
+            if (category != null && detailTags != null && !detailTags.isEmpty()) {
+                final CompetencyCategory finalCategory = category;
+                List<StarTag> tags =
+                        detailTags.stream()
+                                .map(detailTag -> StarTag.of(record, finalCategory, detailTag))
+                                .toList();
+                starTagSavePort.saveAll(tags);
+            }
+        }
 
         Long userId = record.getUser().getId();
         LocalDate date = record.getScrum().getScrumDate();
