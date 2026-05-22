@@ -23,6 +23,9 @@ public class StarRecordClientAdapter implements StarRecordCountQueryPort {
 
     @Override
     public int countCompletedAfter(Long userId, OffsetDateTime after) {
+        if (after == null) {
+            return starRecordJpaRepository.countCompleted(userId);
+        }
         return starRecordJpaRepository.countCompletedAfter(userId, after);
     }
 }
