@@ -35,4 +35,20 @@ public class StarTag extends BaseTimeEntity {
     /** 세부 태그. AI가 자유롭게 생성(예: "이해관계자 조율"). REC007 완료 화면에 최대 3개 노출. */
     @Column(name = "detail_tag", nullable = false, length = 50)
     private String detailTag;
+
+    /**
+     * StarTag 생성 팩토리 메서드.
+     *
+     * @param starRecord 연결된 STAR 기록
+     * @param primaryCategory 대표 역량
+     * @param detailTag 세부 태그
+     */
+    public static StarTag of(
+            StarRecord starRecord, CompetencyCategory primaryCategory, String detailTag) {
+        StarTag tag = new StarTag();
+        tag.starRecord = starRecord;
+        tag.primaryCategory = primaryCategory;
+        tag.detailTag = detailTag;
+        return tag;
+    }
 }

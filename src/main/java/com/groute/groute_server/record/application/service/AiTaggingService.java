@@ -22,10 +22,12 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
+import com.groute.groute_server.record.application.port.out.star.StarTagSavePort;
 import com.groute.groute_server.record.domain.AiTaggingJob;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.record.domain.StarTag;
+import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 import com.groute.groute_server.record.domain.enums.JobStatus;
 import com.groute.groute_server.user.entity.User;
 
@@ -50,6 +52,7 @@ public class AiTaggingService
     private final StarRecordRepositoryPort starRecordPort;
     private final AiTaggingJobPort aiTaggingJobPort;
     private final StarTagQueryPort starTagPort;
+    private final StarTagSavePort starTagSavePort;
     private final ScrumQueryPort scrumQueryPort;
     private final ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     private final UserPort userPort;
@@ -184,13 +187,22 @@ public class AiTaggingService
      */
     @Override
     @Transactional
-    public void completeTagging(Long starRecordId) {
+    public void completeTagging(
+            Long starRecordId, String primaryCategory, List<String> detailTags) {
         StarRecord record =
                 starRecordPort
                         .findByIdWithScrum(starRecordId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.STAR_RECORD_NOT_FOUND));
 
         record.tag();
+
+        // star_tags 저장
+        CompetencyCategory category = CompetencyCategory.valueOf(primaryCategory);
+        List<StarTag> tags =
+                detailTags.stream()
+                        .map(detailTag -> StarTag.of(record, category, detailTag))
+                        .toList();
+        starTagSavePort.saveAll(tags);
 
         Long userId = record.getUser().getId();
         LocalDate date = record.getScrum().getScrumDate();
