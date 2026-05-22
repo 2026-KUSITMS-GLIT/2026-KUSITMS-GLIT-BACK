@@ -55,7 +55,7 @@ public class ReportQueryService
                         .map(Report::getCreatedAt)
                         .orElse(null);
 
-        int currentCount = starRecordCountQueryPort.countCompletedAfter(userId, after);
+        long currentCount = starRecordCountQueryPort.countCompletedAfter(userId, after);
 
         return ReportGaugeView.of(currentCount, NEXT_THRESHOLD);
     }
