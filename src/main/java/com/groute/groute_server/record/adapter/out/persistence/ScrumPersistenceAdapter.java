@@ -38,6 +38,11 @@ class ScrumPersistenceAdapter implements ScrumQueryPort, ScrumWritePort {
     }
 
     @Override
+    public List<Scrum> findAllByTitleIdAndUserId(Long titleId, Long userId) {
+        return jpaRepository.findAllByTitleIdAndUserId(titleId, userId);
+    }
+
+    @Override
     public List<Scrum> saveAll(Collection<Scrum> scrums) {
         if (scrums.isEmpty()) {
             return List.of();
