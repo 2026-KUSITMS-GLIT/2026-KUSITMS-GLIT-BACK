@@ -22,6 +22,8 @@ public interface ScrumForReportJpaRepository extends JpaRepository<Scrum, Long> 
      */
     @Query(
             "SELECT s FROM Scrum s "
+                    + "JOIN FETCH s.title t "
+                    + "JOIN FETCH t.project "
                     + "WHERE s.user.id = :userId "
                     + "AND s.scrumDate IN ("
                     + "  SELECT sr.scrum.scrumDate FROM StarRecord sr "
