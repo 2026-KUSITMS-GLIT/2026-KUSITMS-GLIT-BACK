@@ -5,7 +5,9 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,6 +22,8 @@ import com.groute.groute_server.record.adapter.in.web.dto.ScrumBulkWriteResponse
 import com.groute.groute_server.record.adapter.in.web.dto.ScrumCompetencyUpdateRequest;
 import com.groute.groute_server.record.adapter.in.web.dto.SyncDailyScrumRequest;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumUseCase;
+import com.groute.groute_server.record.application.port.in.scrum.DeleteScrumCommand;
+import com.groute.groute_server.record.application.port.in.scrum.DeleteScrumUseCase;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumUseCase;
 import com.groute.groute_server.record.application.port.in.scrum.UpdateScrumCompetencyUseCase;
 
@@ -37,6 +41,7 @@ public class ScrumController {
     private final SyncDailyScrumUseCase syncDailyScrumUseCase;
     private final BulkWriteScrumUseCase bulkWriteScrumUseCase;
     private final UpdateScrumCompetencyUseCase updateScrumCompetencyUseCase;
+    private final DeleteScrumUseCase deleteScrumUseCase;
 
     @Operation(
             summary = "스크럼 일괄 저장",
@@ -119,5 +124,27 @@ public class ScrumController {
         LocalDate date = DateParam.parseIso(dateRaw);
         syncDailyScrumUseCase.syncDailyScrum(request.toCommand(userId, date));
         return ApiResponse.ok("동기화 성공");
+    }
+
+    @Operation(
+            summary = "스크럼 단일 삭제",
+            description =
+                    "지정한 scrumId 한 건을 soft-delete 한다. 연결된 STAR 기록·첨부 이미지도 함께 cascade 삭제되며,"
+                            + " ScrumTitle.scrumCount 가 1 감소한다. 14일 편집 윈도우와 hasStar 거부 정책은 적용하지 않는다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "삭제 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증 또는 만료된 액세스 토큰"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "scrumId가 본인 소유가 아니거나 존재하지 않음")
+    })
+    @DeleteMapping("/{scrumId}")
+    public ApiResponse<Void> deleteScrum(@CurrentUser Long userId, @PathVariable Long scrumId) {
+        deleteScrumUseCase.deleteScrum(new DeleteScrumCommand(userId, scrumId));
+        return ApiResponse.ok("스크럼 삭제 성공");
     }
 }
