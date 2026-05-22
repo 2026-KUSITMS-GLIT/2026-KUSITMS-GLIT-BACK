@@ -102,14 +102,14 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
         AiTaggingResponse response;
         try {
             response = callFastApi(request);
-            job.succeed(toResponsePayload(response));
-            aiTaggingJobPort.saveJob(job);
         } catch (BusinessException e) {
             handleFailure(job, e.getMessage(), request);
             return;
         }
         completeAiTaggingUseCase.completeTagging(
                 starRecord.getId(), response.primaryCategory(), response.detailTags());
+        job.succeed(toResponsePayload(response));
+        aiTaggingJobPort.saveJob(job);
     }
 
     private Map<String, Object> toResponsePayload(AiTaggingResponse response) {
@@ -155,8 +155,6 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
             AiTaggingResponse response;
             try {
                 response = callFastApi(request);
-                job.succeed(toResponsePayload(response));
-                aiTaggingJobPort.saveJob(job);
             } catch (BusinessException retryEx) {
                 log.error(
                         "[AI Tagging] 재시도 실패 확정 — jobId={}, error={}",
@@ -168,6 +166,8 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
             }
             completeAiTaggingUseCase.completeTagging(
                     job.getStarRecord().getId(), response.primaryCategory(), response.detailTags());
+            job.succeed(toResponsePayload(response));
+            aiTaggingJobPort.saveJob(job);
         } else {
             log.error("[AI Tagging] 최종 실패 — jobId={}, error={}", job.getId(), errorMessage);
             job.fail(errorMessage);
