@@ -19,10 +19,7 @@ public interface AiTaggingJobRepository extends JpaRepository<AiTaggingJob, Long
      * @param starRecordId 조회할 STAR 기록 ID
      * @return 가장 최근 잡 (없으면 empty)
      */
-    @Query(
-            "SELECT j FROM AiTaggingJob j WHERE j.starRecord.id = :starRecordId ORDER BY j.createdAt DESC LIMIT 1")
-    Optional<AiTaggingJob> findTopByStarRecordIdOrderByCreatedAtDesc(
-            @Param("starRecordId") Long starRecordId);
+    Optional<AiTaggingJob> findTopByStarRecordIdOrderByCreatedAtDesc(Long starRecordId);
 
     /**
      * 해당 사용자가 소유한 모든 AiTaggingJob 물리 삭제(MYP-005 hard delete 배치).
