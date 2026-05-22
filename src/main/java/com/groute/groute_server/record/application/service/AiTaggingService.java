@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
@@ -101,8 +103,15 @@ public class AiTaggingService
         AiTaggingJob job = aiTaggingJobPort.save(starRecord);
         log.debug("AI 태깅 잡 생성: starRecordId={}, userId={}", starRecordId, userId);
 
-        // 6. 비동기 FastAPI 호출
-        aiTaggingAsyncExecutor.execute(job.getId());
+        // 6. 트랜잭션 커밋 후 비동기 FastAPI 호출 (커밋 전 조회 실패 방지)
+        Long jobId = job.getId();
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        aiTaggingAsyncExecutor.execute(jobId);
+                    }
+                });
     }
 
     /**
