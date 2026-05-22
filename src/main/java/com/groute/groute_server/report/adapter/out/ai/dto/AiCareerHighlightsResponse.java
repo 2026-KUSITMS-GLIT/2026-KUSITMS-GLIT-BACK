@@ -6,4 +6,4 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /** FastAPI /api/reports/career/highlights 응답. */
 public record AiCareerHighlightsResponse(
-        @JsonProperty("experience_highlights") List<String> experienceHighlights) {}
+        @JsonProperty("experienceHighlights") List<String> experienceHighlights) {}

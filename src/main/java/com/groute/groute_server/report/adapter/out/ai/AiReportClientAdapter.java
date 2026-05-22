@@ -116,10 +116,10 @@ public class AiReportClientAdapter implements RequestAiReportPort {
                             .body(AiMiniReportResponse.class);
 
             Map<String, Object> contentJson = new HashMap<>();
-            contentJson.put("activity_summary", response.activitySummary());
-            contentJson.put("next_focus_point", response.nextFocusPoint());
-            contentJson.put("competency_frequency", response.competencyFrequency());
-            contentJson.put("top_detail_tags", response.topDetailTags());
+            contentJson.put("activitySummary", response.activitySummary());
+            contentJson.put("nextFocusPoint", response.nextFocusPoint());
+            contentJson.put("competencyFrequency", response.competencyFrequency());
+            contentJson.put("topDetailTags", response.topDetailTags());
 
             return new AiReportResult(null, contentJson);
         } catch (ResourceAccessException e) {
@@ -174,13 +174,13 @@ public class AiReportClientAdapter implements RequestAiReportPort {
                             .body(AiCareerStrengthsAndInterviewResponse.class);
 
             Map<String, Object> contentJson = new HashMap<>();
-            contentJson.put("branding_statement", branding.brandingStatement());
-            contentJson.put("branding_pattern", branding.brandingPattern());
-            contentJson.put("top_detail_tags", branding.topDetailTags());
-            contentJson.put("narrative_summary", narrative.narrativeSummary());
-            contentJson.put("experience_highlights", highlights.experienceHighlights());
+            contentJson.put("brandingStatement", branding.brandingStatement());
+            contentJson.put("brandingPattern", branding.brandingPattern());
+            contentJson.put("topDetailTags", branding.topDetailTags());
+            contentJson.put("narrativeSummary", narrative.narrativeSummary());
+            contentJson.put("experienceHighlights", highlights.experienceHighlights());
             contentJson.put("strengths", strengthsAndInterview.strengths());
-            contentJson.put("interview_questions", strengthsAndInterview.interviewQuestions());
+            contentJson.put("interviewQuestions", strengthsAndInterview.interviewQuestions());
 
             return new AiReportResult(branding.brandingStatement(), contentJson);
         } catch (ResourceAccessException e) {

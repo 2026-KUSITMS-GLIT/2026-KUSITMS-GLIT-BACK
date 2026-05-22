@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /** FastAPI /api/reports/career/strengths-and-interview 응답. */
 public record AiCareerStrengthsAndInterviewResponse(
         List<StrengthItem> strengths,
-        @JsonProperty("interview_questions") List<InterviewQuestion> interviewQuestions) {
+        @JsonProperty("interviewQuestions") List<InterviewQuestion> interviewQuestions) {
 
     public record StrengthItem(String title, String description, List<EvidenceItem> evidences) {}
 
@@ -15,7 +15,7 @@ public record AiCareerStrengthsAndInterviewResponse(
 
     public record EvidenceItem(
             int id,
-            @JsonProperty("project_name") String projectName,
-            @JsonProperty("scrum_title") String scrumTitle,
-            @JsonProperty("created_at") String createdAt) {}
+            @JsonProperty("projectName") String projectName,
+            @JsonProperty("scrumTitle") String scrumTitle,
+            @JsonProperty("createdAt") String createdAt) {}
 }
