@@ -105,7 +105,7 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
                     + "WHERE sr.user.id = :userId "
                     + "AND sr.isCompleted = true "
                     + "AND sr.isDeleted = false")
-    int countCompleted(@Param("userId") Long userId);
+    long countCompleted(@Param("userId") Long userId);
 
     /** 특정 시점 이후 완료된 심화기록 수를 카운트한다. after는 항상 non-null로 호출해야 한다. */
     @Query(
@@ -114,7 +114,7 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
                     + "AND sr.isCompleted = true "
                     + "AND sr.isDeleted = false "
                     + "AND sr.completedAt > :after")
-    int countCompletedAfter(@Param("userId") Long userId, @Param("after") OffsetDateTime after);
+    long countCompletedAfter(@Param("userId") Long userId, @Param("after") OffsetDateTime after);
 
     /**
      * 해당 사용자가 소유한 모든 StarRecord 물리 삭제(MYP-005 hard delete 배치).

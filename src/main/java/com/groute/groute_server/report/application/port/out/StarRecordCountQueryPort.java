@@ -18,5 +18,5 @@ public interface StarRecordCountQueryPort {
      * @param after 이 시점 이후 완료된 것만 카운트. null이면 전체 카운트
      * @return 완료된 심화기록 수
      */
-    int countCompletedAfter(Long userId, OffsetDateTime after);
+    long countCompletedAfter(Long userId, OffsetDateTime after);
 }
