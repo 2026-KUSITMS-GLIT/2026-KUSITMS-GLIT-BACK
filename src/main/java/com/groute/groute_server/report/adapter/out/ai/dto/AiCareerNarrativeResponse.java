@@ -4,4 +4,4 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /** FastAPI /api/reports/career/narrative 응답. */
 public record AiCareerNarrativeResponse(
-        @JsonProperty("narrative_summary") String narrativeSummary) {}
+        @JsonProperty("narrativeSummary") String narrativeSummary) {}

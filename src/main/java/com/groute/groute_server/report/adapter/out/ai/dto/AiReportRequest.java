@@ -10,26 +10,26 @@ public record AiReportRequest(
         String job,
         String status,
         List<StarRecordItem> records,
-        @JsonProperty("scrums_by_date") List<ScrumsByDate> scrumsByDate,
-        @JsonProperty("record_period") RecordPeriod recordPeriod,
-        @JsonProperty("total_count") int totalCount) {
+        @JsonProperty("scrumsByDate") List<ScrumsByDate> scrumsByDate,
+        @JsonProperty("recordPeriod") RecordPeriod recordPeriod,
+        @JsonProperty("totalCount") int totalCount) {
 
     public record StarRecordItem(
-            @JsonProperty("star_record_id") Long starRecordId,
-            @JsonProperty("situation_task") String situationTask,
+            @JsonProperty("starRecordId") Long starRecordId,
+            @JsonProperty("situationTask") String situationTask,
             String action,
             String result,
-            @JsonProperty("completed_at") String completedAt,
+            @JsonProperty("completedAt") String completedAt,
             String competency,
-            @JsonProperty("detail_tags") List<String> detailTags) {}
+            @JsonProperty("detailTags") List<String> detailTags) {}
 
     public record ScrumsByDate(String date, List<ScrumItem> scrums) {
 
         public record ScrumItem(
-                @JsonProperty("project_name") String projectName,
-                @JsonProperty("scrum_title") String scrumTitle,
+                @JsonProperty("projectName") String projectName,
+                @JsonProperty("scrumTitle") String scrumTitle,
                 String content,
-                @JsonProperty("star_record_id") Long starRecordId) {}
+                @JsonProperty("starRecordId") Long starRecordId) {}
     }
 
     public record RecordPeriod(@JsonProperty("from") String from, String to) {}
