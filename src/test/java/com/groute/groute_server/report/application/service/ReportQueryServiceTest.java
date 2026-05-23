@@ -54,7 +54,7 @@ class ReportQueryServiceTest {
         @DisplayName("신규 유저: 리포트 없으면 전체 완료 심화기록 수를 currentCount로 반환한다")
         void should_returnTotalCount_when_noReport() {
             given(reportQueryPort.findLatestSuccessByUserId(USER_ID)).willReturn(Optional.empty());
-            given(starRecordCountQueryPort.countCompletedAfter(USER_ID, null)).willReturn(7);
+            given(starRecordCountQueryPort.countCompletedAfter(USER_ID, null)).willReturn(7L);
 
             ReportGaugeView view = service.getGauge(USER_ID);
 
@@ -73,7 +73,7 @@ class ReportQueryServiceTest {
             given(reportQueryPort.findLatestSuccessByUserId(USER_ID))
                     .willReturn(Optional.of(lastReport));
             given(starRecordCountQueryPort.countCompletedAfter(USER_ID, lastReportAt))
-                    .willReturn(4);
+                    .willReturn(4L);
 
             ReportGaugeView view = service.getGauge(USER_ID);
 
@@ -91,7 +91,7 @@ class ReportQueryServiceTest {
             given(reportQueryPort.findLatestSuccessByUserId(USER_ID))
                     .willReturn(Optional.of(lastReport));
             given(starRecordCountQueryPort.countCompletedAfter(USER_ID, lastReportAt))
-                    .willReturn(10);
+                    .willReturn(10L);
 
             ReportGaugeView view = service.getGauge(USER_ID);
 
@@ -103,7 +103,7 @@ class ReportQueryServiceTest {
         @DisplayName("currentCount > 10이면 progressRate가 1.0을 초과한다")
         void should_returnProgressRateOverOne_when_currentCountExceedsThreshold() {
             given(reportQueryPort.findLatestSuccessByUserId(USER_ID)).willReturn(Optional.empty());
-            given(starRecordCountQueryPort.countCompletedAfter(USER_ID, null)).willReturn(12);
+            given(starRecordCountQueryPort.countCompletedAfter(USER_ID, null)).willReturn(12L);
 
             ReportGaugeView view = service.getGauge(USER_ID);
 
