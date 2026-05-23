@@ -108,7 +108,9 @@ class AiTaggingClientAdapterTest {
 
             // then
             assertThat(job.getStatus()).isEqualTo(JobStatus.SUCCESS);
-            then(completeAiTaggingUseCase).should().completeTagging(STAR_RECORD_ID);
+            then(completeAiTaggingUseCase)
+                    .should()
+                    .completeTagging(STAR_RECORD_ID, "PROBLEM_SOLVING", List.of("문제해결", "개선"));
             then(aiTaggingJobPort).should(times(2)).saveJob(job);
         }
     }
@@ -132,7 +134,9 @@ class AiTaggingClientAdapterTest {
 
             // then
             assertThat(job.getStatus()).isEqualTo(JobStatus.SUCCESS);
-            then(completeAiTaggingUseCase).should().completeTagging(STAR_RECORD_ID);
+            then(completeAiTaggingUseCase)
+                    .should()
+                    .completeTagging(STAR_RECORD_ID, "PROBLEM_SOLVING", List.of("문제해결"));
         }
 
         @Test

@@ -34,6 +34,7 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
+import com.groute.groute_server.record.application.port.out.star.StarTagSavePort;
 import com.groute.groute_server.record.application.service.AiTaggingAsyncExecutor;
 import com.groute.groute_server.record.application.service.AiTaggingService;
 import com.groute.groute_server.record.domain.AiTaggingJob;
@@ -59,6 +60,7 @@ class AiTaggingServiceTest {
     @Mock private StarRecordRepositoryPort starRecordPort;
     @Mock private AiTaggingJobPort aiTaggingJobPort;
     @Mock private StarTagQueryPort starTagPort;
+    @Mock private StarTagSavePort starTagSavePort;
     @Mock private ScrumQueryPort scrumQueryPort;
     @Mock private ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     @Mock private UserPort userPort;
@@ -413,7 +415,7 @@ class AiTaggingServiceTest {
             given(starRecordPort.countTaggedByUserId(USER_ID)).willReturn(5L);
             given(userPort.findById(USER_ID)).willReturn(User.createForSocialLogin());
 
-            aiTaggingService.completeTagging(STAR_RECORD_ID);
+            aiTaggingService.completeTagging(STAR_RECORD_ID, "PROBLEM_SOLVING", List.of("문제해결"));
 
             assertThat(record.getStatus()).isEqualTo(StarRecordStatus.TAGGED);
             verify(scrumTitleRepositoryPort).commitAllByIds(List.of(100L));
@@ -428,7 +430,7 @@ class AiTaggingServiceTest {
             given(starRecordPort.countTaggedByUserId(USER_ID)).willReturn(5L);
             given(userPort.findById(USER_ID)).willReturn(User.createForSocialLogin());
 
-            aiTaggingService.completeTagging(STAR_RECORD_ID);
+            aiTaggingService.completeTagging(STAR_RECORD_ID, "PROBLEM_SOLVING", List.of("문제해결"));
 
             assertThat(record.getStatus()).isEqualTo(StarRecordStatus.TAGGED);
             verify(scrumTitleRepositoryPort, never()).commitAllByIds(any());
@@ -439,7 +441,10 @@ class AiTaggingServiceTest {
         void throwsNotFound_whenStarRecordMissing() {
             given(starRecordPort.findByIdWithScrum(STAR_RECORD_ID)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> aiTaggingService.completeTagging(STAR_RECORD_ID))
+            assertThatThrownBy(
+                            () ->
+                                    aiTaggingService.completeTagging(
+                                            STAR_RECORD_ID, "PROBLEM_SOLVING", List.of("문제해결")))
                     .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
                     .extracting(BusinessException::getErrorCode)
                     .isEqualTo(ErrorCode.STAR_RECORD_NOT_FOUND);
