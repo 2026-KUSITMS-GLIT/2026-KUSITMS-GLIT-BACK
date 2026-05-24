@@ -23,6 +23,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.record.domain.Project;
+import com.groute.groute_server.record.domain.Scrum;
+import com.groute.groute_server.record.domain.ScrumTitle;
 import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.report.application.port.in.CreateReportCommand;
 import com.groute.groute_server.report.application.port.in.ReportStatusView;
@@ -62,7 +65,7 @@ class ReportServiceTest {
     class GetSelectableInfo {
 
         @Test
-        @DisplayName("미니 이력 없으면 MINI 타입과 최신 10개 ID를 반환한다")
+        @DisplayName("미니 이력 없으면 MINI 타입과 최신 10개 상세 목록을 반환한다")
         void should_returnMiniType_when_noMiniHistory() {
             // given
             given(loadReportPort.existsMiniReportByUserId(USER_ID)).willReturn(false);
@@ -78,12 +81,13 @@ class ReportServiceTest {
             // then
             assertThat(view.reportType()).isEqualTo("MINI");
             assertThat(view.totalStarCount()).isEqualTo(15);
-            assertThat(view.autoSelectedStarRecordIds()).hasSize(10);
+            assertThat(view.autoSelectedStarRecords()).hasSize(10);
+            assertThat(view.autoSelectedStarRecords().get(0).projectName()).isEqualTo("테스트프로젝트");
             assertThat(view.starRecordDates()).containsExactly("2026-04-09", "2026-04-07");
         }
 
         @Test
-        @DisplayName("미니 이력 있으면 CAREER 타입과 최신 20개 ID를 반환한다")
+        @DisplayName("미니 이력 있으면 CAREER 타입과 최신 20개 상세 목록을 반환한다")
         void should_returnCareerType_when_hasMiniHistory() {
             // given
             given(loadReportPort.existsMiniReportByUserId(USER_ID)).willReturn(true);
@@ -99,7 +103,7 @@ class ReportServiceTest {
             // then
             assertThat(view.reportType()).isEqualTo("CAREER");
             assertThat(view.totalStarCount()).isEqualTo(25);
-            assertThat(view.autoSelectedStarRecordIds()).hasSize(20);
+            assertThat(view.autoSelectedStarRecords()).hasSize(20);
         }
     }
 
@@ -341,8 +345,21 @@ class ReportServiceTest {
         return java.util.stream.IntStream.range(0, count)
                 .mapToObj(
                         i -> {
+                            Project project = new Project();
+                            ReflectionTestUtils.setField(project, "name", "테스트프로젝트");
+
+                            ScrumTitle title = new ScrumTitle();
+                            ReflectionTestUtils.setField(title, "project", project);
+
+                            Scrum scrum = new Scrum();
+                            ReflectionTestUtils.setField(
+                                    scrum, "scrumDate", LocalDate.of(2026, 4, (i % 28) + 1));
+                            ReflectionTestUtils.setField(scrum, "content", "스크럼내용" + i);
+                            ReflectionTestUtils.setField(scrum, "title", title);
+
                             StarRecord sr = new StarRecord();
                             ReflectionTestUtils.setField(sr, "id", (long) (i + 1));
+                            ReflectionTestUtils.setField(sr, "scrum", scrum);
                             return sr;
                         })
                 .toList();
