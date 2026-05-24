@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.groute.groute_server.record.application.port.out.star.ScrumStarTagProjection;
 import com.groute.groute_server.record.domain.StarTag;
 
 /**
@@ -19,6 +20,25 @@ public interface StarTagJpaRepository extends JpaRepository<StarTag, Long> {
 
     @Query("SELECT t FROM StarTag t WHERE t.starRecord.id = :starRecordId ORDER BY t.id ASC")
     List<StarTag> findAllByStarRecordId(@Param("starRecordId") Long starRecordId);
+
+    /**
+     * scrumId 집합의 완료 STAR 태그 row(scrumId/primaryCategory/detailTag).
+     *
+     * <p>userId로 한 번 더 필터(defense-in-depth)하고, soft-delete된 starRecord는 JOIN 조건으로 자연 제외한다. 정렬은
+     * {@code st.id ASC}로 안정적.
+     */
+    @Query(
+            "SELECT new com.groute.groute_server.record.application.port.out.star.ScrumStarTagProjection("
+                    + "sr.scrum.id, st.primaryCategory, st.detailTag) "
+                    + "FROM StarTag st "
+                    + "JOIN st.starRecord sr "
+                    + "WHERE sr.scrum.id IN :scrumIds "
+                    + "  AND sr.user.id = :userId "
+                    + "  AND sr.isCompleted = true "
+                    + "  AND sr.isDeleted = false "
+                    + "ORDER BY st.id ASC")
+    List<ScrumStarTagProjection> findCompletedTagsByScrumIds(
+            @Param("userId") Long userId, @Param("scrumIds") List<Long> scrumIds);
 
     /**
      * 해당 사용자가 소유한 모든 StarTag 물리 삭제(MYP-005 hard delete 배치).
