@@ -31,10 +31,13 @@ public interface StarRecordForReportJpaRepository extends JpaRepository<StarReco
      */
     @Query(
             "SELECT sr FROM StarRecord sr "
+                    + "JOIN FETCH sr.scrum s "
+                    + "JOIN FETCH s.title t "
+                    + "JOIN FETCH t.project p "
                     + "WHERE sr.user.id = :userId "
                     + "AND sr.isCompleted = true "
                     + "AND sr.isDeleted = false "
-                    + "ORDER BY sr.scrum.scrumDate DESC, sr.id DESC "
+                    + "ORDER BY s.scrumDate DESC, sr.id DESC "
                     + "LIMIT :limit")
     List<StarRecord> findCompletedByUserIdOrderByLatest(
             @Param("userId") Long userId, @Param("limit") int limit);
