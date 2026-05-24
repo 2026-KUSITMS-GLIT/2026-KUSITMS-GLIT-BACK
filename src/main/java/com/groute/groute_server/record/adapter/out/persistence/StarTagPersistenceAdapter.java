@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.groute.groute_server.record.application.port.out.star.ScrumStarTagProjection;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagSavePort;
 import com.groute.groute_server.record.domain.StarTag;
@@ -24,6 +25,15 @@ class StarTagPersistenceAdapter implements StarTagQueryPort, StarTagSavePort {
     @Override
     public List<StarTag> findAllByStarRecordId(Long starRecordId) {
         return jpaRepository.findAllByStarRecordId(starRecordId);
+    }
+
+    @Override
+    public List<ScrumStarTagProjection> findCompletedTagsByScrumIds(
+            Long userId, List<Long> scrumIds) {
+        if (scrumIds == null || scrumIds.isEmpty()) {
+            return List.of();
+        }
+        return jpaRepository.findCompletedTagsByScrumIds(userId, scrumIds);
     }
 
     @Override
