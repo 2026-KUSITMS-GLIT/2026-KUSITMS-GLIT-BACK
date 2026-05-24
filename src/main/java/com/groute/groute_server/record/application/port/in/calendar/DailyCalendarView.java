@@ -2,23 +2,29 @@ package com.groute.groute_server.record.application.port.in.calendar;
 
 import java.util.List;
 
+import com.groute.groute_server.record.domain.enums.CompetencyCategory;
+
 /**
  * 일자별 스크럼 조회·sync 응답 모델.
  *
  * <p>ScrumTitle 단위로 그룹핑된 2계층 구조. {@code GetDailyCalendarUseCase}와 {@code SyncDailyScrumUseCase}가 동일
  * schema를 반환한다.
+ *
+ * @param detailTags 해당 일자의 모든 STAR에서 추출된 distinct 세부역량태그 목록. STAR가 한 건도 없으면 빈 배열.
  */
-public record DailyCalendarView(List<GroupView> groups) {
+public record DailyCalendarView(List<String> detailTags, List<GroupView> groups) {
 
     /**
      * ScrumTitle 단위 그룹.
      *
+     * @param primaryCategories 그룹 내 STAR 완료된 스크럼들의 distinct primaryCategory 배열. STAR 완료가 없으면 빈 배열.
      * @param isEditable 그룹 내 수정 가능한 item이 하나라도 있는지 (UI 그룹 X 버튼 노출 기준)
      */
     public record GroupView(
             Long titleId,
             String projectTag,
             String freeText,
+            List<CompetencyCategory> primaryCategories,
             boolean isEditable,
             List<ItemView> items) {}
 
