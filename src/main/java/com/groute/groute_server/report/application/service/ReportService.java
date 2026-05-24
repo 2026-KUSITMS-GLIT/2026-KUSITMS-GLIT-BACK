@@ -11,6 +11,7 @@ import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
+import com.groute.groute_server.report.application.port.in.AutoSelectedStarRecordView;
 import com.groute.groute_server.report.application.port.in.CreateReportCommand;
 import com.groute.groute_server.report.application.port.in.CreateReportUseCase;
 import com.groute.groute_server.report.application.port.in.GetReportStatusUseCase;
@@ -73,9 +74,17 @@ public class ReportService
 
         int totalStarCount = loadStarRecordPort.countCompletedByUserId(userId);
 
-        List<Long> autoSelectedIds =
+        List<AutoSelectedStarRecordView> autoSelectedStarRecords =
                 loadStarRecordPort.findCompletedByUserIdOrderByLatest(userId, limit).stream()
-                        .map(StarRecord::getId)
+                        .map(
+                                sr ->
+                                        new AutoSelectedStarRecordView(
+                                                sr.getId(),
+                                                sr.getScrum()
+                                                        .getScrumDate()
+                                                        .format(DateTimeFormatter.ISO_LOCAL_DATE),
+                                                sr.getScrum().getTitle().getProject().getName(),
+                                                sr.getScrum().getContent()))
                         .toList();
 
         List<String> starRecordDates =
@@ -84,7 +93,7 @@ public class ReportService
                         .toList();
 
         return new SelectableInfoView(
-                reportType.name(), totalStarCount, autoSelectedIds, starRecordDates);
+                reportType.name(), totalStarCount, autoSelectedStarRecords, starRecordDates);
     }
 
     // =========================================================
