@@ -1,6 +1,8 @@
 package com.groute.groute_server.record.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 import java.time.LocalDate;
@@ -20,9 +22,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.groute.groute_server.record.application.port.in.calendar.DailyCalendarView;
 import com.groute.groute_server.record.application.port.in.calendar.GetDailyCalendarQuery;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
+import com.groute.groute_server.record.application.port.out.star.ScrumStarTagProjection;
+import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
 import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
+import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 import com.groute.groute_server.user.entity.User;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +38,7 @@ class CalendarQueryServiceTest {
     private static final GetDailyCalendarQuery QUERY = new GetDailyCalendarQuery(USER_ID, DATE);
 
     @Mock ScrumQueryPort scrumQueryPort;
+    @Mock StarTagQueryPort starTagQueryPort;
 
     @InjectMocks CalendarQueryService service;
 
@@ -41,8 +47,8 @@ class CalendarQueryServiceTest {
     class Empty {
 
         @Test
-        @DisplayName("스크럼이 없으면 빈 그룹 배열을 반환한다")
-        void should_returnEmptyGroups_when_noScrumOnDate() {
+        @DisplayName("스크럼이 없으면 빈 그룹·빈 detailTags를 반환한다")
+        void should_returnEmptyGroupsAndTags_when_noScrumOnDate() {
             // given
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of());
 
@@ -51,6 +57,7 @@ class CalendarQueryServiceTest {
 
             // then
             assertThat(view.groups()).isEmpty();
+            assertThat(view.detailTags()).isEmpty();
         }
     }
 
@@ -69,6 +76,8 @@ class CalendarQueryServiceTest {
             Scrum s20 = scrum(20L, t2, "c", false, DATE.minusDays(1));
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
                     .willReturn(List.of(s10, s11, s20));
+            given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
+                    .willReturn(List.of());
 
             // when
             DailyCalendarView view = service.getDailyCalendar(QUERY);
@@ -101,6 +110,8 @@ class CalendarQueryServiceTest {
             ScrumTitle t = title(1L, "P", "F");
             Scrum scrum = scrum(10L, t, "x", false, LocalDate.now().minusDays(13));
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(scrum));
+            given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
+                    .willReturn(List.of());
 
             // when
             DailyCalendarView view = service.getDailyCalendar(QUERY);
@@ -116,6 +127,8 @@ class CalendarQueryServiceTest {
             ScrumTitle t = title(1L, "P", "F");
             Scrum scrum = scrum(10L, t, "x", false, LocalDate.now().minusDays(15));
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(scrum));
+            given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
+                    .willReturn(List.of());
 
             // when
             DailyCalendarView view = service.getDailyCalendar(QUERY);
@@ -131,6 +144,8 @@ class CalendarQueryServiceTest {
             ScrumTitle t = title(1L, "P", "F");
             Scrum scrum = scrum(10L, t, "x", true, LocalDate.now().minusDays(1));
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(scrum));
+            given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
+                    .willReturn(List.of());
 
             // when
             DailyCalendarView view = service.getDailyCalendar(QUERY);
@@ -155,6 +170,8 @@ class CalendarQueryServiceTest {
             Scrum open = scrum(11L, t, "y", false, LocalDate.now().minusDays(1));
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
                     .willReturn(List.of(locked, open));
+            given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
+                    .willReturn(List.of());
 
             // when
             DailyCalendarView view = service.getDailyCalendar(QUERY);
@@ -171,12 +188,90 @@ class CalendarQueryServiceTest {
             Scrum a = scrum(10L, t, "x", true, LocalDate.now().minusDays(1));
             Scrum b = scrum(11L, t, "y", true, LocalDate.now().minusDays(1));
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(a, b));
+            given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
+                    .willReturn(List.of());
 
             // when
             DailyCalendarView view = service.getDailyCalendar(QUERY);
 
             // then
             assertThat(view.groups().get(0).isEditable()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("primaryCategories·detailTags 집계")
+    class TagAggregation {
+
+        @Test
+        @DisplayName("같은 카드 내 여러 STAR의 primaryCategory를 distinct로 모은다")
+        void should_aggregateGroupPrimaryCategories_distinctByCard() {
+            // given — 한 카드 안에 2개 스크럼, 서로 다른 primaryCategory
+            ScrumTitle t = title(1L, "P", "F");
+            Scrum a = scrum(10L, t, "x", true, LocalDate.now().minusDays(1));
+            Scrum b = scrum(11L, t, "y", true, LocalDate.now().minusDays(1));
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(a, b));
+            given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
+                    .willReturn(
+                            List.of(
+                                    new ScrumStarTagProjection(
+                                            10L, CompetencyCategory.PLANNING_EXECUTION, "UX 설계"),
+                                    new ScrumStarTagProjection(
+                                            11L, CompetencyCategory.COLLABORATION, "이해관계자 조율")));
+
+            // when
+            DailyCalendarView view = service.getDailyCalendar(QUERY);
+
+            // then
+            assertThat(view.groups().get(0).primaryCategories())
+                    .containsExactly(
+                            CompetencyCategory.PLANNING_EXECUTION, CompetencyCategory.COLLABORATION);
+        }
+
+        @Test
+        @DisplayName("STAR 완료가 없는 카드는 primaryCategories=[] 를 반환한다")
+        void should_returnEmptyPrimaryCategories_when_noStarOnCard() {
+            // given
+            ScrumTitle t = title(1L, "P", "F");
+            Scrum s = scrum(10L, t, "x", false, LocalDate.now().minusDays(1));
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(s));
+            given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
+                    .willReturn(List.of());
+
+            // when
+            DailyCalendarView view = service.getDailyCalendar(QUERY);
+
+            // then
+            assertThat(view.groups().get(0).primaryCategories()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("일자 전체 detailTag 합집합을 distinct·등장순서로 노출한다")
+        void should_aggregateDetailTags_distinctAcrossCards() {
+            // given — 서로 다른 카드의 스크럼이 같은 detailTag를 공유
+            ScrumTitle t1 = title(1L, "P1", "F1");
+            ScrumTitle t2 = title(2L, "P2", "F2");
+            Scrum s10 = scrum(10L, t1, "a", true, LocalDate.now().minusDays(1));
+            Scrum s20 = scrum(20L, t2, "b", true, LocalDate.now().minusDays(1));
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
+                    .willReturn(List.of(s10, s20));
+            given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
+                    .willReturn(
+                            List.of(
+                                    new ScrumStarTagProjection(
+                                            10L, CompetencyCategory.PLANNING_EXECUTION, "UX 설계"),
+                                    new ScrumStarTagProjection(
+                                            10L, CompetencyCategory.PLANNING_EXECUTION, "품질 관리"),
+                                    new ScrumStarTagProjection(
+                                            20L, CompetencyCategory.COLLABORATION, "UX 설계"),
+                                    new ScrumStarTagProjection(
+                                            20L, CompetencyCategory.COLLABORATION, "고객 지원")));
+
+            // when
+            DailyCalendarView view = service.getDailyCalendar(QUERY);
+
+            // then
+            assertThat(view.detailTags()).containsExactly("UX 설계", "품질 관리", "고객 지원");
         }
     }
 
