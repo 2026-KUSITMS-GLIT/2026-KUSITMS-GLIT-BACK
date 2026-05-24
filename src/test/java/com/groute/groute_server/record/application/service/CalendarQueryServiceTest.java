@@ -225,7 +225,8 @@ class CalendarQueryServiceTest {
             // then
             assertThat(view.groups().get(0).primaryCategories())
                     .containsExactly(
-                            CompetencyCategory.PLANNING_EXECUTION, CompetencyCategory.COLLABORATION);
+                            CompetencyCategory.PLANNING_EXECUTION,
+                            CompetencyCategory.COLLABORATION);
         }
 
         @Test
@@ -253,8 +254,7 @@ class CalendarQueryServiceTest {
             ScrumTitle t2 = title(2L, "P2", "F2");
             Scrum s10 = scrum(10L, t1, "a", true, LocalDate.now().minusDays(1));
             Scrum s20 = scrum(20L, t2, "b", true, LocalDate.now().minusDays(1));
-            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
-                    .willReturn(List.of(s10, s20));
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(s10, s20));
             given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
                     .willReturn(
                             List.of(
