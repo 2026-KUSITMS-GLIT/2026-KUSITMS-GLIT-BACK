@@ -82,7 +82,10 @@ class ReportServiceTest {
             assertThat(view.reportType()).isEqualTo("MINI");
             assertThat(view.totalStarCount()).isEqualTo(15);
             assertThat(view.autoSelectedStarRecords()).hasSize(10);
+            assertThat(view.autoSelectedStarRecords().get(0).starRecordId()).isEqualTo(1L);
+            assertThat(view.autoSelectedStarRecords().get(0).date()).isEqualTo("2026-04-01");
             assertThat(view.autoSelectedStarRecords().get(0).projectName()).isEqualTo("테스트프로젝트");
+            assertThat(view.autoSelectedStarRecords().get(0).scrumContent()).isEqualTo("스크럼내용0");
             assertThat(view.starRecordDates()).containsExactly("2026-04-09", "2026-04-07");
         }
 
