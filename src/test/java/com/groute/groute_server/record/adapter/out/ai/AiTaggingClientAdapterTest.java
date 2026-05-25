@@ -60,7 +60,7 @@ class AiTaggingClientAdapterTest {
         responseSpec = mock(RestClient.ResponseSpec.class);
 
         given(mockRestClient.post()).willReturn(uriSpec);
-        given(uriSpec.uri("/api/tagging")).willReturn(bodySpec);
+        given(uriSpec.uri("/v1/tagging")).willReturn(bodySpec);
         given(bodySpec.body(ArgumentMatchers.any(AiTaggingRequest.class))).willReturn(bodySpec);
         given(bodySpec.retrieve()).willReturn(responseSpec);
 
