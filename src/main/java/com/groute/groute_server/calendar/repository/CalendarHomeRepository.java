@@ -34,26 +34,23 @@ public class CalendarHomeRepository {
     private final EntityManager em;
 
     /**
-     * 사용자가 해당 기간에 스크럼을 작성한 날짜 set. soft-delete된 scrum은 제외. ScrumTitle.status=COMMITTED인 스크럼만 포함하여
-     * PENDING(임시저장) 스크럼이 캘린더에 노출되지 않도록 한다.
+     * 사용자가 해당 기간에 스크럼을 작성한 날짜 set. soft-delete된 scrum은 제외. ScrumTitle.status는 필터하지 않으며 PENDING(STAR
+     * 미완료) 스크럼도 포함된다. 기획서 CAL-001 정책에 따라 스크럼만 작성된 날도 캘린더 잔디에 노출되어야 한다.
      */
     public List<LocalDate> findScrumDatesInRange(Long userId, LocalDate start, LocalDate end) {
         return em.createQuery(
                         """
                         SELECT DISTINCT s.scrumDate
                         FROM Scrum s
-                        JOIN s.title t
                         WHERE s.user.id = :userId
                           AND s.scrumDate BETWEEN :start AND :end
                           AND s.isDeleted = false
-                          AND t.status = :committed
                         ORDER BY s.scrumDate
                         """,
                         LocalDate.class)
                 .setParameter("userId", userId)
                 .setParameter("start", start)
                 .setParameter("end", end)
-                .setParameter("committed", ScrumTitleStatus.COMMITTED)
                 .getResultList();
     }
 
