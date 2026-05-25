@@ -200,13 +200,13 @@ class CalendarQueryServiceTest {
     }
 
     @Nested
-    @DisplayName("primaryCategories·detailTags 집계")
+    @DisplayName("item primaryCategory·starRecordId·detailTags 집계")
     class TagAggregation {
 
         @Test
-        @DisplayName("같은 카드 내 여러 STAR의 primaryCategory를 distinct로 모은다")
-        void should_aggregateGroupPrimaryCategories_distinctByCard() {
-            // given — 한 카드 안에 2개 스크럼, 서로 다른 primaryCategory
+        @DisplayName("STAR 완료된 item에 primaryCategory와 starRecordId를 매핑한다")
+        void should_setItemPrimaryCategoryAndStarRecordId_when_starCompleted() {
+            // given — 한 카드 안에 2개 스크럼, 서로 다른 primaryCategory와 starRecordId
             ScrumTitle t = title(1L, "P", "F");
             Scrum a = scrum(10L, t, "x", true, LocalDate.now().minusDays(1));
             Scrum b = scrum(11L, t, "y", true, LocalDate.now().minusDays(1));
@@ -215,23 +215,62 @@ class CalendarQueryServiceTest {
                     .willReturn(
                             List.of(
                                     new ScrumStarTagProjection(
-                                            10L, CompetencyCategory.PLANNING_EXECUTION, "UX 설계"),
+                                            10L,
+                                            100L,
+                                            CompetencyCategory.PLANNING_EXECUTION,
+                                            "UX 설계"),
                                     new ScrumStarTagProjection(
-                                            11L, CompetencyCategory.COLLABORATION, "이해관계자 조율")));
+                                            11L,
+                                            101L,
+                                            CompetencyCategory.COLLABORATION,
+                                            "이해관계자 조율")));
 
             // when
             DailyCalendarView view = service.getDailyCalendar(QUERY);
 
             // then
-            assertThat(view.groups().get(0).primaryCategories())
-                    .containsExactly(
-                            CompetencyCategory.PLANNING_EXECUTION,
-                            CompetencyCategory.COLLABORATION);
+            List<DailyCalendarView.ItemView> items = view.groups().get(0).items();
+            assertThat(items.get(0).primaryCategory())
+                    .isEqualTo(CompetencyCategory.PLANNING_EXECUTION);
+            assertThat(items.get(0).starRecordId()).isEqualTo(100L);
+            assertThat(items.get(1).primaryCategory()).isEqualTo(CompetencyCategory.COLLABORATION);
+            assertThat(items.get(1).starRecordId()).isEqualTo(101L);
         }
 
         @Test
-        @DisplayName("STAR 완료가 없는 카드는 primaryCategories=[] 를 반환한다")
-        void should_returnEmptyPrimaryCategories_when_noStarOnCard() {
+        @DisplayName(
+                "같은 scrum의 detailTag가 여러 row여도 primaryCategory·starRecordId는 첫 row 값으로 단일 매핑된다")
+        void should_useFirstRowMapping_when_multipleDetailTagsPerScrum() {
+            // given — scrumId=10에 detailTag가 2개 row
+            ScrumTitle t = title(1L, "P", "F");
+            Scrum s = scrum(10L, t, "x", true, LocalDate.now().minusDays(1));
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(s));
+            given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
+                    .willReturn(
+                            List.of(
+                                    new ScrumStarTagProjection(
+                                            10L,
+                                            100L,
+                                            CompetencyCategory.PLANNING_EXECUTION,
+                                            "UX 설계"),
+                                    new ScrumStarTagProjection(
+                                            10L,
+                                            100L,
+                                            CompetencyCategory.PLANNING_EXECUTION,
+                                            "품질 관리")));
+
+            // when
+            DailyCalendarView view = service.getDailyCalendar(QUERY);
+
+            // then
+            DailyCalendarView.ItemView item = view.groups().get(0).items().get(0);
+            assertThat(item.primaryCategory()).isEqualTo(CompetencyCategory.PLANNING_EXECUTION);
+            assertThat(item.starRecordId()).isEqualTo(100L);
+        }
+
+        @Test
+        @DisplayName("STAR 완료가 없는 item은 primaryCategory·starRecordId가 null이다")
+        void should_returnNullPrimaryCategoryAndStarRecordId_when_noStarOnItem() {
             // given
             ScrumTitle t = title(1L, "P", "F");
             Scrum s = scrum(10L, t, "x", false, LocalDate.now().minusDays(1));
@@ -243,7 +282,9 @@ class CalendarQueryServiceTest {
             DailyCalendarView view = service.getDailyCalendar(QUERY);
 
             // then
-            assertThat(view.groups().get(0).primaryCategories()).isEmpty();
+            DailyCalendarView.ItemView item = view.groups().get(0).items().get(0);
+            assertThat(item.primaryCategory()).isNull();
+            assertThat(item.starRecordId()).isNull();
         }
 
         @Test
@@ -259,13 +300,19 @@ class CalendarQueryServiceTest {
                     .willReturn(
                             List.of(
                                     new ScrumStarTagProjection(
-                                            10L, CompetencyCategory.PLANNING_EXECUTION, "UX 설계"),
+                                            10L,
+                                            100L,
+                                            CompetencyCategory.PLANNING_EXECUTION,
+                                            "UX 설계"),
                                     new ScrumStarTagProjection(
-                                            10L, CompetencyCategory.PLANNING_EXECUTION, "품질 관리"),
+                                            10L,
+                                            100L,
+                                            CompetencyCategory.PLANNING_EXECUTION,
+                                            "품질 관리"),
                                     new ScrumStarTagProjection(
-                                            20L, CompetencyCategory.COLLABORATION, "UX 설계"),
+                                            20L, 200L, CompetencyCategory.COLLABORATION, "UX 설계"),
                                     new ScrumStarTagProjection(
-                                            20L, CompetencyCategory.COLLABORATION, "고객 지원")));
+                                            20L, 200L, CompetencyCategory.COLLABORATION, "고객 지원")));
 
             // when
             DailyCalendarView view = service.getDailyCalendar(QUERY);
