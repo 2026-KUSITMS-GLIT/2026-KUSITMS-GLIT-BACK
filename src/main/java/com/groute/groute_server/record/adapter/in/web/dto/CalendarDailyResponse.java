@@ -26,11 +26,6 @@ public record CalendarDailyResponse(
             @Schema(description = "스크럼 제목 ID", example = "12") Long titleId,
             @Schema(description = "프로젝트 태그 (최대 15자)", example = "밋업 프로젝트") String projectTag,
             @Schema(description = "자유작성 (최대 20자)", example = "기획 작업") String freeText,
-            @Schema(
-                            description =
-                                    "그룹 내 STAR 완료된 스크럼들의 distinct primaryCategory 배열. STAR 완료가 없으면 빈 배열.",
-                            example = "[\"PLANNING_EXECUTION\", \"COLLABORATION\"]")
-                    List<CompetencyCategory> primaryCategories,
             @Schema(description = "그룹 내 수정 가능한 항목이 하나라도 있는지", example = "true") boolean isEditable,
             @Schema(description = "그룹 내 항목 목록") List<ItemResponse> items) {
 
@@ -39,7 +34,6 @@ public record CalendarDailyResponse(
                     group.titleId(),
                     group.projectTag(),
                     group.freeText(),
-                    group.primaryCategories(),
                     group.isEditable(),
                     group.items().stream().map(ItemResponse::from).toList());
         }
@@ -49,13 +43,28 @@ public record CalendarDailyResponse(
     public record ItemResponse(
             @Schema(description = "스크럼 ID", example = "37") Long scrumId,
             @Schema(description = "본문 (최대 50자)", example = "와이어프레임 설계") String content,
-            @Schema(description = "심화기록(STAR) 작성 여부", example = "false") boolean hasStar,
+            @Schema(description = "심화기록(STAR) 작성 여부", example = "true") boolean hasStar,
+            @Schema(
+                            description = "STAR 완료 시 대표 역량(막대기 색상 결정). 미완료 또는 hasStar=false면 null",
+                            example = "PLANNING_EXECUTION",
+                            nullable = true)
+                    CompetencyCategory primaryCategory,
+            @Schema(
+                            description = "hasStar=true인 경우 연결된 STAR id(상세 페이지 이동용). 아니면 null",
+                            example = "108",
+                            nullable = true)
+                    Long starRecordId,
             @Schema(description = "수정 가능 여부 (14일 이내 + hasStar=false)", example = "true")
                     boolean isEditable) {
 
         static ItemResponse from(DailyCalendarView.ItemView item) {
             return new ItemResponse(
-                    item.scrumId(), item.content(), item.hasStar(), item.isEditable());
+                    item.scrumId(),
+                    item.content(),
+                    item.hasStar(),
+                    item.primaryCategory(),
+                    item.starRecordId(),
+                    item.isEditable());
         }
     }
 }
