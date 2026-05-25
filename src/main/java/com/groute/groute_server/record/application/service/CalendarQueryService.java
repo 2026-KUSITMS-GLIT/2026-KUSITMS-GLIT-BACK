@@ -21,6 +21,7 @@ import com.groute.groute_server.record.application.port.out.star.StarTagQueryPor
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
+import com.groute.groute_server.record.domain.enums.ScrumTitleStatus;
 
 import lombok.RequiredArgsConstructor;
 
@@ -51,7 +52,13 @@ public class CalendarQueryService implements GetDailyCalendarUseCase {
     @Override
     public DailyCalendarView getDailyCalendar(GetDailyCalendarQuery query) {
         // 1. 해당 일자의 사용자 스크럼 전체 로드 (Title·Project fetch join)
-        List<Scrum> scrums = scrumQueryPort.findAllByUserAndDate(query.userId(), query.date());
+        //    ScrumTitle.status=COMMITTED 인 스크럼만 노출 (PENDING 임시저장 세션은 사용자에게 보이지 않는다).
+        //    포트는 PENDING 도 함께 반환(ScrumSyncService 의 cleanup 경로가 필요로 함)하므로
+        //    조회 응답 단에서 service-layer 필터를 적용한다.
+        List<Scrum> scrums =
+                scrumQueryPort.findAllByUserAndDate(query.userId(), query.date()).stream()
+                        .filter(s -> s.getTitle().getStatus() == ScrumTitleStatus.COMMITTED)
+                        .toList();
         if (scrums.isEmpty()) {
             return new DailyCalendarView(List.of(), List.of());
         }
