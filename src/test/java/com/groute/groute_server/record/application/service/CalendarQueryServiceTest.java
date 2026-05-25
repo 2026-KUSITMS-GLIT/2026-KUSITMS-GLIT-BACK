@@ -28,6 +28,7 @@ import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
+import com.groute.groute_server.record.domain.enums.ScrumTitleStatus;
 import com.groute.groute_server.user.entity.User;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +52,51 @@ class CalendarQueryServiceTest {
         void should_returnEmptyGroupsAndTags_when_noScrumOnDate() {
             // given
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of());
+
+            // when
+            DailyCalendarView view = service.getDailyCalendar(QUERY);
+
+            // then
+            assertThat(view.groups()).isEmpty();
+            assertThat(view.detailTags()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("PENDING 필터")
+    class PendingFilter {
+
+        @Test
+        @DisplayName("ScrumTitle.status=PENDING 인 스크럼은 응답에서 제외된다")
+        void should_excludePendingScrums_when_titleStatusIsPending() {
+            // given — 같은 일자에 PENDING 1개, COMMITTED 1개
+            ScrumTitle pendingTitle = title(1L, "P1", "F1", ScrumTitleStatus.PENDING);
+            ScrumTitle committedTitle = title(2L, "P2", "F2", ScrumTitleStatus.COMMITTED);
+            Scrum pending = scrum(10L, pendingTitle, "x", false, DATE.minusDays(1));
+            Scrum committed = scrum(20L, committedTitle, "y", false, DATE.minusDays(1));
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
+                    .willReturn(List.of(pending, committed));
+            given(starTagQueryPort.findCompletedTagsByScrumIds(anyLong(), any()))
+                    .willReturn(List.of());
+
+            // when
+            DailyCalendarView view = service.getDailyCalendar(QUERY);
+
+            // then — COMMITTED 그룹만 노출
+            assertThat(view.groups()).hasSize(1);
+            assertThat(view.groups().get(0).titleId()).isEqualTo(2L);
+            assertThat(view.groups().get(0).items())
+                    .extracting(DailyCalendarView.ItemView::scrumId)
+                    .containsExactly(20L);
+        }
+
+        @Test
+        @DisplayName("모든 스크럼이 PENDING 이면 빈 그룹·빈 detailTags 를 반환한다")
+        void should_returnEmpty_when_allScrumsArePending() {
+            // given
+            ScrumTitle pendingTitle = title(1L, "P1", "F1", ScrumTitleStatus.PENDING);
+            Scrum pending = scrum(10L, pendingTitle, "x", false, DATE.minusDays(1));
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(pending));
 
             // when
             DailyCalendarView view = service.getDailyCalendar(QUERY);
@@ -278,11 +324,17 @@ class CalendarQueryServiceTest {
     // ============== helpers ==============
 
     private static ScrumTitle title(Long id, String projectName, String freeText) {
+        return title(id, projectName, freeText, ScrumTitleStatus.COMMITTED);
+    }
+
+    private static ScrumTitle title(
+            Long id, String projectName, String freeText, ScrumTitleStatus status) {
         Project project = Project.builder().id(1000L + id).name(projectName).build();
         ScrumTitle title = new ScrumTitle();
         ReflectionTestUtils.setField(title, "id", id);
         ReflectionTestUtils.setField(title, "project", project);
         ReflectionTestUtils.setField(title, "freeText", freeText);
+        ReflectionTestUtils.setField(title, "status", status);
         return title;
     }
 
