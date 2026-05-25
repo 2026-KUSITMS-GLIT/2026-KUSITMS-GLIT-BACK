@@ -22,14 +22,14 @@ public interface StarTagJpaRepository extends JpaRepository<StarTag, Long> {
     List<StarTag> findAllByStarRecordId(@Param("starRecordId") Long starRecordId);
 
     /**
-     * scrumId 집합의 완료 STAR 태그 row(scrumId/primaryCategory/detailTag).
+     * scrumId 집합의 완료 STAR 태그 row(scrumId/starRecordId/primaryCategory/detailTag).
      *
      * <p>userId로 한 번 더 필터(defense-in-depth)하고, soft-delete된 starRecord는 JOIN 조건으로 자연 제외한다. 정렬은
      * {@code st.id ASC}로 안정적.
      */
     @Query(
             "SELECT new com.groute.groute_server.record.application.port.out.star.ScrumStarTagProjection("
-                    + "sr.scrum.id, st.primaryCategory, st.detailTag) "
+                    + "sr.scrum.id, sr.id, st.primaryCategory, st.detailTag) "
                     + "FROM StarTag st "
                     + "JOIN st.starRecord sr "
                     + "WHERE sr.scrum.id IN :scrumIds "

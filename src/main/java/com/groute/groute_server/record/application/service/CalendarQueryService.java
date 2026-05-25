@@ -3,6 +3,7 @@ package com.groute.groute_server.record.application.service;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -29,8 +30,8 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>해당 일자의 사용자 스크럼 전체를 ScrumTitle 단위로 그룹핑하여 반환한다. 각 스크럼은 작성 14일 이내이고 hasStar=false 일 때만 수정 가능하다.
  *
- * <p>응답에는 그날 STAR가 완료된 스크럼들의 카드(그룹) 단위 distinct {@code primaryCategory} 배열과 일자 단위 distinct {@code
- * detailTag} 목록도 함께 포함된다.
+ * <p>응답에는 각 item별 STAR 완료 시 {@code primaryCategory}·{@code starRecordId}와 일자 단위 distinct {@code
+ * detailTag} 목록이 포함된다. 그룹 단위 핵심역량 표시는 프론트가 item들의 primaryCategory를 조합해 처리한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -46,7 +47,7 @@ public class CalendarQueryService implements GetDailyCalendarUseCase {
      * 일자별 스크럼 전체를 ScrumTitle 단위로 묶어 group/item 2계층 View로 반환.
      *
      * <p>스크럼이 없는 일자는 빈 그룹 배열·빈 detailTags를 반환한다. 그룹·항목의 정렬은 레포지토리 쿼리(titleId asc, id asc)에 위임한다.
-     * primaryCategories는 그룹별 distinct 등장 순서, detailTags는 일자 단위 distinct 등장 순서를 유지한다.
+     * detailTags는 일자 단위 distinct 등장 순서를 유지한다.
      */
     @Override
     public DailyCalendarView getDailyCalendar(GetDailyCalendarQuery query) {
@@ -56,17 +57,17 @@ public class CalendarQueryService implements GetDailyCalendarUseCase {
             return new DailyCalendarView(List.of(), List.of());
         }
 
-        // 2. 완료 STAR 태그 로드 — 카드 primaryCategories + 일자 detailTags 집계 소스
+        // 2. 완료 STAR 태그 로드 — item primaryCategory·starRecordId + 일자 detailTags 집계 소스
         List<Long> scrumIds = scrums.stream().map(Scrum::getId).toList();
         List<ScrumStarTagProjection> tagRows =
                 starTagQueryPort.findCompletedTagsByScrumIds(query.userId(), scrumIds);
 
-        Map<Long, Set<CompetencyCategory>> primaryByScrumId = new LinkedHashMap<>();
+        Map<Long, CompetencyCategory> primaryByScrumId = new HashMap<>();
+        Map<Long, Long> starRecordIdByScrumId = new HashMap<>();
         Set<String> detailTags = new LinkedHashSet<>();
         for (ScrumStarTagProjection row : tagRows) {
-            primaryByScrumId
-                    .computeIfAbsent(row.scrumId(), k -> new LinkedHashSet<>())
-                    .add(row.primaryCategory());
+            primaryByScrumId.putIfAbsent(row.scrumId(), row.primaryCategory());
+            starRecordIdByScrumId.putIfAbsent(row.scrumId(), row.starRecordId());
             detailTags.add(row.detailTag());
         }
 
@@ -80,24 +81,24 @@ public class CalendarQueryService implements GetDailyCalendarUseCase {
             grouped.computeIfAbsent(scrum.getTitle().getId(), k -> new ArrayList<>()).add(scrum);
         }
 
-        // 5. 그룹별로 ItemView + primaryCategories + group editable 집계
+        // 5. 그룹별로 ItemView + group editable 집계
         List<DailyCalendarView.GroupView> groups = new ArrayList<>(grouped.size());
         for (List<Scrum> bucket : grouped.values()) {
             ScrumTitle title = bucket.get(0).getTitle();
             List<DailyCalendarView.ItemView> items = new ArrayList<>(bucket.size());
-            Set<CompetencyCategory> groupPrimary = new LinkedHashSet<>();
             boolean groupEditable = false;
             for (Scrum scrum : bucket) {
                 boolean editable = isEditable(scrum, today, zone);
                 items.add(
                         new DailyCalendarView.ItemView(
-                                scrum.getId(), scrum.getContent(), scrum.isHasStar(), editable));
+                                scrum.getId(),
+                                scrum.getContent(),
+                                scrum.isHasStar(),
+                                primaryByScrumId.get(scrum.getId()),
+                                starRecordIdByScrumId.get(scrum.getId()),
+                                editable));
                 if (editable) {
                     groupEditable = true;
-                }
-                Set<CompetencyCategory> scrumPrimary = primaryByScrumId.get(scrum.getId());
-                if (scrumPrimary != null) {
-                    groupPrimary.addAll(scrumPrimary);
                 }
             }
             groups.add(
@@ -105,7 +106,6 @@ public class CalendarQueryService implements GetDailyCalendarUseCase {
                             title.getId(),
                             title.getProject().getName(),
                             title.getFreeText(),
-                            List.copyOf(groupPrimary),
                             groupEditable,
                             items));
         }
