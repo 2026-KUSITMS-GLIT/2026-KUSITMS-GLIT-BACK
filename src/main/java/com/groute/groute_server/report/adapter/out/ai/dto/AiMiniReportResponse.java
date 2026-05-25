@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/** FastAPI /api/reports/mini 응답. */
+/** FastAPI /v1/reports/mini 응답. */
 public record AiMiniReportResponse(
         @JsonProperty("activitySummary") String activitySummary,
         @JsonProperty("nextFocusPoint") String nextFocusPoint,
