@@ -43,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * {@link RequestAiReportPort}의 FastAPI 실 구현체.
  *
- * <p>MINI 타입은 {@code /api/reports/mini} 1회 호출, CAREER 타입은 branding / narrative / highlights /
+ * <p>MINI 타입은 {@code /v1/reports/mini} 1회 호출, CAREER 타입은 branding / narrative / highlights /
  * strengths-and-interview 4개 순차 호출 후 결과를 합쳐 반환한다. 모든 요청에 {@code X-Internal-Token} 헤더를 포함한다.
  */
 @Slf4j
@@ -110,7 +110,7 @@ public class AiReportClientAdapter implements RequestAiReportPort {
             AiMiniReportResponse response =
                     restClient
                             .post()
-                            .uri("/api/reports/mini")
+                            .uri("/v1/reports/mini")
                             .body(request)
                             .retrieve()
                             .body(AiMiniReportResponse.class);
@@ -144,7 +144,7 @@ public class AiReportClientAdapter implements RequestAiReportPort {
             AiCareerBrandingResponse branding =
                     restClient
                             .post()
-                            .uri("/api/reports/career/branding")
+                            .uri("/v1/reports/career/branding")
                             .body(request)
                             .retrieve()
                             .body(AiCareerBrandingResponse.class);
@@ -152,7 +152,7 @@ public class AiReportClientAdapter implements RequestAiReportPort {
             AiCareerNarrativeResponse narrative =
                     restClient
                             .post()
-                            .uri("/api/reports/career/narrative")
+                            .uri("/v1/reports/career/narrative")
                             .body(request)
                             .retrieve()
                             .body(AiCareerNarrativeResponse.class);
@@ -160,7 +160,7 @@ public class AiReportClientAdapter implements RequestAiReportPort {
             AiCareerHighlightsResponse highlights =
                     restClient
                             .post()
-                            .uri("/api/reports/career/highlights")
+                            .uri("/v1/reports/career/highlights")
                             .body(request)
                             .retrieve()
                             .body(AiCareerHighlightsResponse.class);
@@ -168,7 +168,7 @@ public class AiReportClientAdapter implements RequestAiReportPort {
             AiCareerStrengthsAndInterviewResponse strengthsAndInterview =
                     restClient
                             .post()
-                            .uri("/api/reports/career/strengths-and-interview")
+                            .uri("/v1/reports/career/strengths-and-interview")
                             .body(request)
                             .retrieve()
                             .body(AiCareerStrengthsAndInterviewResponse.class);
