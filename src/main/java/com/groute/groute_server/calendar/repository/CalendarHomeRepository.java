@@ -8,7 +8,6 @@ import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Repository;
 
 import com.groute.groute_server.record.domain.Scrum;
-import com.groute.groute_server.record.domain.enums.ScrumTitleStatus;
 
 import lombok.RequiredArgsConstructor;
 
@@ -85,7 +84,8 @@ public class CalendarHomeRepository {
      * 지정 일자의 사용자 스크럼 목록. ScrumTitle·Project를 fetch join 하여 추가 쿼리를 피한다.
      *
      * <p>soft-delete된 scrum은 제외. (title/project는 부모 scrum이 살아있으면 동시 살아있다고 가정하는 record 도메인 컨벤션을 따라
-     * 추가 필터하지 않는다.) ScrumTitle.status=COMMITTED인 스크럼만 반환하여 PENDING(임시저장) 스크럼이 일자 프리뷰에 노출되지 않도록 한다.
+     * 추가 필터하지 않는다.) ScrumTitle.status는 필터하지 않으며 PENDING(STAR 미완료) 스크럼도 반환된다. 기획서 CAL-001 프리뷰 정책에 따라
+     * 심화기록이 없는 카드도 노출되어야 한다.
      */
     public List<Scrum> findScrumsByUserAndDate(Long userId, LocalDate date) {
         return em.createQuery(
@@ -97,13 +97,11 @@ public class CalendarHomeRepository {
                         WHERE s.user.id = :userId
                           AND s.scrumDate = :date
                           AND s.isDeleted = false
-                          AND t.status = :committed
                         ORDER BY s.id
                         """,
                         Scrum.class)
                 .setParameter("userId", userId)
                 .setParameter("date", date)
-                .setParameter("committed", ScrumTitleStatus.COMMITTED)
                 .getResultList();
     }
 
