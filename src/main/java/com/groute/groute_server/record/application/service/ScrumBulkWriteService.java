@@ -19,6 +19,7 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
+import com.groute.groute_server.record.application.port.out.user.UserStreakPort;
 import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
@@ -46,6 +47,7 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
     private final StarRecordRepositoryPort starRecordRepositoryPort;
     private final StarImageCascadeCleaner starImageCascadeCleaner;
     private final UserReferencePort userReferencePort;
+    private final UserStreakPort userStreakPort;
 
     @Override
     public BulkWriteScrumResult bulkWrite(BulkWriteScrumCommand command) {
@@ -108,7 +110,10 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
         }
         List<Scrum> savedScrums = scrumWritePort.saveAll(scrums);
 
-        // 6. Project.titleCount 증감 (동일 projectId 중복 시 count만큼)
+        // 6. user streak 갱신 (REC-001) — 같은 날 재작성은 entity 단에서 멱등 처리
+        userStreakPort.recordOnDate(command.userId(), command.date());
+
+        // 7. Project.titleCount 증감 (동일 projectId 중복 시 count만큼)
         groups.stream()
                 .collect(
                         Collectors.groupingBy(
@@ -118,7 +123,7 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
                         (projectId, count) ->
                                 projectPort.applyTitleCountIncrement(projectId, count.intValue()));
 
-        // 7. 결과 조립 (저장 순서 보장)
+        // 8. 결과 조립 (저장 순서 보장)
         List<BulkWriteScrumResult.GroupResult> results = new ArrayList<>();
         int scrumIdx = 0;
         for (int i = 0; i < savedTitles.size(); i++) {

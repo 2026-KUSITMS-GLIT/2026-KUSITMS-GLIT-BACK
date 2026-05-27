@@ -2,6 +2,7 @@ package com.groute.groute_server.record.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -33,6 +34,7 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
+import com.groute.groute_server.record.application.port.out.user.UserStreakPort;
 import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
@@ -52,6 +54,7 @@ class ScrumBulkWriteServiceTest {
     @Mock StarRecordRepositoryPort starRecordRepositoryPort;
     @Mock StarImageCascadeCleaner starImageCascadeCleaner;
     @Mock UserReferencePort userReferencePort;
+    @Mock UserStreakPort userStreakPort;
 
     @InjectMocks ScrumBulkWriteService service;
 
@@ -235,6 +238,51 @@ class ScrumBulkWriteServiceTest {
             assertThat(result.groups().get(0).scrums().get(1).content()).isEqualTo("B");
             assertThat(result.groups().get(1).scrums()).hasSize(1);
             assertThat(result.groups().get(1).scrums().get(0).content()).isEqualTo("C");
+        }
+    }
+
+    @Nested
+    @DisplayName("streak 갱신")
+    class Streak {
+
+        @Test
+        @DisplayName("저장 성공 시 user streak를 userId·date로 갱신한다")
+        void should_recordStreak_when_writeSucceeds() {
+            given(projectPort.findByIdAndUserId(100L, USER_ID))
+                    .willReturn(Optional.of(project(100L, "프로젝트A")));
+            given(userReferencePort.getReferenceById(USER_ID))
+                    .willReturn(User.createForSocialLogin());
+            stubSaveTitles();
+            stubSaveScrums();
+
+            service.bulkWrite(command(group(100L, "제목", "스크럼1")));
+
+            verify(userStreakPort).recordOnDate(USER_ID, DATE);
+        }
+
+        @Test
+        @DisplayName("COMMITTED 충돌로 실패하면 streak를 갱신하지 않는다")
+        void should_notRecordStreak_when_committedConflict() {
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
+                    .willReturn(
+                            List.of(scrumWithTitle(50L, 10L, ScrumTitleStatus.COMMITTED, 100L)));
+
+            assertThatThrownBy(() -> service.bulkWrite(command(group(100L, "제목", "스크럼1"))))
+                    .isInstanceOf(BusinessException.class);
+
+            verify(userStreakPort, never()).recordOnDate(anyLong(), any(LocalDate.class));
+        }
+
+        @Test
+        @DisplayName("스크럼 개수 초과로 실패하면 streak를 갱신하지 않는다")
+        void should_notRecordStreak_when_dateLimitExceeded() {
+            BulkWriteScrumCommand command =
+                    command(group(100L, "제목", "a", "b", "c", "d", "e", "f"));
+
+            assertThatThrownBy(() -> service.bulkWrite(command))
+                    .isInstanceOf(BusinessException.class);
+
+            verify(userStreakPort, never()).recordOnDate(anyLong(), any(LocalDate.class));
         }
     }
 
