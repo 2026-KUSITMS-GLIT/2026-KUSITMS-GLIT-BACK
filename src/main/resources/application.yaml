@@ -21,6 +21,9 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 5
       connection-timeout: 30000
+      # 커넥션이 반납되지 않고 점유된 채로 임계치(ms)를 넘기면 WARN 로그로 누수 의심 스택을 남긴다.
+      # 운영 정상 쿼리는 1초 이내라 10s 임계로 잡아도 false positive가 적다.
+      leak-detection-threshold: 10000
 
   jpa:
     hibernate:
@@ -29,6 +32,12 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc.time_zone: UTC
+        # 같은 트랜잭션 안의 INSERT/UPDATE를 묶어 단일 round-trip으로 전송한다.
+        jdbc.batch_size: 50
+        order_inserts: true
+        order_updates: true
+        # N+1을 완화하기 위해 연관 엔티티 lazy 로딩 시 IN 쿼리로 일괄 fetch한다.
+        default_batch_fetch_size: 50
     open-in-view: false
 
   flyway:
