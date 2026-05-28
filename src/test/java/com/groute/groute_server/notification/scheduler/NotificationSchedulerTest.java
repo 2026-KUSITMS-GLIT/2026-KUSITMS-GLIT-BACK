@@ -15,6 +15,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,7 @@ class NotificationSchedulerTest {
     @Mock UserRepository userRepository;
     @Mock FcmPushClient fcmPushClient;
     @Mock ScrumDailyQueryService scrumDailyQueryService;
+    @Mock NotificationDispatchWriter dispatchWriter;
 
     NotificationScheduler scheduler;
     NotificationCopy notificationCopy;
@@ -90,6 +92,7 @@ class NotificationSchedulerTest {
                         notificationCopy,
                         properties,
                         scrumDailyQueryService,
+                        dispatchWriter,
                         FIXED_CLOCK);
     }
 
@@ -98,8 +101,8 @@ class NotificationSchedulerTest {
     class HappyPath {
 
         @Test
-        @DisplayName("KST 09:00 화요일 매칭 시 카피를 닉네임 치환·딥링크와 함께 발송하고 카피 인덱스를 advance한다")
-        void should_sendWithNicknameAndLinkAndAdvanceIndex_when_matchedSlot() {
+        @DisplayName("KST 09:00 화요일 매칭 시 카피를 닉네임 치환·딥링크와 함께 발송하고 dispatchWriter에 user id를 전달한다")
+        void should_sendWithNicknameAndLinkAndDelegateToWriter_when_matchedSlot() {
             // given
             User user = user(1L, "겨레", (short) 0);
             given(
@@ -126,12 +129,12 @@ class NotificationSchedulerTest {
             assertThat(payload.title()).isEqualTo("A 겨레");
             assertThat(payload.body()).isEqualTo("본문 A");
             assertThat(payload.link()).isEqualTo(DEEP_LINK);
-            assertThat(user.getNotificationCopyIndex()).isEqualTo((short) 1);
+            verify(dispatchWriter).apply(Set.of(1L), 3, List.of());
         }
 
         @Test
-        @DisplayName("user별 카피 인덱스에 따라 라운드로빈으로 카피를 선택하고 mod로 advance한다 (0→1, 1→2, 2→0)")
-        void should_pickCopyByIndexAndAdvanceWithMod_when_multipleUsers() {
+        @DisplayName("user별 카피 인덱스에 따라 라운드로빈으로 카피를 선택하고 모든 user id가 dispatchWriter에 전달된다")
+        void should_pickCopyByIndexAndDelegateAllUserIds_when_multipleUsers() {
             // given — copy_index 0/1/2인 3 users
             User u1 = user(1L, "유저1", (short) 0);
             User u2 = user(2L, "유저2", (short) 1);
@@ -160,15 +163,12 @@ class NotificationSchedulerTest {
             assertThat(sent.get("t1").title()).isEqualTo("A 유저1"); // idx=0 → 카피 A
             assertThat(sent.get("t2").title()).isEqualTo("B 유저2"); // idx=1 → 카피 B
             assertThat(sent.get("t3").title()).isEqualTo("C 유저3"); // idx=2 → 카피 C
-            // mod 동작: 0+1=1, 1+1=2, 2+1=3 mod 3 = 0
-            assertThat(u1.getNotificationCopyIndex()).isEqualTo((short) 1);
-            assertThat(u2.getNotificationCopyIndex()).isEqualTo((short) 2);
-            assertThat(u3.getNotificationCopyIndex()).isEqualTo((short) 0);
+            verify(dispatchWriter).apply(Set.of(1L, 2L, 3L), 3, List.of());
         }
 
         @Test
-        @DisplayName("한 user에 토큰 N개면 모두 발송하지만 카피 인덱스는 1번만 advance한다")
-        void should_sendToAllTokensButAdvanceIndexOnce_when_userHasMultipleTokens() {
+        @DisplayName("한 user에 토큰 N개면 모두 발송하지만 dispatchWriter에는 user id가 한 번만 전달된다")
+        void should_sendToAllTokensButDelegateUserIdOnce_when_userHasMultipleTokens() {
             // given
             User user = user(1L, "겨레", (short) 0);
             given(
@@ -188,7 +188,7 @@ class NotificationSchedulerTest {
             verify(fcmPushClient).send(eq("t1"), any());
             verify(fcmPushClient).send(eq("t2"), any());
             verify(fcmPushClient).send(eq("t3"), any());
-            assertThat(user.getNotificationCopyIndex()).isEqualTo((short) 1);
+            verify(dispatchWriter).apply(Set.of(1L), 3, List.of());
         }
     }
 
@@ -197,16 +197,15 @@ class NotificationSchedulerTest {
     class Filtering {
 
         @Test
-        @DisplayName("당일 작성자(user 2)는 발송에서 제외되고 카피 인덱스도 변하지 않는다")
+        @DisplayName("당일 작성자(user 2)는 발송에서 제외되고 dispatchWriter에도 전달되지 않는다")
         void should_skipWriters_when_someUsersAlreadyWrote() {
             // given — 후보 {1,2,3}, 작성자 {2}
             User u1 = user(1L, "U1", (short) 0);
-            User u2 = user(2L, "U2", (short) 0);
             User u3 = user(3L, "U3", (short) 0);
             given(
                             notificationSettingRepository
                                     .findAllByDayOfWeekAndNotifyTimeAndIsActiveTrue(any(), any()))
-                    .willReturn(List.of(slot(u1), slot(u2), slot(u3)));
+                    .willReturn(List.of(slot(u1), slot(user(2L, "U2", (short) 0)), slot(u3)));
             given(scrumDailyQueryService.findUserIdsWithScrumOn(any(), any()))
                     .willReturn(Set.of(2L));
             // 서비스가 candidate에서 작성자 제외 후 user/토큰 조회 (u2 빠짐)
@@ -222,12 +221,12 @@ class NotificationSchedulerTest {
             verify(fcmPushClient).send(eq("t1"), any());
             verify(fcmPushClient).send(eq("t3"), any());
             verify(fcmPushClient, never()).send(eq("t2"), any());
-            assertThat(u2.getNotificationCopyIndex()).isEqualTo((short) 0);
+            verify(dispatchWriter).apply(Set.of(1L, 3L), 3, List.of());
         }
 
         @Test
-        @DisplayName("invalid 응답을 받은 토큰만 deactivateByPushToken으로 비활성화된다")
-        void should_deactivateOnlyInvalidTokens_when_fcmReturnsTokenInvalid() {
+        @DisplayName("invalid 응답을 받은 토큰만 dispatchWriter.apply의 invalidTokens 인자에 포함된다")
+        void should_collectOnlyInvalidTokens_when_fcmReturnsTokenInvalid() {
             // given
             User user = user(1L, "겨레", (short) 0);
             DeviceToken good = token(user, "t-good");
@@ -247,8 +246,10 @@ class NotificationSchedulerTest {
             scheduler.dispatch();
 
             // then
-            verify(deviceTokenRepository).deactivateByPushToken("t-bad");
-            verify(deviceTokenRepository, never()).deactivateByPushToken("t-good");
+            ArgumentCaptor<Collection<String>> invalidCap =
+                    ArgumentCaptor.forClass(Collection.class);
+            verify(dispatchWriter).apply(eq(Set.of(1L)), eq(3), invalidCap.capture());
+            assertThat(invalidCap.getValue()).containsExactly("t-bad");
         }
     }
 
