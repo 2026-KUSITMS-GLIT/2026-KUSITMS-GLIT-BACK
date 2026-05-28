@@ -36,6 +36,9 @@ public interface StarRecordRepositoryPort {
     /** 사용자의 TAGGED 심화기록 총 개수. */
     long countTaggedByUserId(Long userId);
 
+    /** 사용자의 완료된(isCompleted=true) 심화기록 총 개수. */
+    long countCompleted(Long userId);
+
     /** TAGGED 완료된 STAR 기록의 역량 카테고리별 건수. selectedCompetency가 NULL인 스크럼은 제외. */
     List<CompetencyCount> countCompletedByCompetency(Long userId, StarRecordStatus status);
 }
