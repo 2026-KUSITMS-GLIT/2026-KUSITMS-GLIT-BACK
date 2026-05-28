@@ -22,12 +22,10 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
-import com.groute.groute_server.record.application.port.out.star.StarTagSavePort;
 import com.groute.groute_server.record.domain.AiTaggingJob;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.record.domain.StarTag;
-import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 import com.groute.groute_server.record.domain.enums.JobStatus;
 import com.groute.groute_server.user.entity.User;
 
@@ -52,11 +50,11 @@ public class AiTaggingService
     private final StarRecordRepositoryPort starRecordPort;
     private final AiTaggingJobPort aiTaggingJobPort;
     private final StarTagQueryPort starTagPort;
-    private final StarTagSavePort starTagSavePort;
     private final ScrumQueryPort scrumQueryPort;
     private final ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     private final UserPort userPort;
     private final AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
+    private final StarTagPersister starTagPersister;
 
     /**
      * REC-005: AI 태깅 트리거.
@@ -196,31 +194,7 @@ public class AiTaggingService
 
         record.tag();
 
-        // star_tags 저장
-        if (primaryCategory == null || primaryCategory.isBlank()) {
-            log.warn(
-                    "[AI Tagging] primaryCategory가 비어있어 star_tags 저장 생략 — starRecordId={}",
-                    starRecordId);
-        } else {
-            CompetencyCategory category;
-            try {
-                category = CompetencyCategory.valueOf(primaryCategory);
-            } catch (IllegalArgumentException e) {
-                log.warn(
-                        "[AI Tagging] primaryCategory 값 불일치 — value={}, starRecordId={}",
-                        primaryCategory,
-                        starRecordId);
-                category = null;
-            }
-            if (category != null && detailTags != null && !detailTags.isEmpty()) {
-                final CompetencyCategory finalCategory = category;
-                List<StarTag> tags =
-                        detailTags.stream()
-                                .map(detailTag -> StarTag.of(record, finalCategory, detailTag))
-                                .toList();
-                starTagSavePort.saveAll(tags);
-            }
-        }
+        starTagPersister.persist(record, primaryCategory, detailTags);
 
         Long userId = record.getUser().getId();
         LocalDate date = record.getScrum().getScrumDate();

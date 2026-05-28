@@ -34,9 +34,9 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
-import com.groute.groute_server.record.application.port.out.star.StarTagSavePort;
 import com.groute.groute_server.record.application.service.AiTaggingAsyncExecutor;
 import com.groute.groute_server.record.application.service.AiTaggingService;
+import com.groute.groute_server.record.application.service.StarTagPersister;
 import com.groute.groute_server.record.domain.AiTaggingJob;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
@@ -60,11 +60,11 @@ class AiTaggingServiceTest {
     @Mock private StarRecordRepositoryPort starRecordPort;
     @Mock private AiTaggingJobPort aiTaggingJobPort;
     @Mock private StarTagQueryPort starTagPort;
-    @Mock private StarTagSavePort starTagSavePort;
     @Mock private ScrumQueryPort scrumQueryPort;
     @Mock private ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     @Mock private UserPort userPort;
     @Mock private AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
+    @Mock private StarTagPersister starTagPersister;
 
     @InjectMocks private AiTaggingService aiTaggingService;
 
