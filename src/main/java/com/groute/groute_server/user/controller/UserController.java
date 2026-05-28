@@ -65,7 +65,8 @@ public class UserController {
 
     @Operation(
             summary = "프로필 수정",
-            description = "닉네임·직군·상태를 덮어쓴다. 변경 사항이 없어도 세 필드 모두 포함해 요청한다. 닉네임은 외부 노출이 없어 변경 횟수·기간 제한 없이 자유 수정 가능.")
+            description =
+                    "닉네임·직군·상태를 덮어쓴다. 변경 사항이 없어도 세 필드 모두 포함해 요청한다. 닉네임은 외부 노출이 없어 변경 횟수·기간 제한 없이 자유 수정 가능.")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
