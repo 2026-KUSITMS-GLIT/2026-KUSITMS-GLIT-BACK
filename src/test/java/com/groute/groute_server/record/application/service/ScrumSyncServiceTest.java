@@ -38,6 +38,7 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordCascadePort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
+import com.groute.groute_server.record.application.port.out.user.UserStreakPort;
 import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
@@ -56,6 +57,7 @@ class ScrumSyncServiceTest {
     @Mock StarRecordCascadePort starRecordCascadePort;
     @Mock StarImageCascadeCleaner starImageCascadeCleaner;
     @Mock UserReferencePort userReferencePort;
+    @Mock UserStreakPort userStreakPort;
 
     @InjectMocks ScrumSyncService service;
 
@@ -357,6 +359,93 @@ class ScrumSyncServiceTest {
             assertThat(captor.getValue()).hasSize(2);
             verify(scrumTitleRepositoryPort).applyScrumCountIncrement(2L, 2);
             verify(scrumTitleRepositoryPort).applyScrumCountIncrement(1L, -1);
+        }
+    }
+
+    @Nested
+    @DisplayName("streak 갱신")
+    class Streak {
+
+        @Test
+        @DisplayName("신규 생성으로 잔존 스크럼이 1개 이상이면 recordOnDate를 호출한다")
+        void should_recordStreak_when_newScrumCreated() {
+            // given
+            ScrumTitle title = title(1L, "P", "F");
+            given(scrumTitleRepositoryPort.findAllByIdInAndUserId(anyCollection(), anyLong()))
+                    .willReturn(List.of(title));
+            given(scrumQueryPort.findAllByIdInAndUserId(anyCollection(), anyLong()))
+                    .willReturn(List.of());
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of());
+            given(userReferencePort.getReferenceById(USER_ID))
+                    .willReturn(User.createForSocialLogin());
+            SyncDailyScrumCommand command = command(group(1L, item(null, "신규")));
+
+            // when
+            service.syncDailyScrum(command);
+
+            // then
+            verify(userStreakPort).recordOnDate(USER_ID, DATE);
+        }
+
+        @Test
+        @DisplayName("수정만 일어나고 기존 스크럼이 잔존하면 recordOnDate를 호출한다")
+        void should_recordStreak_when_onlyUpdated() {
+            // given
+            ScrumTitle title = title(1L, "P", "F");
+            Scrum existing = scrum(10L, title, "old", false, YESTERDAY);
+            given(scrumTitleRepositoryPort.findAllByIdInAndUserId(anyCollection(), anyLong()))
+                    .willReturn(List.of(title));
+            given(scrumQueryPort.findAllByIdInAndUserId(anyCollection(), anyLong()))
+                    .willReturn(List.of(existing));
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(existing));
+            SyncDailyScrumCommand command = command(group(1L, item(10L, "new")));
+
+            // when
+            service.syncDailyScrum(command);
+
+            // then
+            verify(userStreakPort).recordOnDate(USER_ID, DATE);
+        }
+
+        @Test
+        @DisplayName("기존 스크럼이 전부 삭제되어 잔존 0이면 recordOnDate를 호출하지 않는다")
+        void should_notRecordStreak_when_allDeleted() {
+            // given — DB에 1건, 요청은 빈 items → survivingCount=0
+            ScrumTitle title = title(1L, "P", "F");
+            Scrum existing = scrum(10L, title, "x", false, YESTERDAY);
+            given(scrumTitleRepositoryPort.findAllByIdInAndUserId(anyCollection(), anyLong()))
+                    .willReturn(List.of(title));
+            given(scrumQueryPort.findAllByIdInAndUserId(anyCollection(), anyLong()))
+                    .willReturn(List.of());
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(existing));
+            SyncDailyScrumCommand command = command(group(1L));
+
+            // when
+            service.syncDailyScrum(command);
+
+            // then
+            verify(userStreakPort, never()).recordOnDate(anyLong(), any(LocalDate.class));
+        }
+
+        @Test
+        @DisplayName("validation 단계에서 실패하면 recordOnDate를 호출하지 않는다")
+        void should_notRecordStreak_when_validationFails() {
+            // given — 5개 제한 초과
+            SyncDailyScrumCommand command =
+                    command(
+                            group(
+                                    1L,
+                                    item(null, "a"),
+                                    item(null, "b"),
+                                    item(null, "c"),
+                                    item(null, "d"),
+                                    item(null, "e"),
+                                    item(null, "f")));
+
+            // when & then
+            assertThatThrownBy(() -> service.syncDailyScrum(command))
+                    .isInstanceOf(BusinessException.class);
+            verify(userStreakPort, never()).recordOnDate(anyLong(), any(LocalDate.class));
         }
     }
 
