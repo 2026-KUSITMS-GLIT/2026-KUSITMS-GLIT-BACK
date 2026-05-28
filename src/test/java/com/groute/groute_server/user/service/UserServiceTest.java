@@ -184,22 +184,36 @@ class UserServiceTest {
     class UpdateMyProfile {
 
         @Test
-        @DisplayName("성공 — 라벨을 enum으로 변환해 엔티티에 반영")
+        @DisplayName("성공 — 라벨을 enum으로 변환해 엔티티에 반영하고 닉네임도 덮어씀")
         void updatesEntity_whenLabelsValid() {
             User user = User.createForSocialLogin();
+            ReflectionTestUtils.setField(user, "nickname", "이전닉네임");
             given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
 
-            User result = userService.updateMyProfile(USER_ID, "개발자", "재학 중");
+            User result = userService.updateMyProfile(USER_ID, "새닉네임", "개발자", "재학 중");
 
             assertThat(result).isSameAs(user);
+            assertThat(result.getNickname()).isEqualTo("새닉네임");
             assertThat(result.getJobRole()).isEqualTo(JobRole.DEVELOPER);
             assertThat(result.getUserStatus()).isEqualTo(UserStatus.STUDENT);
         }
 
         @Test
+        @DisplayName("성공 — 동일 닉네임 재요청도 무제한 갱신 정책에 따라 그대로 반영")
+        void overwritesSameNickname_whenRepeated() {
+            User user = User.createForSocialLogin();
+            ReflectionTestUtils.setField(user, "nickname", "겨레");
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+
+            User result = userService.updateMyProfile(USER_ID, "겨레", "개발자", "재학 중");
+
+            assertThat(result.getNickname()).isEqualTo("겨레");
+        }
+
+        @Test
         @DisplayName("실패 — 직군 라벨 이상 시 INVALID_JOB_ROLE, 유저 조회 스킵")
         void throwsInvalidJobRole_whenJobRoleUnknown() {
-            assertThatThrownBy(() -> userService.updateMyProfile(USER_ID, "몰라요", "재학 중"))
+            assertThatThrownBy(() -> userService.updateMyProfile(USER_ID, "겨레", "몰라요", "재학 중"))
                     .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
                     .extracting(BusinessException::getErrorCode)
                     .isEqualTo(ErrorCode.INVALID_JOB_ROLE);
@@ -210,7 +224,7 @@ class UserServiceTest {
         @Test
         @DisplayName("실패 — 상태 라벨 이상 시 INVALID_USER_STATUS, 유저 조회 스킵")
         void throwsInvalidUserStatus_whenStatusUnknown() {
-            assertThatThrownBy(() -> userService.updateMyProfile(USER_ID, "개발자", "백수"))
+            assertThatThrownBy(() -> userService.updateMyProfile(USER_ID, "겨레", "개발자", "백수"))
                     .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
                     .extracting(BusinessException::getErrorCode)
                     .isEqualTo(ErrorCode.INVALID_USER_STATUS);
@@ -223,10 +237,21 @@ class UserServiceTest {
         void throwsUserNotFound_whenUserMissing() {
             given(userRepository.findById(USER_ID)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> userService.updateMyProfile(USER_ID, "개발자", "재학 중"))
+            assertThatThrownBy(() -> userService.updateMyProfile(USER_ID, "겨레", "개발자", "재학 중"))
                     .asInstanceOf(InstanceOfAssertFactories.type(BusinessException.class))
                     .extracting(BusinessException::getErrorCode)
                     .isEqualTo(ErrorCode.USER_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("실패 — 닉네임이 blank면 도메인 invariant 위반으로 IllegalArgumentException")
+        void throwsIllegalArgument_whenNicknameBlank() {
+            User user = User.createForSocialLogin();
+            ReflectionTestUtils.setField(user, "nickname", "겨레");
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> userService.updateMyProfile(USER_ID, "  ", "개발자", "재학 중"))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
