@@ -17,14 +17,12 @@ import com.groute.groute_server.record.application.port.in.GetAiTaggingResultUse
 import com.groute.groute_server.record.application.port.in.GetAiTaggingStatusUseCase;
 import com.groute.groute_server.record.application.port.in.TriggerAiTaggingUseCase;
 import com.groute.groute_server.record.application.port.out.AiTaggingJobPort;
-import com.groute.groute_server.record.application.port.out.UserPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
 import com.groute.groute_server.record.domain.AiTaggingJob;
 import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.record.domain.StarTag;
 import com.groute.groute_server.record.domain.enums.JobStatus;
-import com.groute.groute_server.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,10 +45,10 @@ public class AiTaggingService
     private final StarRecordRepositoryPort starRecordPort;
     private final AiTaggingJobPort aiTaggingJobPort;
     private final StarTagQueryPort starTagPort;
-    private final UserPort userPort;
     private final AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
     private final StarTagPersister starTagPersister;
     private final ScrumTitleCommitter scrumTitleCommitter;
+    private final UserMilestoneTracker userMilestoneTracker;
 
     /**
      * REC-005: AI 태깅 트리거.
@@ -197,15 +195,6 @@ public class AiTaggingService
 
         scrumTitleCommitter.commitIfFullyTagged(userId, date);
 
-        long taggedCount = starRecordPort.countTaggedByUserId(userId);
-        User user = userPort.findById(userId);
-        if (taggedCount == 1) {
-            user.markPendingCoachMark();
-        }
-        if (taggedCount == 10) {
-            user.markPendingReportModal("MINI");
-        } else if (taggedCount >= 20 && taggedCount % 10 == 0) {
-            user.markPendingReportModal("FULL");
-        }
+        userMilestoneTracker.track(userId);
     }
 }
