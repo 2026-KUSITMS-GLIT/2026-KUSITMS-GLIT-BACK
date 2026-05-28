@@ -1,6 +1,7 @@
 package com.groute.groute_server.record.application.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -8,6 +9,7 @@ import static org.mockito.Mockito.verify;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,13 +19,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.application.port.in.star.UpdateStarRecordStepCommand;
+import com.groute.groute_server.record.application.port.out.UserPort;
+import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
+import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
@@ -41,10 +47,14 @@ class UpdateStarRecordStepServiceTest {
 
     @Mock StarRecordRepositoryPort starRecordRepositoryPort;
     @Mock ScrumWritePort scrumWritePort;
+    @Mock ScrumQueryPort scrumQueryPort;
+    @Mock ScrumTitleRepositoryPort scrumTitleRepositoryPort;
+    @Mock UserPort userPort;
 
     @InjectMocks UpdateStarRecordStepService service;
 
     private User owner;
+    private User mockOwner;
     private Scrum scrum;
     private StarRecord record;
 
@@ -52,6 +62,9 @@ class UpdateStarRecordStepServiceTest {
     void setUp() {
         owner = User.createForSocialLogin();
         ReflectionTestUtils.setField(owner, "id", USER_ID);
+
+        mockOwner = Mockito.mock(User.class);
+        Mockito.lenient().when(mockOwner.getId()).thenReturn(USER_ID);
 
         ScrumTitle title = new ScrumTitle();
         ReflectionTestUtils.setField(title, "id", 10L);
@@ -141,14 +154,21 @@ class UpdateStarRecordStepServiceTest {
     @DisplayName("R 단계 완료 처리")
     class CompleteStep {
 
-        @Test
-        @DisplayName("R 단계 저장 시 record.complete()와 scrumWritePort.completeStar가 호출된다")
-        void should_callCompleteStar_when_stepIsR() {
+        @BeforeEach
+        void setUpR() {
             record.saveStep(StarStep.ST, "ST 답변");
             record.saveStep(StarStep.A, "A 답변");
             given(starRecordRepositoryPort.findByIdWithScrum(STAR_ID))
                     .willReturn(Optional.of(record));
+            Mockito.lenient().when(scrumQueryPort.findAllByUserAndDate(any(), any())).thenReturn(List.of(scrum));
+            Mockito.lenient().when(userPort.findById(USER_ID)).thenReturn(mockOwner);
+        }
+
+        @Test
+        @DisplayName("R 단계 저장 시 record.complete()와 scrumWritePort.completeStar가 호출된다")
+        void should_callCompleteStar_when_stepIsR() {
             given(scrumWritePort.completeStar(scrum.getId())).willReturn(1);
+            given(starRecordRepositoryPort.countCompleted(USER_ID)).willReturn(1L);
 
             service.updateStep(command(StarStep.R));
 
@@ -158,16 +178,67 @@ class UpdateStarRecordStepServiceTest {
         @Test
         @DisplayName("completeStar가 0을 반환하면 SCRUM_NOT_FOUND를 던진다")
         void should_throwScrumNotFound_when_completeStarUpdatesNothing() {
-            record.saveStep(StarStep.ST, "ST 답변");
-            record.saveStep(StarStep.A, "A 답변");
-            given(starRecordRepositoryPort.findByIdWithScrum(STAR_ID))
-                    .willReturn(Optional.of(record));
             given(scrumWritePort.completeStar(scrum.getId())).willReturn(0);
 
             assertThatThrownBy(() -> service.updateStep(command(StarStep.R)))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.SCRUM_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("R 단계 완료 시 isCompleted=true로 세팅된다")
+        void should_setIsCompleted_when_stepIsR() {
+            given(scrumWritePort.completeStar(scrum.getId())).willReturn(1);
+            given(starRecordRepositoryPort.countCompleted(USER_ID)).willReturn(1L);
+
+            service.updateStep(command(StarStep.R));
+
+            org.assertj.core.api.Assertions.assertThat(record.isCompleted()).isTrue();
+        }
+
+        @Test
+        @DisplayName("R 단계 완료 시 commitAllByIds가 호출된다")
+        void should_callCommitAllByIds_when_stepIsR() {
+            given(scrumWritePort.completeStar(scrum.getId())).willReturn(1);
+            given(starRecordRepositoryPort.countCompleted(USER_ID)).willReturn(1L);
+
+            service.updateStep(command(StarStep.R));
+
+            verify(scrumTitleRepositoryPort).commitAllByIds(any());
+        }
+
+        @Test
+        @DisplayName("완료 개수 1회일 때 코치마크 노출 플래그가 세팅된다")
+        void should_markCoachMark_when_completedCountIs1() {
+            given(scrumWritePort.completeStar(scrum.getId())).willReturn(1);
+            given(starRecordRepositoryPort.countCompleted(USER_ID)).willReturn(1L);
+
+            service.updateStep(command(StarStep.R));
+
+            verify(mockOwner).markPendingCoachMark();
+        }
+
+        @Test
+        @DisplayName("완료 개수 10회일 때 MINI 리포트 모달 노출 플래그가 세팅된다")
+        void should_markMiniReportModal_when_completedCountIs10() {
+            given(scrumWritePort.completeStar(scrum.getId())).willReturn(1);
+            given(starRecordRepositoryPort.countCompleted(USER_ID)).willReturn(10L);
+
+            service.updateStep(command(StarStep.R));
+
+            verify(mockOwner).markPendingReportModal("MINI");
+        }
+
+        @Test
+        @DisplayName("완료 개수 20회일 때 FULL 리포트 모달 노출 플래그가 세팅된다")
+        void should_markFullReportModal_when_completedCountIs20() {
+            given(scrumWritePort.completeStar(scrum.getId())).willReturn(1);
+            given(starRecordRepositoryPort.countCompleted(USER_ID)).willReturn(20L);
+
+            service.updateStep(command(StarStep.R));
+
+            verify(mockOwner).markPendingReportModal("FULL");
         }
     }
 
