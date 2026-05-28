@@ -23,6 +23,7 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordCascadePort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
+import com.groute.groute_server.record.application.port.out.user.UserStreakPort;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
 import com.groute.groute_server.user.entity.User;
@@ -49,6 +50,7 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
     private final StarRecordCascadePort starRecordCascadePort;
     private final StarImageCascadeCleaner starImageCascadeCleaner;
     private final UserReferencePort userReferencePort;
+    private final UserStreakPort userStreakPort;
 
     /**
      * 일자별 스크럼을 요청 payload 상태로 동기화.
@@ -159,6 +161,13 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
         // 8. 비정규화 카운터 갱신
         for (Map.Entry<Long, Integer> entry : titleDeltas.entrySet()) {
             scrumTitleRepositoryPort.applyScrumCountIncrement(entry.getKey(), entry.getValue());
+        }
+
+        // 9. user streak 갱신 (REC-001) — 동기화 후 해당 일자에 잔존 스크럼이 1개 이상일 때만 호출. 전부 삭제된 경우는
+        // lastRecordDate가 잘못 갱신되지 않도록 skip. 엔티티에서 같은 날/과거 일자는 멱등 처리됨.
+        int survivingCount = currentScrums.size() - toDelete.size() + toCreate.size();
+        if (survivingCount > 0) {
+            userStreakPort.recordOnDate(command.userId(), command.date());
         }
     }
 
