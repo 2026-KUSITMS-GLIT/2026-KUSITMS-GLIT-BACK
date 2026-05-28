@@ -69,8 +69,8 @@ public class CalendarHomeRepository {
                         """
                         SELECT new com.groute.groute_server.calendar.repository.StarDailyRow(
                             sr.id, sr.scrum.scrumDate, sr.completedAt, st.primaryCategory)
-                        FROM StarTag st
-                        JOIN st.starRecord sr
+                        FROM StarRecord sr
+                        LEFT JOIN StarTag st ON st.starRecord = sr
                         WHERE sr.user.id = :userId
                           AND sr.isCompleted = true
                           AND sr.isDeleted = false
@@ -125,8 +125,8 @@ public class CalendarHomeRepository {
                         """
                         SELECT new com.groute.groute_server.calendar.repository.ScrumStarTagRow(
                             sr.scrum.id, st.primaryCategory, st.detailTag)
-                        FROM StarTag st
-                        JOIN st.starRecord sr
+                        FROM StarRecord sr
+                        LEFT JOIN StarTag st ON st.starRecord = sr
                         WHERE sr.scrum.id IN :scrumIds
                           AND sr.user.id = :userId
                           AND sr.isCompleted = true

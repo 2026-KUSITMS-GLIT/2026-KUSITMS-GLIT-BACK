@@ -97,11 +97,12 @@ public class StarRecord extends SoftDeleteEntity {
         }
     }
 
-    /** R 단계 완료 처리. status=WRITTEN, currentStep=DONE, completedAt 설정. */
+    /** R 단계 완료 처리. status=WRITTEN, currentStep=DONE, completedAt 설정. isCompleted=true로 설정하여 리포트 카운트에 포함한다. */
     public void complete(OffsetDateTime completedAt) {
         this.status = StarRecordStatus.WRITTEN;
         this.currentStep = StarStep.DONE;
         this.completedAt = Objects.requireNonNull(completedAt, "completedAt");
+        this.isCompleted = true;
     }
 
     /** AI 태깅 완료 처리. status=TAGGED로 전환하고 isCompleted=true로 설정. */
