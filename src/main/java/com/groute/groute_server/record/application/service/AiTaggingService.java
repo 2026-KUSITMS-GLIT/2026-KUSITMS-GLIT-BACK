@@ -1,6 +1,5 @@
 package com.groute.groute_server.record.application.service;
 
-import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -17,19 +16,14 @@ import com.groute.groute_server.record.application.port.in.GetAiTaggingResultUse
 import com.groute.groute_server.record.application.port.in.GetAiTaggingStatusUseCase;
 import com.groute.groute_server.record.application.port.in.TriggerAiTaggingUseCase;
 import com.groute.groute_server.record.application.port.out.AiTaggingJobPort;
-import com.groute.groute_server.record.application.port.out.UserPort;
-import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
-import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagSavePort;
 import com.groute.groute_server.record.domain.AiTaggingJob;
-import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.record.domain.StarTag;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 import com.groute.groute_server.record.domain.enums.JobStatus;
-import com.groute.groute_server.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,9 +47,6 @@ public class AiTaggingService
     private final AiTaggingJobPort aiTaggingJobPort;
     private final StarTagQueryPort starTagPort;
     private final StarTagSavePort starTagSavePort;
-    private final ScrumQueryPort scrumQueryPort;
-    private final ScrumTitleRepositoryPort scrumTitleRepositoryPort;
-    private final UserPort userPort;
     private final AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
 
     /**
@@ -220,30 +211,6 @@ public class AiTaggingService
                                 .toList();
                 starTagSavePort.saveAll(tags);
             }
-        }
-
-        Long userId = record.getUser().getId();
-        LocalDate date = record.getScrum().getScrumDate();
-
-        if (!starRecordPort.existsUntaggedByUserAndDate(userId, date)) {
-            List<Long> titleIds =
-                    scrumQueryPort.findAllByUserAndDate(userId, date).stream()
-                            .map(Scrum::getTitle)
-                            .map(t -> t.getId())
-                            .distinct()
-                            .toList();
-            scrumTitleRepositoryPort.commitAllByIds(titleIds);
-        }
-
-        long taggedCount = starRecordPort.countTaggedByUserId(userId);
-        User user = userPort.findById(userId);
-        if (taggedCount == 1) {
-            user.markPendingCoachMark();
-        }
-        if (taggedCount == 10) {
-            user.markPendingReportModal("MINI");
-        } else if (taggedCount >= 20 && taggedCount % 10 == 0) {
-            user.markPendingReportModal("FULL");
         }
     }
 }
