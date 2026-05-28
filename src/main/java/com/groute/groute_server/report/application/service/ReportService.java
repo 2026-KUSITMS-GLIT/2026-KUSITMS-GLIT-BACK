@@ -25,6 +25,7 @@ import com.groute.groute_server.report.application.port.out.RequestAiReportPort;
 import com.groute.groute_server.report.application.port.out.RequestAiReportPort.AiReportResult;
 import com.groute.groute_server.report.application.port.out.SaveReportPort;
 import com.groute.groute_server.report.domain.Report;
+import com.groute.groute_server.report.domain.ReportLimits;
 import com.groute.groute_server.report.domain.enums.ReportType;
 
 import lombok.RequiredArgsConstructor;
@@ -47,9 +48,6 @@ public class ReportService
                 GetReportStatusUseCase,
                 RetryReportUseCase {
 
-    private static final int MINI_LIMIT = 10;
-    private static final int CAREER_LIMIT = 20;
-
     private final LoadReportPort loadReportPort;
     private final LoadStarRecordPort loadStarRecordPort;
     private final RequestAiReportPort requestAiReportPort;
@@ -70,7 +68,7 @@ public class ReportService
     public SelectableInfoView getSelectableInfo(Long userId) {
         boolean hasMini = loadReportPort.existsMiniReportByUserId(userId);
         ReportType reportType = hasMini ? ReportType.CAREER : ReportType.MINI;
-        int limit = hasMini ? CAREER_LIMIT : MINI_LIMIT;
+        int limit = hasMini ? ReportLimits.CAREER_LIMIT : ReportLimits.MINI_LIMIT;
 
         int totalStarCount = loadStarRecordPort.countCompletedByUserId(userId);
 
