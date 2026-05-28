@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 /**
  * 심화 STAR 기록.
  *
- * <p>스크럼과 1:1(REC008). 단계별로 작성이 진행되며, 3단계 완료 후 AI 태깅 호출로 완료된다. {@link #currentStep} + 각 단계 필드(S/T,
+ * <p>스크럼과 1:1(REC008). 단계별로 작성이 진행되며, 3단계 완료 시 완료 처리된다. AI 태깅 결과는 별도 상태(status=TAGGED)로 관리된다. {@link #currentStep} + 각 단계 필드(S/T,
  * A, R)로 임시저장을 대체한다(REC010).
  */
 @Getter
@@ -64,7 +64,7 @@ public class StarRecord extends SoftDeleteEntity {
     @Column(name = "completed_at")
     private OffsetDateTime completedAt;
 
-    /** AI 태깅 완료 여부. status=TAGGED 전환 시 true로 설정. JPQL 조건절 호환용. */
+    /** R단계 완료(리포트 집계 기준). AI 태깅 성공/실패 무관하게 R단계 완료 시 true로 설정. JPQL 조건절 호환용. */
     @Column(name = "is_completed", nullable = false)
     private boolean isCompleted = false;
 
