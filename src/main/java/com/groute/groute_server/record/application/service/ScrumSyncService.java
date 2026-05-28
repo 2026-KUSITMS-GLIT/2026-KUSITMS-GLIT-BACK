@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.util.DateTimeFormatters;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumUseCase;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
@@ -99,8 +100,8 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
             throw new BusinessException(ErrorCode.SCRUM_NOT_FOUND);
         }
 
-        // 5. 변경 분류 + 14일·STAR 검증 (변경 대상에 한해)
-        ZoneId zone = ZoneId.systemDefault();
+        // 5. 변경 분류 + 14일·STAR 검증 (변경 대상에 한해) — JVM TZ에 의존하지 않도록 KST 고정.
+        ZoneId zone = DateTimeFormatters.ZONE_KST;
         LocalDate today = LocalDate.now(zone);
         List<UpdateOp> updates = new ArrayList<>();
         Map<Long, Integer> titleDeltas = new HashMap<>();
