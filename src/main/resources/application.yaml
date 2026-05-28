@@ -48,6 +48,8 @@ spring:
     baseline-version: 1
     baseline-on-migrate: true
     out-of-order: true
+    placeholders:
+      social_email_hash_pepper: ${SOCIAL_EMAIL_HASH_PEPPER}
 
   security:
     oauth2:
@@ -108,6 +110,13 @@ jwt:
   secret: ${JWT_SECRET}
   access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600000}
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:1209600000}
+
+social:
+  email-hash:
+    # stg/prod는 SSM에서 SOCIAL_EMAIL_HASH_PEPPER 주입 필수 — 누락 시 부팅 실패(fail-fast).
+    # 로컬은 하단 local 프로파일에서 개발용 pepper fallback 허용.
+    # 한 번 정한 값은 변경 금지 — 변경 시 기존 row의 해시값과 일치하지 않게 된다.
+    pepper: ${SOCIAL_EMAIL_HASH_PEPPER}
 
 auth:
   refresh-token:
@@ -194,8 +203,16 @@ spring:
       hibernate:
         format_sql: true
 
+  flyway:
+    placeholders:
+      social_email_hash_pepper: ${SOCIAL_EMAIL_HASH_PEPPER:local-dev-pepper-must-be-changed-in-production-env}
+
 jwt:
   secret: ${JWT_SECRET:local-dev-secret-key-must-be-changed-in-production-env}
+
+social:
+  email-hash:
+    pepper: ${SOCIAL_EMAIL_HASH_PEPPER:local-dev-pepper-must-be-changed-in-production-env}
 
 app:
   user:

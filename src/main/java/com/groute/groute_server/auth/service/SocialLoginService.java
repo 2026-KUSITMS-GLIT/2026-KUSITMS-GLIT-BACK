@@ -26,6 +26,7 @@ public class SocialLoginService {
 
     private final UserRepository userRepository;
     private final SocialAccountRepository socialAccountRepository;
+    private final SocialEmailHasher socialEmailHasher;
 
     @Transactional
     public User upsertUser(OAuthAttributes attributes) {
@@ -36,7 +37,7 @@ public class SocialLoginService {
     }
 
     private User updateReturning(SocialAccount existing, OAuthAttributes attributes) {
-        existing.updateEmail(attributes.email());
+        existing.updateEmail(socialEmailHasher.hash(attributes.email()));
         User user = existing.getUser();
         user.recordLogin();
         return user;
@@ -47,7 +48,10 @@ public class SocialLoginService {
         user.recordLogin();
         SocialAccount account =
                 SocialAccount.create(
-                        user, attributes.provider(), attributes.providerUid(), attributes.email());
+                        user,
+                        attributes.provider(),
+                        attributes.providerUid(),
+                        socialEmailHasher.hash(attributes.email()));
         socialAccountRepository.save(account);
         log.info("신규 소셜 유저 생성: userId={}, provider={}", user.getId(), attributes.provider());
         return user;
