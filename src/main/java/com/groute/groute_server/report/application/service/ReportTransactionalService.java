@@ -16,6 +16,7 @@ import com.groute.groute_server.report.application.port.out.LoadStarRecordPort;
 import com.groute.groute_server.report.application.port.out.LoadUserPort;
 import com.groute.groute_server.report.application.port.out.SaveReportPort;
 import com.groute.groute_server.report.domain.Report;
+import com.groute.groute_server.report.domain.ReportLimits;
 import com.groute.groute_server.report.domain.enums.ReportType;
 import com.groute.groute_server.user.entity.User;
 
@@ -30,9 +31,6 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ReportTransactionalService {
-
-    private static final int MINI_LIMIT = 10;
-    private static final int CAREER_LIMIT = 20;
 
     private final LoadReportPort loadReportPort;
     private final SaveReportPort saveReportPort;
@@ -114,10 +112,10 @@ public class ReportTransactionalService {
     // =========================================================
 
     private void validateStarRecordCount(ReportType reportType, int size) {
-        if (reportType == ReportType.MINI && size != MINI_LIMIT) {
+        if (reportType == ReportType.MINI && size != ReportLimits.MINI_LIMIT) {
             throw new BusinessException(ErrorCode.REPORT_INVALID_STAR_COUNT);
         }
-        if (reportType == ReportType.CAREER && size < CAREER_LIMIT) {
+        if (reportType == ReportType.CAREER && size < ReportLimits.CAREER_LIMIT) {
             throw new BusinessException(ErrorCode.REPORT_INVALID_STAR_COUNT);
         }
     }
