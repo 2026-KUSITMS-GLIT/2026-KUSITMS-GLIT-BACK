@@ -1,6 +1,5 @@
 package com.groute.groute_server.record.adapter.out.persistence;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -85,19 +84,6 @@ public interface StarRecordJpaRepository extends JpaRepository<StarRecord, Long>
                     + "GROUP BY s.selectedCompetency")
     List<CompetencyCount> countCompletedByCompetency(
             @Param("userId") Long userId, @Param("status") StarRecordStatus status);
-
-    /** 해당 날짜에 TAGGED 미완료 StarRecord가 존재하는지 확인. */
-    @Query(
-            "SELECT (COUNT(sr) > 0) FROM StarRecord sr "
-                    + "JOIN sr.scrum s "
-                    + "WHERE sr.user.id = :userId "
-                    + "AND s.scrumDate = :date "
-                    + "AND sr.status <> :tagged "
-                    + "AND sr.isDeleted = false")
-    boolean existsUntaggedByUserAndDate(
-            @Param("userId") Long userId,
-            @Param("date") LocalDate date,
-            @Param("tagged") StarRecordStatus tagged);
 
     /** 전체 완료된 심화기록 수를 카운트한다. 리포트가 없는 신규 유저 케이스에 사용한다. */
     @Query(

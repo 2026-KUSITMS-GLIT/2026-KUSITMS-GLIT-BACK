@@ -1,6 +1,5 @@
 package com.groute.groute_server.record.application.port.out.star;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,9 +28,6 @@ public interface StarRecordRepositoryPort {
 
     /** PENDING 세션 취소 시 해당 스크럼들에 연결된 StarRecord 일괄 soft-delete. */
     int softDeleteByScrumIds(List<Long> scrumIds);
-
-    /** 해당 날짜에 TAGGED 미완료(WRITING·WRITTEN) StarRecord가 남아있는지 확인. */
-    boolean existsUntaggedByUserAndDate(Long userId, LocalDate date);
 
     /** 사용자의 TAGGED 심화기록 총 개수. */
     long countTaggedByUserId(Long userId);
