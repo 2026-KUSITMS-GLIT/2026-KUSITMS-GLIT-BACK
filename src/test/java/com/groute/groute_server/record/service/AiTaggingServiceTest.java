@@ -30,12 +30,11 @@ import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingResultRespons
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingStatusResponse;
 import com.groute.groute_server.record.application.port.out.AiTaggingJobPort;
 import com.groute.groute_server.record.application.port.out.UserPort;
-import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
-import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
 import com.groute.groute_server.record.application.service.AiTaggingAsyncExecutor;
 import com.groute.groute_server.record.application.service.AiTaggingService;
+import com.groute.groute_server.record.application.service.ScrumTitleCommitter;
 import com.groute.groute_server.record.application.service.StarTagPersister;
 import com.groute.groute_server.record.domain.AiTaggingJob;
 import com.groute.groute_server.record.domain.Scrum;
@@ -60,11 +59,10 @@ class AiTaggingServiceTest {
     @Mock private StarRecordRepositoryPort starRecordPort;
     @Mock private AiTaggingJobPort aiTaggingJobPort;
     @Mock private StarTagQueryPort starTagPort;
-    @Mock private ScrumQueryPort scrumQueryPort;
-    @Mock private ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     @Mock private UserPort userPort;
     @Mock private AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
     @Mock private StarTagPersister starTagPersister;
+    @Mock private ScrumTitleCommitter scrumTitleCommitter;
 
     @InjectMocks private AiTaggingService aiTaggingService;
 
@@ -108,15 +106,6 @@ class AiTaggingServiceTest {
         ReflectionTestUtils.setField(scrum, "title", title);
         ReflectionTestUtils.setField(record, "scrum", scrum);
         return record;
-    }
-
-    private static Scrum scrumWithTitle(Long scrumId, Long titleId) {
-        ScrumTitle title = new ScrumTitle();
-        ReflectionTestUtils.setField(title, "id", titleId);
-        Scrum scrum = new Scrum();
-        ReflectionTestUtils.setField(scrum, "id", scrumId);
-        ReflectionTestUtils.setField(scrum, "title", title);
-        return scrum;
     }
 
     private AiTaggingJob makeJob(JobStatus status, int retryCount) {
@@ -405,35 +394,18 @@ class AiTaggingServiceTest {
     class CompleteTagging {
 
         @Test
-        @DisplayName("성공 — 세션 내 마지막 태깅 완료 시 StarRecord TAGGED + ScrumTitle COMMITTED")
-        void marksTaggedAndCommits_whenAllTagged() {
+        @DisplayName("성공 — StarRecord TAGGED 전환 후 starTagPersister·scrumTitleCommitter 위임 호출")
+        void delegatesToCollaborators_whenTaggingCompletes() {
             StarRecord record = makeStarRecordWithScrum(USER_ID, StarStep.DONE);
             given(starRecordPort.findByIdWithScrum(STAR_RECORD_ID)).willReturn(Optional.of(record));
-            given(starRecordPort.existsUntaggedByUserAndDate(USER_ID, DATE)).willReturn(false);
-            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
-                    .willReturn(List.of(scrumWithTitle(1L, 100L), scrumWithTitle(2L, 100L)));
             given(starRecordPort.countTaggedByUserId(USER_ID)).willReturn(5L);
             given(userPort.findById(USER_ID)).willReturn(User.createForSocialLogin());
 
             aiTaggingService.completeTagging(STAR_RECORD_ID, "PROBLEM_SOLVING", List.of("문제해결"));
 
             assertThat(record.getStatus()).isEqualTo(StarRecordStatus.TAGGED);
-            verify(scrumTitleRepositoryPort).commitAllByIds(List.of(100L));
-        }
-
-        @Test
-        @DisplayName("성공 — 아직 미완료 StarRecord 있으면 TAGGED 전환만 하고 COMMITTED 안 함")
-        void marksTaggedOnly_whenUntaggedRemain() {
-            StarRecord record = makeStarRecordWithScrum(USER_ID, StarStep.DONE);
-            given(starRecordPort.findByIdWithScrum(STAR_RECORD_ID)).willReturn(Optional.of(record));
-            given(starRecordPort.existsUntaggedByUserAndDate(USER_ID, DATE)).willReturn(true);
-            given(starRecordPort.countTaggedByUserId(USER_ID)).willReturn(5L);
-            given(userPort.findById(USER_ID)).willReturn(User.createForSocialLogin());
-
-            aiTaggingService.completeTagging(STAR_RECORD_ID, "PROBLEM_SOLVING", List.of("문제해결"));
-
-            assertThat(record.getStatus()).isEqualTo(StarRecordStatus.TAGGED);
-            verify(scrumTitleRepositoryPort, never()).commitAllByIds(any());
+            verify(starTagPersister).persist(record, "PROBLEM_SOLVING", List.of("문제해결"));
+            verify(scrumTitleCommitter).commitIfFullyTagged(USER_ID, DATE);
         }
 
         @Test

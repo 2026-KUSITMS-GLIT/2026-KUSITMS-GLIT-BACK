@@ -18,12 +18,9 @@ import com.groute.groute_server.record.application.port.in.GetAiTaggingStatusUse
 import com.groute.groute_server.record.application.port.in.TriggerAiTaggingUseCase;
 import com.groute.groute_server.record.application.port.out.AiTaggingJobPort;
 import com.groute.groute_server.record.application.port.out.UserPort;
-import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
-import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarTagQueryPort;
 import com.groute.groute_server.record.domain.AiTaggingJob;
-import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.StarRecord;
 import com.groute.groute_server.record.domain.StarTag;
 import com.groute.groute_server.record.domain.enums.JobStatus;
@@ -50,11 +47,10 @@ public class AiTaggingService
     private final StarRecordRepositoryPort starRecordPort;
     private final AiTaggingJobPort aiTaggingJobPort;
     private final StarTagQueryPort starTagPort;
-    private final ScrumQueryPort scrumQueryPort;
-    private final ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     private final UserPort userPort;
     private final AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
     private final StarTagPersister starTagPersister;
+    private final ScrumTitleCommitter scrumTitleCommitter;
 
     /**
      * REC-005: AI 태깅 트리거.
@@ -199,15 +195,7 @@ public class AiTaggingService
         Long userId = record.getUser().getId();
         LocalDate date = record.getScrum().getScrumDate();
 
-        if (!starRecordPort.existsUntaggedByUserAndDate(userId, date)) {
-            List<Long> titleIds =
-                    scrumQueryPort.findAllByUserAndDate(userId, date).stream()
-                            .map(Scrum::getTitle)
-                            .map(t -> t.getId())
-                            .distinct()
-                            .toList();
-            scrumTitleRepositoryPort.commitAllByIds(titleIds);
-        }
+        scrumTitleCommitter.commitIfFullyTagged(userId, date);
 
         long taggedCount = starRecordPort.countTaggedByUserId(userId);
         User user = userPort.findById(userId);
