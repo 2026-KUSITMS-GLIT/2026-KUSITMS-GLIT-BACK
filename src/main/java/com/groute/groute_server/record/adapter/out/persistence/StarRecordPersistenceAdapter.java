@@ -69,6 +69,11 @@ class StarRecordPersistenceAdapter implements StarRecordRepositoryPort, StarReco
     }
 
     @Override
+    public long countCompleted(Long userId) {
+        return jpaRepository.countCompleted(userId);
+    }
+
+    @Override
     public List<CompetencyCount> countCompletedByCompetency(Long userId, StarRecordStatus status) {
         return jpaRepository.countCompletedByCompetency(userId, status);
     }
