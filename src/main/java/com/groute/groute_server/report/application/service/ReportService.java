@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.common.exception.BusinessException;
@@ -42,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ReportService
         implements GetSelectableInfoUseCase,
                 CreateReportUseCase,
@@ -64,7 +66,6 @@ public class ReportService
      * <p>미니 발행 이력이 없으면 MINI, 있으면 CAREER 타입으로 결정한다.
      */
     @Override
-    @Transactional(readOnly = true)
     public SelectableInfoView getSelectableInfo(Long userId) {
         boolean hasMini = loadReportPort.existsMiniReportByUserId(userId);
         ReportType reportType = hasMini ? ReportType.CAREER : ReportType.MINI;
@@ -101,9 +102,11 @@ public class ReportService
     /**
      * 유저가 선택한 심화기록을 검증하고 리포트 row를 생성한 뒤 AI 서버에 생성을 요청한다.
      *
-     * <p>DB 저장은 {@link ReportTransactionalService#saveReportTx}에 위임하여 트랜잭션 커밋 후 AI 호출이 실행된다.
+     * <p>DB 저장은 {@link ReportTransactionalService#saveReportTx}에 위임하여 트랜잭션 커밋 후 AI 호출이 실행된다. 본 메서드는
+     * {@link Propagation#NEVER}로 외부 트랜잭션 안에서 호출되는 것을 명시적으로 금지해 AI I/O가 DB 커넥션을 점유하지 않게 한다.
      */
     @Override
+    @Transactional(propagation = Propagation.NEVER)
     public Long createReport(CreateReportCommand command) {
         // 1~7. 검증 + DB 저장 (트랜잭션 커밋까지 완료)
         ReportTransactionalService.CreateReportResult result =
@@ -114,20 +117,7 @@ public class ReportService
                 loadReportPort
                         .findById(result.reportId())
                         .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
-        try {
-            AiReportResult aiResult =
-                    requestAiReportPort.requestReportGeneration(
-                            result.reportId(), result.starRecords(), result.scrums());
-            report.complete(aiResult.title(), aiResult.contentJson());
-        } catch (Exception e) {
-            log.error(
-                    "[AI Report] 생성 실패 — reportId={}, error={}",
-                    result.reportId(),
-                    e.getMessage(),
-                    e);
-            report.fail();
-        }
-        saveReportPort.save(report);
+        invokeAiAndPersist(report, result.reportId(), result.starRecords(), result.scrums(), "생성");
 
         return result.reportId();
     }
@@ -142,7 +132,6 @@ public class ReportService
      * <p>FAILED 상태이고 재시도가 가능한 경우 retryAvailable=true를 함께 반환한다.
      */
     @Override
-    @Transactional(readOnly = true)
     public ReportStatusView getReportStatus(Long userId, Long reportId) {
         Report report =
                 loadReportPort
@@ -163,9 +152,11 @@ public class ReportService
     /**
      * FAILED 상태인 리포트를 GENERATING으로 되돌리고 AI 서버에 재호출한다.
      *
-     * <p>DB 상태 변경은 {@link ReportTransactionalService#retryReportTx}에 위임하여 트랜잭션 커밋 후 AI 호출이 실행된다.
+     * <p>DB 상태 변경은 {@link ReportTransactionalService#retryReportTx}에 위임하여 트랜잭션 커밋 후 AI 호출이 실행된다. 본
+     * 메서드는 {@link Propagation#NEVER}로 외부 트랜잭션 안에서 호출되는 것을 명시적으로 금지해 AI I/O가 DB 커넥션을 점유하지 않게 한다.
      */
     @Override
+    @Transactional(propagation = Propagation.NEVER)
     public Long retryReport(Long userId, Long reportId) {
         // DB 상태 변경 (트랜잭션 커밋까지 완료)
         reportTransactionalService.retryReportTx(userId, reportId);
@@ -193,15 +184,7 @@ public class ReportService
             return reportId;
         }
 
-        try {
-            AiReportResult aiResult =
-                    requestAiReportPort.requestReportGeneration(reportId, starRecords, scrums);
-            report.complete(aiResult.title(), aiResult.contentJson());
-        } catch (Exception e) {
-            log.error("[AI Report] 재시도 실패 — reportId={}, error={}", reportId, e.getMessage(), e);
-            report.fail();
-        }
-        saveReportPort.save(report);
+        invokeAiAndPersist(report, reportId, starRecords, scrums, "재시도");
 
         return reportId;
     }
@@ -214,5 +197,32 @@ public class ReportService
         if (!Objects.equals(report.getUser().getId(), userId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
+    }
+
+    /**
+     * AI 호출 결과에 따라 Report 상태를 갱신하고 영속화한다. 트랜잭션 밖에서 호출되며, 예외 시 FAILED로 전환해 재시도 경로로 보낸다.
+     *
+     * @param stageLabel 로그 식별용 단계 표기(예: "생성", "재시도")
+     */
+    private void invokeAiAndPersist(
+            Report report,
+            Long reportId,
+            List<StarRecord> starRecords,
+            List<Scrum> scrums,
+            String stageLabel) {
+        try {
+            AiReportResult aiResult =
+                    requestAiReportPort.requestReportGeneration(reportId, starRecords, scrums);
+            report.complete(aiResult.title(), aiResult.contentJson());
+        } catch (Exception e) {
+            log.error(
+                    "[AI Report] {} 실패 — reportId={}, error={}",
+                    stageLabel,
+                    reportId,
+                    e.getMessage(),
+                    e);
+            report.fail();
+        }
+        saveReportPort.save(report);
     }
 }
