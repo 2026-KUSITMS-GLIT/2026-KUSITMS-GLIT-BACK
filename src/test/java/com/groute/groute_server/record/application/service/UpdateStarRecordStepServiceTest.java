@@ -160,7 +160,9 @@ class UpdateStarRecordStepServiceTest {
             record.saveStep(StarStep.A, "A 답변");
             given(starRecordRepositoryPort.findByIdWithScrum(STAR_ID))
                     .willReturn(Optional.of(record));
-            Mockito.lenient().when(scrumQueryPort.findAllByUserAndDate(any(), any())).thenReturn(List.of(scrum));
+            Mockito.lenient()
+                    .when(scrumQueryPort.findAllByUserAndDate(any(), any()))
+                    .thenReturn(List.of(scrum));
             Mockito.lenient().when(userPort.findById(USER_ID)).thenReturn(mockOwner);
         }
 
