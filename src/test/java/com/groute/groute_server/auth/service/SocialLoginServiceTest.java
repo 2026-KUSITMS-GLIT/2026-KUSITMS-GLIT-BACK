@@ -33,6 +33,7 @@ class SocialLoginServiceTest {
 
     @Mock UserRepository userRepository;
     @Mock SocialAccountRepository socialAccountRepository;
+    @Mock SocialEmailHasher socialEmailHasher;
 
     @InjectMocks SocialLoginService socialLoginService;
 
@@ -41,7 +42,7 @@ class SocialLoginServiceTest {
     class UpsertUser {
 
         @Test
-        @DisplayName("기존 소셜 계정이 없을 때 User를 먼저 저장하고 SocialAccount를 이어서 저장한 뒤 User를 반환한다")
+        @DisplayName("기존 소셜 계정이 없을 때 User를 먼저 저장하고 SocialAccount에는 해시된 email을 저장한 뒤 User를 반환한다")
         void should_createUserAndSocialAccount_when_socialAccountNotFound() {
             // given
             OAuthAttributes attributes =
@@ -59,6 +60,7 @@ class SocialLoginServiceTest {
                                 ReflectionTestUtils.setField(saved, "id", 42L);
                                 return saved;
                             });
+            given(socialEmailHasher.hash("new@kakao.com")).willReturn("HASHED-NEW");
 
             // when
             User result = socialLoginService.upsertUser(attributes);
@@ -75,19 +77,18 @@ class SocialLoginServiceTest {
             SocialAccount saved = captor.getValue();
             assertThat(saved.getProvider()).isEqualTo(SocialProvider.KAKAO);
             assertThat(saved.getProviderUid()).isEqualTo("9999");
-            assertThat(saved.getEmail()).isEqualTo("new@kakao.com");
+            assertThat(saved.getEmail()).isEqualTo("HASHED-NEW");
             assertThat(saved.getUser()).isSameAs(result);
         }
 
         @Test
-        @DisplayName("기존 소셜 계정이 있을 때 email을 갱신하고 recordLogin만 호출하며 새로 저장하지 않는다")
+        @DisplayName("기존 소셜 계정이 있을 때 email을 해시 값으로 갱신하고 recordLogin만 호출하며 새로 저장하지 않는다")
         void should_updateEmailAndRecordLoginOnly_when_socialAccountExists() {
             // given
             User existingUser = User.createForSocialLogin();
             ReflectionTestUtils.setField(existingUser, "id", 42L);
             SocialAccount existingAccount =
-                    SocialAccount.create(
-                            existingUser, SocialProvider.KAKAO, "9999", "old@kakao.com");
+                    SocialAccount.create(existingUser, SocialProvider.KAKAO, "9999", "HASHED-OLD");
             given(
                             socialAccountRepository.findByProviderAndProviderUid(
                                     SocialProvider.KAKAO, "9999"))
@@ -96,6 +97,7 @@ class SocialLoginServiceTest {
                     OAuthAttributes.from(
                             "kakao",
                             Map.of("id", 9999L, "kakao_account", Map.of("email", "new@kakao.com")));
+            given(socialEmailHasher.hash("new@kakao.com")).willReturn("HASHED-NEW");
 
             // when
             User result = socialLoginService.upsertUser(attributes);
@@ -103,7 +105,7 @@ class SocialLoginServiceTest {
             // then
             assertThat(result).isSameAs(existingUser);
             assertThat(result.getLastLoginAt()).isNotNull();
-            assertThat(existingAccount.getEmail()).isEqualTo("new@kakao.com");
+            assertThat(existingAccount.getEmail()).isEqualTo("HASHED-NEW");
             verify(userRepository, never()).save(any(User.class));
             verify(socialAccountRepository, never()).save(any(SocialAccount.class));
         }
