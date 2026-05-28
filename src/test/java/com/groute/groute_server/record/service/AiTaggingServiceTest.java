@@ -405,30 +405,21 @@ class AiTaggingServiceTest {
     class CompleteTagging {
 
         @Test
-        @DisplayName("성공 — 세션 내 마지막 태깅 완료 시 StarRecord TAGGED + ScrumTitle COMMITTED")
-        void marksTaggedAndCommits_whenAllTagged() {
+        @DisplayName("성공 — 세션 내 마지막 태깅 완료 시 StarRecord TAGGED 전환")
+        void marksTagged_whenCompleteTagging() {
             StarRecord record = makeStarRecordWithScrum(USER_ID, StarStep.DONE);
             given(starRecordPort.findByIdWithScrum(STAR_RECORD_ID)).willReturn(Optional.of(record));
-            given(starRecordPort.existsUntaggedByUserAndDate(USER_ID, DATE)).willReturn(false);
-            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
-                    .willReturn(List.of(scrumWithTitle(1L, 100L), scrumWithTitle(2L, 100L)));
-            given(starRecordPort.countTaggedByUserId(USER_ID)).willReturn(5L);
-            given(userPort.findById(USER_ID)).willReturn(User.createForSocialLogin());
 
             aiTaggingService.completeTagging(STAR_RECORD_ID, "PROBLEM_SOLVING", List.of("문제해결"));
 
             assertThat(record.getStatus()).isEqualTo(StarRecordStatus.TAGGED);
-            verify(scrumTitleRepositoryPort).commitAllByIds(List.of(100L));
         }
 
         @Test
-        @DisplayName("성공 — 아직 미완료 StarRecord 있으면 TAGGED 전환만 하고 COMMITTED 안 함")
+        @DisplayName("성공 — 아직 미완료 StarRecord 있어도 TAGGED 전환 된다")
         void marksTaggedOnly_whenUntaggedRemain() {
             StarRecord record = makeStarRecordWithScrum(USER_ID, StarStep.DONE);
             given(starRecordPort.findByIdWithScrum(STAR_RECORD_ID)).willReturn(Optional.of(record));
-            given(starRecordPort.existsUntaggedByUserAndDate(USER_ID, DATE)).willReturn(true);
-            given(starRecordPort.countTaggedByUserId(USER_ID)).willReturn(5L);
-            given(userPort.findById(USER_ID)).willReturn(User.createForSocialLogin());
 
             aiTaggingService.completeTagging(STAR_RECORD_ID, "PROBLEM_SOLVING", List.of("문제해결"));
 
