@@ -63,14 +63,16 @@ public class UserController {
                         user.streakSnapshotAsOf(kstToday)));
     }
 
-    @Operation(summary = "프로필 수정", description = "직군·상태를 덮어쓴다. 변경 사항이 없어도 두 필드 모두 한글 라벨로 포함해 요청한다.")
+    @Operation(
+            summary = "프로필 수정",
+            description = "닉네임·직군·상태를 덮어쓴다. 변경 사항이 없어도 세 필드 모두 포함해 요청한다. 닉네임은 외부 노출이 없어 변경 횟수·기간 제한 없이 자유 수정 가능.")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
                 description = "수정 성공 — 업데이트된 프로필 반환"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "400",
-                description = "필수 필드 누락 또는 지원하지 않는 라벨"),
+                description = "필수 필드 누락, 지원하지 않는 라벨, 또는 닉네임 형식 위반(2~12자 한글·영문·숫자)"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "401",
                 description = "미인증 또는 만료된 액세스 토큰"),
@@ -81,7 +83,9 @@ public class UserController {
     @PatchMapping("/me")
     public ApiResponse<ProfileResponse> updateMyProfile(
             @CurrentUser Long userId, @Valid @RequestBody ProfileUpdateRequest request) {
-        User user = userService.updateMyProfile(userId, request.jobRole(), request.userStatus());
+        User user =
+                userService.updateMyProfile(
+                        userId, request.nickname(), request.jobRole(), request.userStatus());
         LocalDate kstToday = LocalDate.now(DateTimeFormatters.ZONE_KST);
         return ApiResponse.ok(
                 ProfileResponse.from(

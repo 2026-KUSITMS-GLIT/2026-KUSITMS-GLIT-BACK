@@ -118,11 +118,17 @@ public class User extends SoftDeleteEntity {
     }
 
     /**
-     * 마이페이지 프로필 수정(MYP002). 직군·상태를 덮어쓴다.
+     * 마이페이지 프로필 수정(MYP002). 닉네임·직군·상태를 덮어쓴다.
      *
-     * <p>요청 바디가 항상 두 필드를 모두 포함한다는 전제(부분 수정 아님). 엔티티 invariant 유지를 위해 호출부와 관계없이 null을 거부한다
+     * <p>요청 바디가 항상 세 필드를 모두 포함한다는 전제(부분 수정 아님). 엔티티 invariant 유지를 위해 호출부와 관계없이 null·blank 닉네임을
+     * 거부한다. 닉네임 형식·길이 검증은 DTO 단계에서 끝났다는 가정.
      */
-    public void updateProfile(JobRole jobRole, UserStatus userStatus) {
+    public void updateProfile(String nickname, JobRole jobRole, UserStatus userStatus) {
+        Objects.requireNonNull(nickname, "nickname");
+        if (nickname.isBlank()) {
+            throw new IllegalArgumentException("nickname must not be blank");
+        }
+        this.nickname = nickname;
         this.jobRole = Objects.requireNonNull(jobRole, "jobRole");
         this.userStatus = Objects.requireNonNull(userStatus, "userStatus");
     }

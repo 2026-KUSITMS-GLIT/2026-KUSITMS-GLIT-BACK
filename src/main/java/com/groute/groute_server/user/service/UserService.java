@@ -48,21 +48,23 @@ public class UserService {
     }
 
     /**
-     * 프로필 수정 — 한글 라벨을 enum으로 변환해 엔티티에 덮어쓴다.
+     * 프로필 수정 — 한글 라벨을 enum으로 변환해 엔티티에 덮어쓴다. 닉네임도 함께 갱신한다.
      *
      * <p>라벨 파싱 실패는 필드별로 구분된 400 응답을 반환한다 — 직군은 {@link ErrorCode#INVALID_JOB_ROLE}, 상태는 {@link
      * ErrorCode#INVALID_USER_STATUS}. enum에서 던지는 {@link IllegalArgumentException}을 {@link
-     * BusinessException}으로 래핑해 일관된 에러 포맷을 유지한다.
+     * BusinessException}으로 래핑해 일관된 에러 포맷을 유지한다. 닉네임 형식·길이 검증은 DTO bean validation 단계에서 끝났다는
+     * 가정으로, 본 메서드는 도메인 invariant(null·blank 거부)만 책임진다. 닉네임은 외부에 노출되지 않으므로 변경 횟수·기간 제한 없이 자유 갱신.
      */
     @Transactional
-    public User updateMyProfile(Long userId, String jobRoleLabel, String userStatusLabel) {
+    public User updateMyProfile(
+            Long userId, String nickname, String jobRoleLabel, String userStatusLabel) {
         JobRole jobRole = parseJobRole(jobRoleLabel);
         UserStatus userStatus = parseUserStatus(userStatusLabel);
         User user =
                 userRepository
                         .findById(userId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        user.updateProfile(jobRole, userStatus);
+        user.updateProfile(nickname, jobRole, userStatus);
         return user;
     }
 
