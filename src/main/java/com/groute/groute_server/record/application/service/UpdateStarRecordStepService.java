@@ -25,8 +25,8 @@ import lombok.RequiredArgsConstructor;
 /**
  * STAR 단계별 저장 서비스 (POST /api/star-records/{id}/steps/{step}).
  *
- * <p>R 단계 저장 시 StarRecord를 완료 처리하고 연결된 Scrum의 hasStar를 true로 설정한다.
- * ScrumTitle COMMITTED 전환과 리포트/코치마크 팝업 트리거도 R단계 완료 시점에 함께 처리한다.
+ * <p>R 단계 저장 시 StarRecord를 완료 처리하고 연결된 Scrum의 hasStar를 true로 설정한다. ScrumTitle COMMITTED 전환과
+ * 리포트/코치마크 팝업 트리거도 R단계 완료 시점에 함께 처리한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -63,7 +63,8 @@ public class UpdateStarRecordStepService implements UpdateStarRecordStepUseCase 
                 throw new BusinessException(ErrorCode.SCRUM_NOT_FOUND);
             }
             List<Long> titleIds =
-                    scrumQueryPort.findAllByUserAndDate(command.userId(), scrum.getScrumDate())
+                    scrumQueryPort
+                            .findAllByUserAndDate(command.userId(), scrum.getScrumDate())
                             .stream()
                             .map(Scrum::getTitle)
                             .map(t -> t.getId())
