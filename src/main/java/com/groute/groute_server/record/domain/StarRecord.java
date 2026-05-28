@@ -16,8 +16,8 @@ import lombok.NoArgsConstructor;
 /**
  * 심화 STAR 기록.
  *
- * <p>스크럼과 1:1(REC008). 단계별로 작성이 진행되며, 3단계 완료 시 완료 처리된다. AI 태깅 결과는 별도 상태(status=TAGGED)로 관리된다. {@link #currentStep} + 각 단계 필드(S/T,
- * A, R)로 임시저장을 대체한다(REC010).
+ * <p>스크럼과 1:1(REC008). 단계별로 작성이 진행되며, 3단계 완료 시 완료 처리된다. AI 태깅 결과는 별도 상태(status=TAGGED)로 관리된다.
+ * {@link #currentStep} + 각 단계 필드(S/T, A, R)로 임시저장을 대체한다(REC010).
  */
 @Getter
 @NoArgsConstructor
