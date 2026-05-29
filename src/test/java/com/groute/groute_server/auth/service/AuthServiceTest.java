@@ -111,8 +111,8 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("rotate에 실패했을 때 저장값을 삭제하고 INVALID_REFRESH_TOKEN을 던진다")
-        void should_deleteStoredAndThrowInvalidRefreshToken_when_rotateFails() {
+        @DisplayName("rotate에 실패했을 때 저장값을 삭제하지 않고 INVALID_REFRESH_TOKEN을 던진다")
+        void should_throwInvalidRefreshTokenAndKeepStored_when_rotateFails() {
             // given
             String oldRefresh = "old-refresh";
             String newRefresh = "new-refresh";
@@ -129,7 +129,7 @@ class AuthServiceTest {
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INVALID_REFRESH_TOKEN);
-            verify(refreshTokenRepository).deleteByUserId(userId);
+            verify(refreshTokenRepository, never()).deleteByUserId(anyLong());
         }
     }
 
