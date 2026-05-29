@@ -66,6 +66,13 @@ public class SecurityConfig {
                         ex ->
                                 ex.authenticationEntryPoint(jwtAuthenticationEntryPoint)
                                         .accessDeniedHandler(jwtAccessDeniedHandler))
+                .headers(
+                        h ->
+                                h.httpStrictTransportSecurity(
+                                        hsts ->
+                                                hsts.includeSubDomains(true)
+                                                        .maxAgeInSeconds(31536000)
+                                                        .preload(true)))
                 .addFilterBefore(
                         jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
