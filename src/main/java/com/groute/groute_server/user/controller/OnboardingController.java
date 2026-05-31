@@ -36,9 +36,14 @@ public class OnboardingController {
     private final UserProperties userProperties;
 
     @Operation(summary = "온보딩 완료 여부 조회", description = "로그인한 유저의 온보딩 완료 여부를 반환한다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "조회 성공")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증 또는 만료된 액세스 토큰")
+    })
     @GetMapping("/status")
     public ApiResponse<OnboardingStatusResponse> getOnboardingStatus(@CurrentUser Long userId) {
         return ApiResponse.ok(
