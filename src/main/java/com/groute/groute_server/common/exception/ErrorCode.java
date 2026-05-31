@@ -60,6 +60,8 @@ public enum ErrorCode {
     STAR_WRITE_LOCKED(HttpStatus.CONFLICT, "RECORD_010", "이미 완료된 심화기록은 수정할 수 없어요."),
     STAR_IMAGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "RECORD_011", "이미지는 최대 2장까지 첨부할 수 있어요."),
     STAR_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECORD_012", "이미지를 찾을 수 없습니다."),
+    DOMAIN_OWNER_MISMATCH(
+            HttpStatus.INTERNAL_SERVER_ERROR, "RECORD_013", "도메인 객체의 소유자가 일치하지 않습니다."),
 
     // Record - StarRecord
     STAR_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "REC_001", "STAR 기록을 찾을 수 없습니다."),

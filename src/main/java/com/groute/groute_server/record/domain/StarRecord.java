@@ -6,6 +6,8 @@ import java.util.Objects;
 import jakarta.persistence.*;
 
 import com.groute.groute_server.common.entity.SoftDeleteEntity;
+import com.groute.groute_server.common.exception.BusinessException;
+import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.domain.enums.StarRecordStatus;
 import com.groute.groute_server.record.domain.enums.StarStep;
 import com.groute.groute_server.user.entity.User;
@@ -70,9 +72,14 @@ public class StarRecord extends SoftDeleteEntity {
 
     /** 신규 StarRecord 팩토리. currentStep=ST, status=WRITING으로 초기화된다. */
     public static StarRecord create(User user, Scrum scrum) {
+        Objects.requireNonNull(user, "user");
+        Objects.requireNonNull(scrum, "scrum");
+        if (!user.getId().equals(scrum.getUser().getId())) {
+            throw new BusinessException(ErrorCode.DOMAIN_OWNER_MISMATCH);
+        }
         StarRecord record = new StarRecord();
-        record.user = Objects.requireNonNull(user, "user");
-        record.scrum = Objects.requireNonNull(scrum, "scrum");
+        record.user = user;
+        record.scrum = scrum;
         return record;
     }
 

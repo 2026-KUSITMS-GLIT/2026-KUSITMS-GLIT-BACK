@@ -6,6 +6,8 @@ import java.util.Objects;
 import jakarta.persistence.*;
 
 import com.groute.groute_server.common.entity.SoftDeleteEntity;
+import com.groute.groute_server.common.exception.BusinessException;
+import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
 import com.groute.groute_server.user.entity.User;
 
@@ -59,9 +61,14 @@ public class Scrum extends SoftDeleteEntity {
 
     /** 신규 스크럼 팩토리. {@code hasStar}는 false, {@code selectedCompetency}는 NULL로 초기화한다. */
     public static Scrum create(User user, ScrumTitle title, String content, LocalDate scrumDate) {
+        Objects.requireNonNull(user, "user");
+        Objects.requireNonNull(title, "title");
+        if (!user.getId().equals(title.getUser().getId())) {
+            throw new BusinessException(ErrorCode.DOMAIN_OWNER_MISMATCH);
+        }
         Scrum scrum = new Scrum();
-        scrum.user = Objects.requireNonNull(user, "user");
-        scrum.title = Objects.requireNonNull(title, "title");
+        scrum.user = user;
+        scrum.title = title;
         scrum.content = Objects.requireNonNull(content, "content");
         scrum.scrumDate = Objects.requireNonNull(scrumDate, "scrumDate");
         return scrum;
