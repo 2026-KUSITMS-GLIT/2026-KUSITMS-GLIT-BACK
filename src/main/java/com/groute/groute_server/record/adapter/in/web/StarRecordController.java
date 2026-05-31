@@ -80,6 +80,9 @@ public class StarRecordController {
                 responseCode = "400",
                 description = "중복 scrumId 또는 빈 목록"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증 또는 만료된 액세스 토큰"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "404",
                 description = "스크럼을 찾을 수 없음 (미존재 또는 타인 소유)"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
