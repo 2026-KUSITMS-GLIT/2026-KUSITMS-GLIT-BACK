@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.domain;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
@@ -43,6 +44,6 @@ class ScrumTest {
 
         Scrum scrum = Scrum.create(owner, title, "내용", LocalDate.of(2026, 5, 31));
 
-        assert scrum != null;
+        assertThat(scrum).isNotNull();
     }
 }

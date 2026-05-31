@@ -1,5 +1,6 @@
 package com.groute.groute_server.record.domain;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.DisplayName;
@@ -41,6 +42,6 @@ class StarRecordTest {
 
         StarRecord record = StarRecord.create(owner, scrum);
 
-        assert record != null;
+        assertThat(record).isNotNull();
     }
 }
