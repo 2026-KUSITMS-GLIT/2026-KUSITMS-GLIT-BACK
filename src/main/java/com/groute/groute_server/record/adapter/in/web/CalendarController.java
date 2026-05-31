@@ -14,6 +14,7 @@ import com.groute.groute_server.record.application.port.in.calendar.GetDailyCale
 import com.groute.groute_server.record.application.port.in.calendar.GetDailyCalendarUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +48,10 @@ public class CalendarController {
     })
     @GetMapping("/daily")
     public ApiResponse<CalendarDailyResponse> getDailyCalendar(
-            @CurrentUser Long userId, @RequestParam("date") String dateRaw) {
+            @CurrentUser Long userId,
+            @Parameter(description = "조회 일자 (yyyy-MM-dd)", example = "2026-04-15", required = true)
+                    @RequestParam("date")
+                    String dateRaw) {
         LocalDate date = DateParam.parseIso(dateRaw);
         return ApiResponse.ok(
                 CalendarDailyResponse.from(

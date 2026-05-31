@@ -24,6 +24,7 @@ import com.groute.groute_server.record.application.port.in.star.QueryStarImagesU
 import com.groute.groute_server.record.application.port.in.star.UploadStarImageUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +57,8 @@ public class StarImageController {
     })
     @GetMapping("/{starRecordId}/images")
     public ApiResponse<List<StarImageListItemResponse>> getImages(
-            @CurrentUser Long userId, @PathVariable Long starRecordId) {
+            @CurrentUser Long userId,
+            @Parameter(description = "심화기록 ID") @PathVariable Long starRecordId) {
         List<StarImageListItemResponse> images =
                 queryStarImagesUseCase.query(userId, starRecordId).stream()
                         .map(StarImageListItemResponse::from)
@@ -93,7 +95,7 @@ public class StarImageController {
     @PostMapping("/{starRecordId}/images/presigned-url")
     public ApiResponse<List<UploadStarImageResponse>> uploadImage(
             @CurrentUser Long userId,
-            @PathVariable Long starRecordId,
+            @Parameter(description = "심화기록 ID") @PathVariable Long starRecordId,
             @Valid @RequestBody UploadStarImageRequest request) {
         List<UploadStarImageResponse> responses =
                 uploadStarImageUseCase.upload(request.toCommand(userId, starRecordId)).stream()
@@ -129,7 +131,7 @@ public class StarImageController {
     @PostMapping("/{starRecordId}/images/confirm")
     public ApiResponse<Void> confirmImage(
             @CurrentUser Long userId,
-            @PathVariable Long starRecordId,
+            @Parameter(description = "심화기록 ID") @PathVariable Long starRecordId,
             @Valid @RequestBody ConfirmStarImageRequest request) {
         confirmStarImageUseCase.confirm(request.toCommand(userId, starRecordId));
         return ApiResponse.ok("이미지 등록 성공", null);
@@ -157,7 +159,9 @@ public class StarImageController {
     })
     @DeleteMapping("/{starRecordId}/images/{imageId}")
     public ApiResponse<Void> deleteImage(
-            @CurrentUser Long userId, @PathVariable Long starRecordId, @PathVariable Long imageId) {
+            @CurrentUser Long userId,
+            @Parameter(description = "심화기록 ID") @PathVariable Long starRecordId,
+            @Parameter(description = "이미지 ID") @PathVariable Long imageId) {
         deleteStarImageUseCase.delete(userId, starRecordId, imageId);
         return ApiResponse.ok("이미지 삭제 성공", null);
     }

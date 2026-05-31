@@ -16,6 +16,7 @@ import com.groute.groute_server.common.annotation.CurrentUser;
 import com.groute.groute_server.common.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +52,10 @@ public class CalendarHomeController {
     @GetMapping("/monthly")
     public ApiResponse<CalendarMonthlyResponse> getMonthly(
             @CurrentUser Long userId,
-            @RequestParam("month") @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
+            @Parameter(description = "조회 월 (yyyy-MM)", example = "2026-04", required = true)
+                    @RequestParam("month")
+                    @DateTimeFormat(pattern = "yyyy-MM")
+                    YearMonth month) {
         return ApiResponse.ok(
                 CalendarMonthlyResponse.from(calendarHomeService.getMonthly(userId, month)));
     }
@@ -75,7 +79,10 @@ public class CalendarHomeController {
     @GetMapping("/daily-preview")
     public ApiResponse<CalendarDailyPreviewResponse> getDailyPreview(
             @CurrentUser Long userId,
-            @RequestParam("date") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
+            @Parameter(description = "조회 일자 (yyyy-MM-dd)", example = "2026-04-15", required = true)
+                    @RequestParam("date")
+                    @DateTimeFormat(pattern = "yyyy-MM-dd")
+                    LocalDate date) {
         return ApiResponse.ok(
                 CalendarDailyPreviewResponse.from(
                         calendarHomeService.getDailyPreview(userId, date)));

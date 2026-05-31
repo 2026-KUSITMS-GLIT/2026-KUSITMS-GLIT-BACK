@@ -14,6 +14,7 @@ import com.groute.groute_server.report.adapter.in.web.dto.ReportSelectableRecord
 import com.groute.groute_server.report.application.port.in.GetSelectableRecordsUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +46,10 @@ public class ReportSelectableRecordsController {
     @GetMapping("/selectable-records/{date}")
     public ApiResponse<ReportSelectableRecordsResponse> getSelectableRecords(
             @CurrentUser Long userId,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @Parameter(description = "조회 일자 (yyyy-MM-dd)", example = "2026-04-15", required = true)
+                    @PathVariable
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate date) {
         return ApiResponse.ok(
                 "날짜별 심화기록 모달 조회 성공",
                 ReportSelectableRecordsResponse.from(
