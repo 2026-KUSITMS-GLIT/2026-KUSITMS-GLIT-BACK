@@ -161,8 +161,9 @@ class ScrumSyncServiceTest {
             given(scrumQueryPort.findAllByIdInAndUserId(anyCollection(), anyLong()))
                     .willReturn(List.of());
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of());
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            User stubUser = User.createForSocialLogin();
+            ReflectionTestUtils.setField(stubUser, "id", USER_ID);
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(stubUser);
             SyncDailyScrumCommand command = command(group(1L, item(null, "신규")));
 
             // when
@@ -340,8 +341,9 @@ class ScrumSyncServiceTest {
             given(scrumQueryPort.findAllByIdInAndUserId(anyCollection(), anyLong()))
                     .willReturn(List.of(a));
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(a, b));
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            User stubUser = User.createForSocialLogin();
+            ReflectionTestUtils.setField(stubUser, "id", USER_ID);
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(stubUser);
             SyncDailyScrumCommand command =
                     command(
                             group(1L, item(100L, "A_new")),
@@ -376,8 +378,9 @@ class ScrumSyncServiceTest {
             given(scrumQueryPort.findAllByIdInAndUserId(anyCollection(), anyLong()))
                     .willReturn(List.of());
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of());
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            User stubUser = User.createForSocialLogin();
+            ReflectionTestUtils.setField(stubUser, "id", USER_ID);
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(stubUser);
             SyncDailyScrumCommand command = command(group(1L, item(null, "신규")));
 
             // when
@@ -494,9 +497,12 @@ class ScrumSyncServiceTest {
     }
 
     private static ScrumTitle title(Long id, String projectName, String freeText) {
+        User user = User.createForSocialLogin();
+        ReflectionTestUtils.setField(user, "id", USER_ID);
         Project project = Project.builder().id(1000L + id).name(projectName).build();
         ScrumTitle title = new ScrumTitle();
         ReflectionTestUtils.setField(title, "id", id);
+        ReflectionTestUtils.setField(title, "user", user);
         ReflectionTestUtils.setField(title, "project", project);
         ReflectionTestUtils.setField(title, "freeText", freeText);
         return title;
@@ -508,7 +514,10 @@ class ScrumSyncServiceTest {
             String content,
             boolean hasStar,
             LocalDate createdLocalDate) {
-        Scrum scrum = Scrum.create(User.createForSocialLogin(), title, content, DATE);
+        User user = User.createForSocialLogin();
+        ReflectionTestUtils.setField(user, "id", USER_ID);
+        ReflectionTestUtils.setField(title, "user", user);
+        Scrum scrum = Scrum.create(user, title, content, DATE);
         ReflectionTestUtils.setField(scrum, "id", id);
         ReflectionTestUtils.setField(scrum, "hasStar", hasStar);
         OffsetDateTime createdAt =

@@ -183,12 +183,11 @@ class ScrumCompetencyUpdateServiceTest {
     }
 
     private static Scrum scrum(Long id) {
-        Scrum scrum =
-                Scrum.create(
-                        User.createForSocialLogin(),
-                        new ScrumTitle(),
-                        "내용",
-                        LocalDate.of(2026, 5, 9));
+        User user = User.createForSocialLogin();
+        ReflectionTestUtils.setField(user, "id", USER_ID);
+        ScrumTitle title = new ScrumTitle();
+        ReflectionTestUtils.setField(title, "user", user);
+        Scrum scrum = Scrum.create(user, title, "내용", LocalDate.of(2026, 5, 9));
         ReflectionTestUtils.setField(scrum, "id", id);
         return scrum;
     }
