@@ -85,8 +85,7 @@ class ScrumBulkWriteServiceTest {
             given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE)).willReturn(List.of(existing));
             given(projectPort.findByIdAndUserId(100L, USER_ID))
                     .willReturn(Optional.of(project(100L, "프로젝트A")));
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
             stubSaveTitles();
             stubSaveScrums();
 
@@ -151,8 +150,7 @@ class ScrumBulkWriteServiceTest {
         void should_returnCorrectResult_when_singleGroupSingleScrum() {
             Project project = project(100L, "프로젝트A");
             given(projectPort.findByIdAndUserId(100L, USER_ID)).willReturn(Optional.of(project));
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
             stubSaveTitles();
             stubSaveScrums();
 
@@ -172,8 +170,7 @@ class ScrumBulkWriteServiceTest {
         void should_saveScrums_when_exactly5Scrums() {
             given(projectPort.findByIdAndUserId(anyLong(), anyLong()))
                     .willReturn(Optional.of(project(100L, "프로젝트A")));
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
             stubSaveTitles();
             stubSaveScrums();
 
@@ -190,8 +187,7 @@ class ScrumBulkWriteServiceTest {
                     .willReturn(Optional.of(project(100L, "프로젝트A")));
             given(projectPort.findByIdAndUserId(101L, USER_ID))
                     .willReturn(Optional.of(project(101L, "프로젝트B")));
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
             stubSaveTitles();
             stubSaveScrums();
 
@@ -206,8 +202,7 @@ class ScrumBulkWriteServiceTest {
         void should_incrementTitleCountByTwo_when_sameProjectInTwoGroups() {
             given(projectPort.findByIdAndUserId(anyLong(), anyLong()))
                     .willReturn(Optional.of(project(100L, "프로젝트A")));
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
             stubSaveTitles();
             stubSaveScrums();
 
@@ -223,8 +218,7 @@ class ScrumBulkWriteServiceTest {
                     .willReturn(Optional.of(project(100L, "P1")));
             given(projectPort.findByIdAndUserId(101L, USER_ID))
                     .willReturn(Optional.of(project(101L, "P2")));
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
             stubSaveTitles();
             stubSaveScrums();
 
@@ -250,8 +244,7 @@ class ScrumBulkWriteServiceTest {
         void should_recordStreak_when_writeSucceeds() {
             given(projectPort.findByIdAndUserId(100L, USER_ID))
                     .willReturn(Optional.of(project(100L, "프로젝트A")));
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
             stubSaveTitles();
             stubSaveScrums();
 
@@ -308,6 +301,12 @@ class ScrumBulkWriteServiceTest {
         ReflectionTestUtils.setField(scrum, "id", scrumId);
         ReflectionTestUtils.setField(scrum, "title", title);
         return scrum;
+    }
+
+    private static User userRef() {
+        User user = User.createForSocialLogin();
+        ReflectionTestUtils.setField(user, "id", USER_ID);
+        return user;
     }
 
     private static Project project(Long id, String name) {
