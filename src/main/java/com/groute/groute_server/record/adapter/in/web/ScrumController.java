@@ -30,6 +30,7 @@ import com.groute.groute_server.record.application.port.in.scrumtitle.DeleteScru
 import com.groute.groute_server.record.application.port.in.scrumtitle.DeleteScrumTitleUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -122,7 +123,12 @@ public class ScrumController {
     @PutMapping("/daily")
     public ApiResponse<Void> syncDailyScrum(
             @CurrentUser Long userId,
-            @RequestParam("date") String dateRaw,
+            @Parameter(
+                            description = "동기화 대상 일자 (yyyy-MM-dd)",
+                            example = "2026-04-15",
+                            required = true)
+                    @RequestParam("date")
+                    String dateRaw,
             @Valid @RequestBody SyncDailyScrumRequest request) {
         LocalDate date = DateParam.parseIso(dateRaw);
         syncDailyScrumUseCase.syncDailyScrum(request.toCommand(userId, date));
@@ -146,7 +152,9 @@ public class ScrumController {
                 description = "scrumId가 본인 소유가 아니거나 존재하지 않음")
     })
     @DeleteMapping("/{scrumId}")
-    public ApiResponse<Void> deleteScrum(@CurrentUser Long userId, @PathVariable Long scrumId) {
+    public ApiResponse<Void> deleteScrum(
+            @CurrentUser Long userId,
+            @Parameter(description = "삭제할 스크럼 ID") @PathVariable Long scrumId) {
         deleteScrumUseCase.deleteScrum(new DeleteScrumCommand(userId, scrumId));
         return ApiResponse.ok("스크럼 삭제 성공");
     }
@@ -170,7 +178,8 @@ public class ScrumController {
     })
     @DeleteMapping("/titles/{titleId}")
     public ApiResponse<Void> deleteScrumTitle(
-            @CurrentUser Long userId, @PathVariable Long titleId) {
+            @CurrentUser Long userId,
+            @Parameter(description = "삭제할 스크럼 제목 ID") @PathVariable Long titleId) {
         deleteScrumTitleUseCase.deleteScrumTitle(new DeleteScrumTitleCommand(userId, titleId));
         return ApiResponse.ok("freeText 삭제 성공");
     }

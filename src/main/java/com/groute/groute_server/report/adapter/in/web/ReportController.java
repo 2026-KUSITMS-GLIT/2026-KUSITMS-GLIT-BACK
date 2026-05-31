@@ -26,6 +26,7 @@ import com.groute.groute_server.report.application.port.in.GetSelectableInfoUseC
 import com.groute.groute_server.report.application.port.in.RetryReportUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -98,7 +99,8 @@ public class ReportController {
     })
     @GetMapping("/{reportId}")
     public ApiResponse<ReportDetailResponse> getDetail(
-            @PathVariable Long reportId, @CurrentUser Long userId) {
+            @Parameter(description = "리포트 ID") @PathVariable Long reportId,
+            @CurrentUser Long userId) {
         return ApiResponse.ok(
                 ReportDetailResponse.from(getReportDetailUseCase.getDetail(reportId, userId)));
     }
@@ -167,7 +169,8 @@ public class ReportController {
     })
     @GetMapping("/{reportId}/status")
     public ApiResponse<ReportStatusResponse> getReportStatus(
-            @CurrentUser Long userId, @PathVariable Long reportId) {
+            @CurrentUser Long userId,
+            @Parameter(description = "리포트 ID") @PathVariable Long reportId) {
         return ApiResponse.ok(
                 "리포트 생성 상태 조회 성공",
                 ReportStatusResponse.from(
@@ -194,7 +197,8 @@ public class ReportController {
     })
     @PostMapping("/{reportId}/retry")
     public ApiResponse<ReportCreateResponse> retryReport(
-            @CurrentUser Long userId, @PathVariable Long reportId) {
+            @CurrentUser Long userId,
+            @Parameter(description = "리포트 ID") @PathVariable Long reportId) {
         return ApiResponse.ok(
                 "리포트 생성 재시도 요청 성공",
                 ReportCreateResponse.from(retryReportUseCase.retryReport(userId, reportId)));
