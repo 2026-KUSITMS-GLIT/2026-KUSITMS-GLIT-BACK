@@ -26,6 +26,7 @@ import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.ProjectPage;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -72,8 +73,14 @@ public class ProjectController {
     @GetMapping
     public ApiResponse<ProjectsResponse> getProjects(
             @CurrentUser Long userId,
-            @Min(0) @RequestParam(defaultValue = "0") int page,
-            @Min(1) @RequestParam(defaultValue = "5") int size) {
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+                    @Min(0)
+                    @RequestParam(defaultValue = "0")
+                    int page,
+            @Parameter(description = "페이지 크기", example = "5")
+                    @Min(1)
+                    @RequestParam(defaultValue = "5")
+                    int size) {
         ProjectPage projects = projectUseCase.getProjects(userId, page, size);
         return ApiResponse.ok("프로젝트 태그 목록을 조회했습니다.", ProjectsResponse.from(projects));
     }
@@ -96,7 +103,7 @@ public class ProjectController {
     @PatchMapping("/{projectId}")
     public ApiResponse<Void> updateProject(
             @CurrentUser Long userId,
-            @PathVariable Long projectId,
+            @Parameter(description = "프로젝트 태그 ID") @PathVariable Long projectId,
             @Valid @RequestBody ProjectNameRequest request) {
         projectUseCase.updateProject(userId, projectId, request.name());
         return ApiResponse.ok("프로젝트 태그 이름이 수정되었습니다.");
@@ -115,7 +122,9 @@ public class ProjectController {
                 description = "연결된 기록이 있어 삭제 불가")
     })
     @DeleteMapping("/{projectId}")
-    public ApiResponse<Void> deleteProject(@CurrentUser Long userId, @PathVariable Long projectId) {
+    public ApiResponse<Void> deleteProject(
+            @CurrentUser Long userId,
+            @Parameter(description = "프로젝트 태그 ID") @PathVariable Long projectId) {
         projectUseCase.deleteProject(userId, projectId);
         return ApiResponse.ok("프로젝트 태그가 삭제되었습니다.");
     }

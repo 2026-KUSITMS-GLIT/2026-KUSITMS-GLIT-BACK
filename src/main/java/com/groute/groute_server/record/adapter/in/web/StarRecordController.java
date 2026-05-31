@@ -29,6 +29,7 @@ import com.groute.groute_server.record.application.port.in.star.UpdateStarRecord
 import com.groute.groute_server.record.domain.enums.StarStep;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -118,8 +119,8 @@ public class StarRecordController {
     @PostMapping("/{starRecordId}/steps/{step}")
     public ApiResponse<Void> updateStep(
             @CurrentUser Long userId,
-            @PathVariable Long starRecordId,
-            @PathVariable String step,
+            @Parameter(description = "심화기록 ID") @PathVariable Long starRecordId,
+            @Parameter(description = "저장할 단계 (st, a, r)") @PathVariable String step,
             @RequestBody @Valid StarRecordStepUpdateRequest request) {
         StarStep starStep;
         try {
@@ -152,7 +153,8 @@ public class StarRecordController {
     })
     @GetMapping("/{starRecordId}")
     public ApiResponse<StarDetailResponse> getStarDetail(
-            @CurrentUser Long userId, @PathVariable Long starRecordId) {
+            @CurrentUser Long userId,
+            @Parameter(description = "심화기록 ID") @PathVariable Long starRecordId) {
         return ApiResponse.ok(
                 "심화 기록 조회 성공",
                 StarDetailResponse.from(
@@ -179,7 +181,9 @@ public class StarRecordController {
                 description = "심화기록을 찾을 수 없음")
     })
     @DeleteMapping("/{starRecordId}")
-    public ApiResponse<Void> deleteStar(@CurrentUser Long userId, @PathVariable Long starRecordId) {
+    public ApiResponse<Void> deleteStar(
+            @CurrentUser Long userId,
+            @Parameter(description = "심화기록 ID") @PathVariable Long starRecordId) {
         deleteStarUseCase.deleteStar(new DeleteStarCommand(userId, starRecordId));
         return ApiResponse.ok("심화 기록 삭제 성공");
     }

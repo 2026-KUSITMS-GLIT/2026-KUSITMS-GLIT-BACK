@@ -17,6 +17,7 @@ import com.groute.groute_server.record.application.port.in.GetAiTaggingStatusUse
 import com.groute.groute_server.record.application.port.in.TriggerAiTaggingUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -68,7 +69,8 @@ public class StarTaggingController {
     @PostMapping("/{starRecordId}/ai-tagging")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<Void> triggerAiTagging(
-            @PathVariable Long starRecordId, @CurrentUser Long userId) {
+            @Parameter(description = "심화기록 ID") @PathVariable Long starRecordId,
+            @CurrentUser Long userId) {
         triggerAiTaggingUseCase.trigger(starRecordId, userId);
         return ApiResponse.created("AI 태깅 트리거 성공");
     }
@@ -98,7 +100,8 @@ public class StarTaggingController {
     })
     @GetMapping("/{starRecordId}/ai-tagging/status")
     public ApiResponse<AiTaggingStatusResponse> getAiTaggingStatus(
-            @PathVariable Long starRecordId, @CurrentUser Long userId) {
+            @Parameter(description = "심화기록 ID") @PathVariable Long starRecordId,
+            @CurrentUser Long userId) {
         AiTaggingStatusResponse response =
                 getAiTaggingStatusUseCase.getStatus(starRecordId, userId);
         return ApiResponse.ok(response);
@@ -131,7 +134,8 @@ public class StarTaggingController {
     })
     @GetMapping("/{starRecordId}/ai-tagging/result")
     public ApiResponse<AiTaggingResultResponse> getAiTaggingResult(
-            @PathVariable Long starRecordId, @CurrentUser Long userId) {
+            @Parameter(description = "심화기록 ID") @PathVariable Long starRecordId,
+            @CurrentUser Long userId) {
         AiTaggingResultResponse response =
                 getAiTaggingResultUseCase.getResult(starRecordId, userId);
         return ApiResponse.ok(response);
