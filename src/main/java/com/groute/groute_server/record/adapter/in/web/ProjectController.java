@@ -49,6 +49,9 @@ public class ProjectController {
                 responseCode = "400",
                 description = "유효하지 않은 입력값"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증 또는 만료된 액세스 토큰"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "409",
                 description = "이미 존재하는 태그 이름")
     })
@@ -67,7 +70,10 @@ public class ProjectController {
                 description = "조회 성공"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "400",
-                description = "유효하지 않은 page/size 입력값")
+                description = "유효하지 않은 page/size 입력값"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증 또는 만료된 액세스 토큰")
     })
     @GetMapping
     public ApiResponse<ProjectsResponse> getProjects(
@@ -86,6 +92,9 @@ public class ProjectController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "400",
                 description = "유효하지 않은 입력값"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증 또는 만료된 액세스 토큰"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "404",
                 description = "프로젝트 태그를 찾을 수 없음"),
@@ -107,6 +116,9 @@ public class ProjectController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
                 description = "삭제 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "미인증 또는 만료된 액세스 토큰"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "404",
                 description = "프로젝트 태그를 찾을 수 없음"),
