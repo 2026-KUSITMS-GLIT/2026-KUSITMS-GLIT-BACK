@@ -63,7 +63,11 @@ public class Scrum extends SoftDeleteEntity {
     public static Scrum create(User user, ScrumTitle title, String content, LocalDate scrumDate) {
         Objects.requireNonNull(user, "user");
         Objects.requireNonNull(title, "title");
-        if (!user.getId().equals(title.getUser().getId())) {
+        User titleOwner = title.getUser();
+        if (titleOwner == null
+                || user.getId() == null
+                || titleOwner.getId() == null
+                || !user.getId().equals(titleOwner.getId())) {
             throw new BusinessException(ErrorCode.DOMAIN_OWNER_MISMATCH);
         }
         Scrum scrum = new Scrum();
