@@ -74,7 +74,11 @@ public class StarRecord extends SoftDeleteEntity {
     public static StarRecord create(User user, Scrum scrum) {
         Objects.requireNonNull(user, "user");
         Objects.requireNonNull(scrum, "scrum");
-        if (!user.getId().equals(scrum.getUser().getId())) {
+        User scrumOwner = scrum.getUser();
+        if (scrumOwner == null
+                || user.getId() == null
+                || scrumOwner.getId() == null
+                || !user.getId().equals(scrumOwner.getId())) {
             throw new BusinessException(ErrorCode.DOMAIN_OWNER_MISMATCH);
         }
         StarRecord record = new StarRecord();
