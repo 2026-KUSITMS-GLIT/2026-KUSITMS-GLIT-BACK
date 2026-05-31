@@ -161,12 +161,10 @@ class DeleteScrumServiceTest {
     }
 
     private static Scrum scrum(Long id, ScrumTitle title, boolean hasStar) {
-        Scrum scrum =
-                Scrum.create(
-                        User.createForSocialLogin(),
-                        title,
-                        "content",
-                        java.time.LocalDate.of(2026, 5, 4));
+        User user = User.createForSocialLogin();
+        ReflectionTestUtils.setField(user, "id", USER_ID);
+        ReflectionTestUtils.setField(title, "user", user);
+        Scrum scrum = Scrum.create(user, title, "content", java.time.LocalDate.of(2026, 5, 4));
         ReflectionTestUtils.setField(scrum, "id", id);
         ReflectionTestUtils.setField(scrum, "hasStar", hasStar);
         return scrum;

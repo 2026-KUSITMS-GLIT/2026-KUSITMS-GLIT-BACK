@@ -128,8 +128,9 @@ class BulkCreateStarRecordServiceTest {
             Scrum scrum = scrum(10L);
             given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L), USER_ID))
                     .willReturn(List.of(scrum));
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            User stubUser = User.createForSocialLogin();
+            ReflectionTestUtils.setField(stubUser, "id", USER_ID);
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(stubUser);
             given(starRecordWritePort.save(any())).willReturn(starRecord(100L));
 
             BulkCreateStarRecordResult result = service.bulkCreate(command(List.of(10L)));
@@ -145,8 +146,9 @@ class BulkCreateStarRecordServiceTest {
             Scrum scrum20 = scrum(20L);
             given(scrumQueryPort.findAllByIdInAndUserId(List.of(10L, 20L), USER_ID))
                     .willReturn(List.of(scrum10, scrum20));
-            given(userReferencePort.getReferenceById(USER_ID))
-                    .willReturn(User.createForSocialLogin());
+            User stubUser = User.createForSocialLogin();
+            ReflectionTestUtils.setField(stubUser, "id", USER_ID);
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(stubUser);
             given(starRecordWritePort.save(any()))
                     .willReturn(starRecord(100L))
                     .willReturn(starRecord(101L));
@@ -168,13 +170,21 @@ class BulkCreateStarRecordServiceTest {
     }
 
     private static Scrum scrum(Long id, LocalDate date) {
-        Scrum scrum = Scrum.create(User.createForSocialLogin(), new ScrumTitle(), "내용", date);
+        User user = User.createForSocialLogin();
+        ReflectionTestUtils.setField(user, "id", 1L);
+        ScrumTitle title = new ScrumTitle();
+        ReflectionTestUtils.setField(title, "user", user);
+        Scrum scrum = Scrum.create(user, title, "내용", date);
         ReflectionTestUtils.setField(scrum, "id", id);
         return scrum;
     }
 
     private static StarRecord starRecord(Long id) {
-        StarRecord record = StarRecord.create(User.createForSocialLogin(), new Scrum());
+        User user = User.createForSocialLogin();
+        ReflectionTestUtils.setField(user, "id", 1L);
+        Scrum scrum = new Scrum();
+        ReflectionTestUtils.setField(scrum, "user", user);
+        StarRecord record = StarRecord.create(user, scrum);
         ReflectionTestUtils.setField(record, "id", id);
         return record;
     }

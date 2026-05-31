@@ -62,6 +62,7 @@ class ConfirmStarImageServiceTest {
 
         ScrumTitle title = new ScrumTitle();
         ReflectionTestUtils.setField(title, "id", 20L);
+        ReflectionTestUtils.setField(title, "user", owner);
 
         Scrum scrum = Scrum.create(owner, title, "스크럼 내용", LocalDate.of(2026, 5, 12));
         ReflectionTestUtils.setField(scrum, "id", 50L);

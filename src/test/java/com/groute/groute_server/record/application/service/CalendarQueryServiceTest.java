@@ -391,7 +391,10 @@ class CalendarQueryServiceTest {
             String content,
             boolean hasStar,
             LocalDate createdLocalDate) {
-        Scrum scrum = Scrum.create(User.createForSocialLogin(), title, content, DATE);
+        User user = User.createForSocialLogin();
+        ReflectionTestUtils.setField(user, "id", USER_ID);
+        ReflectionTestUtils.setField(title, "user", user);
+        Scrum scrum = Scrum.create(user, title, content, DATE);
         ReflectionTestUtils.setField(scrum, "id", id);
         ReflectionTestUtils.setField(scrum, "hasStar", hasStar);
         OffsetDateTime createdAt =

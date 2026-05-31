@@ -68,6 +68,7 @@ class UpdateStarRecordStepServiceTest {
 
         ScrumTitle title = new ScrumTitle();
         ReflectionTestUtils.setField(title, "id", 10L);
+        ReflectionTestUtils.setField(title, "user", owner);
 
         scrum = Scrum.create(owner, title, "내용", DATE);
         ReflectionTestUtils.setField(scrum, "id", 50L);
@@ -96,7 +97,10 @@ class UpdateStarRecordStepServiceTest {
         void should_throwForbidden_when_notOwner() {
             User anotherUser = User.createForSocialLogin();
             ReflectionTestUtils.setField(anotherUser, "id", ANOTHER_USER_ID);
-            StarRecord otherRecord = StarRecord.create(anotherUser, scrum);
+            ScrumTitle anotherTitle = new ScrumTitle();
+            ReflectionTestUtils.setField(anotherTitle, "user", anotherUser);
+            Scrum anotherScrum = Scrum.create(anotherUser, anotherTitle, "내용", DATE);
+            StarRecord otherRecord = StarRecord.create(anotherUser, anotherScrum);
             given(starRecordRepositoryPort.findByIdWithScrum(STAR_ID))
                     .willReturn(Optional.of(otherRecord));
 
