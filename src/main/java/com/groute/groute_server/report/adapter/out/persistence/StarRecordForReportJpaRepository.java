@@ -54,6 +54,7 @@ public interface StarRecordForReportJpaRepository extends JpaRepository<StarReco
     /** 심화기록 ID 목록으로 심화기록을 조회한다. userId로 소유권을 함께 검증한다. */
     @Query(
             "SELECT sr FROM StarRecord sr "
+                    + "JOIN FETCH sr.scrum s "
                     + "WHERE sr.user.id = :userId "
                     + "AND sr.id IN :ids "
                     + "AND sr.isDeleted = false")
