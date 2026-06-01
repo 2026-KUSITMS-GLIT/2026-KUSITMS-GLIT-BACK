@@ -55,6 +55,7 @@ public interface StarRecordForReportJpaRepository extends JpaRepository<StarReco
     @Query(
             "SELECT sr FROM StarRecord sr "
                     + "JOIN FETCH sr.scrum s "
+                    + "JOIN FETCH sr.user u "
                     + "WHERE sr.user.id = :userId "
                     + "AND sr.id IN :ids "
                     + "AND sr.isDeleted = false")
