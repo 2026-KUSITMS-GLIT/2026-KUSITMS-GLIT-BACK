@@ -43,7 +43,6 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
 
     @Autowired
     public AiTaggingClientAdapter(
-            RestClient.Builder restClientBuilder,
             @Value("${ai.base-url:http://localhost:8000}") String baseUrl,
             @Value("${ai.internal-token:}") String internalToken,
             @Value("${ai.timeout.connect:5000}") int connectTimeoutMs,
@@ -54,7 +53,7 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
         factory.setConnectTimeout(java.time.Duration.ofMillis(connectTimeoutMs));
         factory.setReadTimeout(java.time.Duration.ofMillis(readTimeoutMs));
         this.restClient =
-                restClientBuilder
+                RestClient.builder()
                         .baseUrl(baseUrl)
                         .requestFactory(factory)
                         .defaultHeader("X-Internal-Token", internalToken)
