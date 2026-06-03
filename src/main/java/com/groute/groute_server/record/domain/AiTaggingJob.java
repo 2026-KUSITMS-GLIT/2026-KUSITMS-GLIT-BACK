@@ -42,12 +42,37 @@ public class AiTaggingJob extends BaseTimeEntity {
     @Column(name = "retry_count", nullable = false)
     private Short retryCount = 0;
 
-    /** 요청 페이로드 JSON: 직군 + 선택 역량 + S-T-A-R 텍스트(REC006). */
+    /**
+     * 요청 페이로드 JSON: 직군 + 선택 역량 + S-T-A-R 텍스트(REC006).
+     *
+     * <pre>
+     * {
+     *   "jobRole"            : String  — JobRole.name(),
+     *   "selectedCompetency" : String  — CompetencyCategory.name(), 미선택 시 빈 문자열,
+     *   "situationTask"      : String  — 상황/과제 텍스트,
+     *   "action"             : String  — 행동 텍스트,
+     *   "result"             : String  — 결과 텍스트
+     * }
+     * </pre>
+     *
+     * {@link com.groute.groute_server.record.adapter.out.ai.dto.AiTaggingRequest} 필드와 1:1 대응.
+     */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "request_payload", columnDefinition = "jsonb")
     private Map<String, Object> requestPayload;
 
-    /** AI 응답 원문. {primary_category, detail_tags[]} JSON. 디버깅 및 모델 교체 대비용 원본 보관. */
+    /**
+     * AI 응답 페이로드 JSON. 디버깅 및 모델 교체 대비용 원본 보관(REC006).
+     *
+     * <pre>
+     * {
+     *   "primaryCategory" : String       — CompetencyCategory.name(),
+     *   "detailTags"      : List&lt;String&gt; — 세부 태그 목록
+     * }
+     * </pre>
+     *
+     * {@link com.groute.groute_server.record.adapter.out.ai.dto.AiTaggingResponse} 필드와 1:1 대응.
+     */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "response_payload", columnDefinition = "jsonb")
     private Map<String, Object> responsePayload;
