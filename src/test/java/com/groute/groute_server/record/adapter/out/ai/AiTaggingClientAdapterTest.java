@@ -20,7 +20,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.groute.groute_server.record.adapter.out.ai.dto.AiTaggingResponse;
@@ -68,7 +67,6 @@ class AiTaggingClientAdapterTest {
         String baseUrl = mockWebServer.url("").toString();
         adapter =
                 new AiTaggingClientAdapter(
-                        RestClient.builder(),
                         baseUrl,
                         "test-token",
                         5000,
