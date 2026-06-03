@@ -43,6 +43,7 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
 
     @Autowired
     public AiTaggingClientAdapter(
+            RestClient.Builder restClientBuilder,
             @Value("${ai.base-url:http://localhost:8000}") String baseUrl,
             @Value("${ai.internal-token:}") String internalToken,
             @Value("${ai.timeout.connect:5000}") int connectTimeoutMs,
@@ -53,22 +54,12 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
         factory.setConnectTimeout(java.time.Duration.ofMillis(connectTimeoutMs));
         factory.setReadTimeout(java.time.Duration.ofMillis(readTimeoutMs));
         this.restClient =
-                RestClient.builder()
+                restClientBuilder
                         .baseUrl(baseUrl)
                         .requestFactory(factory)
                         .defaultHeader("X-Internal-Token", internalToken)
                         .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                         .build();
-        this.aiTaggingJobPort = aiTaggingJobPort;
-        this.completeAiTaggingUseCase = completeAiTaggingUseCase;
-    }
-
-    /** 테스트용 생성자. RestClient를 직접 주입받는다. */
-    AiTaggingClientAdapter(
-            RestClient restClient,
-            AiTaggingJobPort aiTaggingJobPort,
-            CompleteAiTaggingUseCase completeAiTaggingUseCase) {
-        this.restClient = restClient;
         this.aiTaggingJobPort = aiTaggingJobPort;
         this.completeAiTaggingUseCase = completeAiTaggingUseCase;
     }
