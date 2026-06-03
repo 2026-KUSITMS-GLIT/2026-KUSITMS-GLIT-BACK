@@ -10,8 +10,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -40,30 +39,20 @@ import okhttp3.mockwebserver.RecordedRequest;
 @ExtendWith(MockitoExtension.class)
 class AiTaggingClientAdapterTest {
 
-    static MockWebServer mockWebServer;
-    static ObjectMapper objectMapper = new ObjectMapper();
+    MockWebServer mockWebServer;
+    static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock AiTaggingJobPort aiTaggingJobPort;
     @Mock CompleteAiTaggingUseCase completeAiTaggingUseCase;
 
     AiTaggingClientAdapter adapter;
-    int requestCountBefore;
 
     private static final Long STAR_RECORD_ID = 1L;
 
-    @BeforeAll
-    static void startServer() throws IOException {
+    @BeforeEach
+    void setUp() throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
-    }
-
-    @AfterAll
-    static void stopServer() throws IOException {
-        mockWebServer.shutdown();
-    }
-
-    @BeforeEach
-    void setUp() {
         String baseUrl = mockWebServer.url("").toString();
         adapter =
                 new AiTaggingClientAdapter(
@@ -73,7 +62,11 @@ class AiTaggingClientAdapterTest {
                         30000,
                         aiTaggingJobPort,
                         completeAiTaggingUseCase);
-        requestCountBefore = mockWebServer.getRequestCount();
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        mockWebServer.shutdown();
     }
 
     private AiTaggingJob makeJob() {
@@ -145,7 +138,7 @@ class AiTaggingClientAdapterTest {
 
             adapter.requestTagging(job);
 
-            assertThat(mockWebServer.getRequestCount() - requestCountBefore).isEqualTo(2);
+            assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
             assertThat(job.getStatus()).isEqualTo(JobStatus.SUCCESS);
             then(completeAiTaggingUseCase)
                     .should()
@@ -162,7 +155,7 @@ class AiTaggingClientAdapterTest {
 
             adapter.requestTagging(job);
 
-            assertThat(mockWebServer.getRequestCount() - requestCountBefore).isEqualTo(2);
+            assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
             assertThat(job.getStatus()).isEqualTo(JobStatus.FAILED);
             assertThat(job.getRetryCount()).isEqualTo((short) 2);
             then(completeAiTaggingUseCase).shouldHaveNoInteractions();
