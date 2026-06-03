@@ -4,27 +4,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClient;
 
-import com.groute.groute_server.common.exception.BusinessException;
-import com.groute.groute_server.common.exception.ErrorCode;
-import com.groute.groute_server.record.adapter.out.ai.dto.AiTaggingRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.groute.groute_server.record.adapter.out.ai.dto.AiTaggingResponse;
 import com.groute.groute_server.record.application.port.in.CompleteAiTaggingUseCase;
 import com.groute.groute_server.record.application.port.out.AiTaggingJobPort;
@@ -36,37 +34,48 @@ import com.groute.groute_server.record.domain.enums.JobStatus;
 import com.groute.groute_server.user.entity.User;
 import com.groute.groute_server.user.enums.JobRole;
 
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class AiTaggingClientAdapterTest {
 
-    @Mock private AiTaggingJobPort aiTaggingJobPort;
-    @Mock private CompleteAiTaggingUseCase completeAiTaggingUseCase;
+    static MockWebServer mockWebServer;
+    static ObjectMapper objectMapper = new ObjectMapper();
 
-    private RestClient mockRestClient;
-    private RestClient.RequestBodyUriSpec uriSpec;
-    private RestClient.RequestBodySpec bodySpec;
-    private RestClient.ResponseSpec responseSpec;
+    @Mock AiTaggingJobPort aiTaggingJobPort;
+    @Mock CompleteAiTaggingUseCase completeAiTaggingUseCase;
 
-    private AiTaggingClientAdapter adapter;
+    AiTaggingClientAdapter adapter;
+    int requestCountBefore;
 
     private static final Long STAR_RECORD_ID = 1L;
 
+    @BeforeAll
+    static void startServer() throws IOException {
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
+    }
+
+    @AfterAll
+    static void stopServer() throws IOException {
+        mockWebServer.shutdown();
+    }
+
     @BeforeEach
     void setUp() {
-        mockRestClient = mock(RestClient.class);
-        uriSpec = mock(RestClient.RequestBodyUriSpec.class);
-        bodySpec = mock(RestClient.RequestBodySpec.class);
-        responseSpec = mock(RestClient.ResponseSpec.class);
-
-        given(mockRestClient.post()).willReturn(uriSpec);
-        given(uriSpec.uri("/v1/tagging")).willReturn(bodySpec);
-        given(bodySpec.body(ArgumentMatchers.any(AiTaggingRequest.class))).willReturn(bodySpec);
-        given(bodySpec.retrieve()).willReturn(responseSpec);
-
+        String baseUrl = mockWebServer.url("").toString();
         adapter =
                 new AiTaggingClientAdapter(
-                        mockRestClient, aiTaggingJobPort, completeAiTaggingUseCase);
+                        RestClient.builder(),
+                        baseUrl,
+                        "test-token",
+                        5000,
+                        30000,
+                        aiTaggingJobPort,
+                        completeAiTaggingUseCase);
+        requestCountBefore = mockWebServer.getRequestCount();
     }
 
     private AiTaggingJob makeJob() {
@@ -90,23 +99,31 @@ class AiTaggingClientAdapterTest {
         return job;
     }
 
+    private MockResponse jsonResponse(Object body) throws Exception {
+        return new MockResponse()
+                .setResponseCode(200)
+                .addHeader("Content-Type", "application/json")
+                .setBody(objectMapper.writeValueAsString(body));
+    }
+
     @Nested
     @DisplayName("AI 태깅 성공")
     class Success {
 
         @Test
         @DisplayName("FastAPI 정상 응답 시 job SUCCESS 전환 및 completeTagging 호출")
-        void should_succeedAndCompleteTagging_when_fastApiRespondsNormally() {
-            // given
+        void should_succeedAndCompleteTagging_when_fastApiRespondsNormally() throws Exception {
             AiTaggingJob job = makeJob();
-            given(responseSpec.body(AiTaggingResponse.class))
-                    .willReturn(new AiTaggingResponse("PROBLEM_SOLVING", List.of("문제해결", "개선")));
             given(aiTaggingJobPort.saveJob(any())).willAnswer(inv -> inv.getArgument(0));
+            mockWebServer.enqueue(
+                    jsonResponse(new AiTaggingResponse("PROBLEM_SOLVING", List.of("문제해결", "개선"))));
 
-            // when
             adapter.requestTagging(job);
 
-            // then
+            RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+            assertThat(request).isNotNull();
+            assertThat(request.getMethod()).isEqualTo("POST");
+            assertThat(request.getPath()).isEqualTo("/v1/tagging");
             assertThat(job.getStatus()).isEqualTo(JobStatus.SUCCESS);
             then(completeAiTaggingUseCase)
                     .should()
@@ -121,18 +138,16 @@ class AiTaggingClientAdapterTest {
 
         @Test
         @DisplayName("1차 실패 후 재시도 성공 시 job SUCCESS 전환")
-        void should_succeedOnRetry_when_firstCallFails() {
-            // given
+        void should_succeedOnRetry_when_firstCallFails() throws Exception {
             AiTaggingJob job = makeJob();
-            given(responseSpec.body(AiTaggingResponse.class))
-                    .willThrow(new BusinessException(ErrorCode.AI_SERVER_ERROR))
-                    .willReturn(new AiTaggingResponse("PROBLEM_SOLVING", List.of("문제해결")));
             given(aiTaggingJobPort.saveJob(any())).willAnswer(inv -> inv.getArgument(0));
+            mockWebServer.enqueue(new MockResponse().setResponseCode(500));
+            mockWebServer.enqueue(
+                    jsonResponse(new AiTaggingResponse("PROBLEM_SOLVING", List.of("문제해결"))));
 
-            // when
             adapter.requestTagging(job);
 
-            // then
+            assertThat(mockWebServer.getRequestCount() - requestCountBefore).isEqualTo(2);
             assertThat(job.getStatus()).isEqualTo(JobStatus.SUCCESS);
             then(completeAiTaggingUseCase)
                     .should()
@@ -141,18 +156,15 @@ class AiTaggingClientAdapterTest {
 
         @Test
         @DisplayName("1차 실패 후 재시도도 실패 시 job FAILED 확정")
-        void should_failPermanently_when_retryAlsoFails() {
-            // given
+        void should_failPermanently_when_retryAlsoFails() throws Exception {
             AiTaggingJob job = makeJob();
-            given(responseSpec.body(AiTaggingResponse.class))
-                    .willThrow(new BusinessException(ErrorCode.AI_SERVER_ERROR))
-                    .willThrow(new BusinessException(ErrorCode.AI_SERVER_ERROR));
             given(aiTaggingJobPort.saveJob(any())).willAnswer(inv -> inv.getArgument(0));
+            mockWebServer.enqueue(new MockResponse().setResponseCode(500));
+            mockWebServer.enqueue(new MockResponse().setResponseCode(500));
 
-            // when
             adapter.requestTagging(job);
 
-            // then
+            assertThat(mockWebServer.getRequestCount() - requestCountBefore).isEqualTo(2);
             assertThat(job.getStatus()).isEqualTo(JobStatus.FAILED);
             assertThat(job.getRetryCount()).isEqualTo((short) 2);
             then(completeAiTaggingUseCase).shouldHaveNoInteractions();
