@@ -1,0 +1,168 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: '롤백할 커밋 SHA (short 7자 또는 full 40자)'
+        required: true
+        type: string
+      environment:
+        description: '롤백 대상 환경'
+        required: true
+        type: choice
+        options:
+          - stg
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SHA 입력값 검증
+        env:
+          INPUT_SHA: ${{ github.event.inputs.sha }}
+        run: |
+          if ! echo "$INPUT_SHA" | grep -qiE '^[0-9a-f]{7,40}$'; then
+            echo "유효하지 않은 SHA 형식: $INPUT_SHA"
+            echo "7~40자의 16진수(0-9, a-f)만 허용됩니다."
+            exit 1
+          fi
+          echo "SHA 검증 완료: $INPUT_SHA"
+
+      - name: Short SHA → Full SHA 변환
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_SHA: ${{ github.event.inputs.sha }}
+        run: |
+          FULL_SHA=$(gh api \
+            "/repos/${{ github.repository }}/commits/${INPUT_SHA}" \
+            --jq '.sha')
+          echo "Full SHA: $FULL_SHA"
+          echo "FULL_SHA=${FULL_SHA}" >> "$GITHUB_ENV"
+
+      - name: 환경 설정 (stg/prod)
+        env:
+          INPUT_ENV: ${{ github.event.inputs.environment }}
+        run: |
+          if [ "$INPUT_ENV" = "stg" ]; then
+            {
+              echo "DEPLOY_ENV=stg"
+              echo "ROLE_ARN=${{ secrets.STG_ROLE_ARN }}"
+              echo "SSM_PATH=/groute/stg"
+            } >> "$GITHUB_ENV"
+          else
+            {
+              echo "DEPLOY_ENV=prod"
+              echo "ROLE_ARN=${{ secrets.PROD_ROLE_ARN }}"
+              echo "SSM_PATH=/groute/prod"
+            } >> "$GITHUB_ENV"
+          fi
+          echo "IMAGE_TAG=sha-${FULL_SHA}" >> "$GITHUB_ENV"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ap-northeast-2
+
+      - name: ECR 이미지 URI 구성
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.ap-northeast-2.amazonaws.com"
+          {
+            echo "ECR_REGISTRY=${ECR_REGISTRY}"
+            echo "FULL_IMAGE=${ECR_REGISTRY}/groute-ecr:${IMAGE_TAG}"
+          } >> "$GITHUB_ENV"
+
+      - name: ECR 이미지 존재 여부 확인
+        run: |
+          aws ecr describe-images \
+            --region ap-northeast-2 \
+            --repository-name groute-ecr \
+            --image-ids imageTag="${IMAGE_TAG}" \
+            --query 'imageDetails[0].imageTags' \
+            --output text
+          echo "이미지 확인 완료: ${FULL_IMAGE}"
+
+      - name: SSM SendCommand로 EC2 롤백 배포
+        run: |
+          cat << 'JQ_EOF' > /tmp/jq-deploy.jq
+          {
+            Targets: [{ Key: "tag:Env", Values: [$env_val] }],
+            DocumentName: "AWS-RunShellScript",
+            Parameters: {
+              commands: [
+                "set -e",
+                "cleanup() { rm -f /tmp/groute.env; }",
+                "trap cleanup EXIT",
+                "docker compose version >/dev/null 2>&1 || (apt-get update && apt-get install -y --no-install-recommends docker-compose-plugin)",
+                ("aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin " + $reg),
+                "mkdir -p /home/ssm-user/glit",
+                ("aws ssm get-parameters-by-path --region ap-northeast-2 --path " + $ssmpath + " --recursive --with-decryption --query 'Parameters[*].[Name,Value]' --output text | awk -F'\\t' '{n=$1; sub(/.*\\//, \"\", n); print n\"=\"$2}' > /tmp/groute.env"),
+                ("export APP_IMAGE=" + $image),
+                ("export SPRING_PROFILES_ACTIVE=" + $env_val),
+                "export REDIS_PASSWORD=$(grep '^REDIS_PASSWORD=' /tmp/groute.env | cut -d= -f2-)",
+                "[ -n \"$REDIS_PASSWORD\" ] || { echo 'REDIS_PASSWORD가 SSM에 없습니다'; exit 1; }",
+                ("aws s3 cp s3://glit-images/deploy/" + $sha + "/docker-compose.yml /home/ssm-user/glit/docker-compose.yml"),
+                "docker stop groute-server 2>/dev/null || true",
+                "docker rm   groute-server 2>/dev/null || true",
+                "cd /home/ssm-user/glit && docker compose up -d --pull always --wait"
+              ]
+            },
+            TimeoutSeconds: 300
+          }
+          JQ_EOF
+
+          jq -n \
+            --arg env_val "$DEPLOY_ENV" \
+            --arg reg     "$ECR_REGISTRY" \
+            --arg image   "$FULL_IMAGE" \
+            --arg ssmpath "$SSM_PATH" \
+            --arg sha     "$FULL_SHA" \
+            -f /tmp/jq-deploy.jq > /tmp/ssm-input.json
+
+          COMMAND_ID=$(aws ssm send-command \
+            --region ap-northeast-2 \
+            --cli-input-json file:///tmp/ssm-input.json \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM Command ID: $COMMAND_ID"
+          echo "COMMAND_ID=$COMMAND_ID" >> "$GITHUB_ENV"
+
+      - name: 롤백 결과 확인 (최대 5분 대기)
+        run: |
+          for i in $(seq 1 20); do
+            STATUS=$(aws ssm list-command-invocations \
+              --region ap-northeast-2 \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" \
+              --output text 2>/dev/null || echo "Pending")
+            echo "[$i/20] $STATUS"
+            case "$STATUS" in
+              Success)
+                echo "롤백 완료: $FULL_IMAGE"
+                exit 0
+                ;;
+              Failed|Cancelled|TimedOut|DeliveryTimedOut)
+                echo "롤백 실패: $STATUS"
+                aws ssm list-command-invocations \
+                  --region ap-northeast-2 \
+                  --command-id "$COMMAND_ID" \
+                  --details \
+                  --query "CommandInvocations[0].CommandPlugins[0].Output" \
+                  --output text
+                exit 1
+                ;;
+            esac
+            sleep 15
+          done
+          echo "롤백 타임아웃 (5분)"
+          exit 1
