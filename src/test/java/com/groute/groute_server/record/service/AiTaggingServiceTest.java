@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -65,6 +66,7 @@ class AiTaggingServiceTest {
     @Mock private ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     @Mock private UserPort userPort;
     @Mock private AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
+    @Mock private CacheManager cacheManager;
 
     @InjectMocks private AiTaggingService aiTaggingService;
 

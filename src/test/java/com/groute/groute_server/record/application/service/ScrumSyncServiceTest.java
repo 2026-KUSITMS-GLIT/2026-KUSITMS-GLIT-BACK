@@ -26,6 +26,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
@@ -58,6 +59,7 @@ class ScrumSyncServiceTest {
     @Mock StarImageCascadeCleaner starImageCascadeCleaner;
     @Mock UserReferencePort userReferencePort;
     @Mock UserStreakPort userStreakPort;
+    @Mock CacheManager cacheManager;
 
     @InjectMocks ScrumSyncService service;
 
