@@ -27,6 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumResult;
 import com.groute.groute_server.record.application.port.out.ProjectPort;
@@ -57,6 +58,7 @@ class ScrumBulkWriteServiceTest {
     @Mock UserReferencePort userReferencePort;
     @Mock UserStreakPort userStreakPort;
     @Mock CacheManager cacheManager;
+    @Mock AfterCommitExecutor afterCommitExecutor;
 
     @InjectMocks ScrumBulkWriteService service;
 
