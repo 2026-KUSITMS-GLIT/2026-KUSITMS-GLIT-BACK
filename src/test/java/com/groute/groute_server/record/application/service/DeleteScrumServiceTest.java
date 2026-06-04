@@ -24,6 +24,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.scrum.DeleteScrumCommand;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
@@ -48,6 +49,7 @@ class DeleteScrumServiceTest {
     @Mock StarRecordCascadePort starRecordCascadePort;
     @Mock StarImageCascadeCleaner starImageCascadeCleaner;
     @Mock CacheManager cacheManager;
+    @Mock AfterCommitExecutor afterCommitExecutor;
 
     @InjectMocks DeleteScrumService service;
 
