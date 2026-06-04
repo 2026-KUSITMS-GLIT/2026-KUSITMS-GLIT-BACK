@@ -88,7 +88,16 @@ class ScrumJpaRepositoryTest extends DataJpaTestBase {
             Scrum mine2 = em.persistAndFlush(Scrum.create(user, title, "내꺼2", DATE));
 
             User other = em.persistAndFlush(User.createForSocialLogin());
-            Scrum othersScrum = em.persistAndFlush(Scrum.create(other, title, "남꺼", DATE));
+            Project otherProject =
+                    em.persistAndFlush(Project.builder().user(other).name("다른프로젝트").build());
+            ScrumTitle otherTitle =
+                    em.persistAndFlush(
+                            ScrumTitle.builder()
+                                    .user(other)
+                                    .project(otherProject)
+                                    .freeText("다른제목")
+                                    .build());
+            Scrum othersScrum = em.persistAndFlush(Scrum.create(other, otherTitle, "남꺼", DATE));
             em.clear();
 
             // when
@@ -179,7 +188,16 @@ class ScrumJpaRepositoryTest extends DataJpaTestBase {
             em.flush();
 
             User other = em.persistAndFlush(User.createForSocialLogin());
-            Scrum othersScrum = em.persistAndFlush(Scrum.create(other, title, "다른유저", DATE));
+            Project otherProject =
+                    em.persistAndFlush(Project.builder().user(other).name("다른프로젝트").build());
+            ScrumTitle otherTitle =
+                    em.persistAndFlush(
+                            ScrumTitle.builder()
+                                    .user(other)
+                                    .project(otherProject)
+                                    .freeText("다른제목")
+                                    .build());
+            Scrum othersScrum = em.persistAndFlush(Scrum.create(other, otherTitle, "다른유저", DATE));
             em.clear();
 
             // when
