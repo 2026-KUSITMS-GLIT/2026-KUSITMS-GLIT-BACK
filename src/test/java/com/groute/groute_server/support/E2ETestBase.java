@@ -2,22 +2,16 @@ package com.groute.groute_server.support;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.client.TestRestTemplate.HttpClientOption;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -38,11 +32,6 @@ import org.testcontainers.utility.DockerImageName;
 import com.groute.groute_server.common.jwt.JwtTokenProvider;
 
 import okhttp3.mockwebserver.MockWebServer;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 /**
  * E2E 플로우 테스트 공통 베이스.
@@ -50,6 +39,10 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
  * <p>PostgreSQL·Redis·LocalStack S3 컨테이너와 AI·OAuth2용 MockWebServer를 static 초기화 블록에서 직접 기동한다.
  * {@code @Container}를 사용하지 않으므로 Testcontainers가 클래스 종료 시 컨테이너를 중지하지 않는다 — 여러 테스트 클래스가 동일 컨테이너를
  * 재사용해도 포트가 바뀌지 않는다.
+ *
+ * <p>S3 빈 교체: S3TestConfig(@Primary) 대신 AWS SDK 시스템 프로퍼티 {@code aws.accessKeyId} / {@code
+ * aws.endpointUrl}을 static 블록에서 주입한다. 프로덕션 S3Config 빈이 그대로 사용되되 LocalStack을 가리키므로 빈 등록 순서 문제를 피할 수
+ * 있다.
  *
  * <p>각 테스트 메서드 실행 전 {@code TRUNCATE TABLE users CASCADE}와 Redis {@code FLUSHALL}로 상태를 초기화한다.
  */
@@ -63,16 +56,14 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
             "aws.s3.region=us-east-1",
             "aws.s3.presigned-url-expiration-minutes=5",
             "aws.s3.cdn-base-url=http://localhost",
-            "spring.main.allow-bean-definition-overriding=true",
         })
-@Import(E2ETestBase.S3TestConfig.class)
 public abstract class E2ETestBase {
 
     // ── 컨테이너 — @Container 없이 수동 기동 (클래스 종료 시 자동 중지 방지) ──────────────────
 
     static final PostgreSQLContainer<?> POSTGRES;
     static final GenericContainer<?> REDIS;
-    static final LocalStackContainer LOCALSTACK;
+    protected static final LocalStackContainer LOCALSTACK;
     protected static final MockWebServer AI_MOCK;
     protected static final MockWebServer OAUTH_MOCK;
 
@@ -88,6 +79,13 @@ public abstract class E2ETestBase {
                     new LocalStackContainer(DockerImageName.parse("localstack/localstack:3.8.1"));
             LOCALSTACK.start();
             LOCALSTACK.execInContainer("awslocal", "s3", "mb", "s3://test-bucket");
+
+            // 프로덕션 S3Config 빈이 LocalStack을 가리키도록 AWS SDK 시스템 프로퍼티 주입
+            // (S3TestConfig @Primary 방식은 빈 등록 순서에 따라 프로덕션 빈에 덮어쓰여 실패)
+            String localstackEndpoint = "http://localhost:" + LOCALSTACK.getMappedPort(4566);
+            System.setProperty("aws.accessKeyId", "test");
+            System.setProperty("aws.secretAccessKey", "test");
+            System.setProperty("aws.endpointUrl", localstackEndpoint);
 
             AI_MOCK = new MockWebServer();
             AI_MOCK.start();
@@ -107,7 +105,6 @@ public abstract class E2ETestBase {
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.data.redis.host", REDIS::getHost);
         registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
-        registry.add("aws.s3.endpoint", () -> "http://localhost:" + LOCALSTACK.getMappedPort(4566));
         registry.add("ai.base-url", () -> "http://localhost:" + AI_MOCK.getPort());
         String oauthBase = "http://localhost:" + OAUTH_MOCK.getPort();
         registry.add(
@@ -143,9 +140,8 @@ public abstract class E2ETestBase {
     /**
      * OAuth2 state 캡처용 — HttpURLConnection의 기본 redirect 동작을 비활성화.
      *
-     * <p>@Autowired TestRestTemplate과 TestRestTemplate(ENABLE_COOKIES) 모두
-     * SimpleClientHttpRequestFactory 또는 Apache HttpClient가 redirect를 따라가므로, HttpURLConnection 레벨에서
-     * 직접 비활성화한다.
+     * <p>@Autowired TestRestTemplate과 TestRestTemplate(ENABLE_COOKIES) 모두 redirect를 따라가므로,
+     * HttpURLConnection 레벨에서 직접 비활성화한다.
      */
     protected final RestTemplate noRedirectRest = buildNoRedirectRest();
 
@@ -269,46 +265,5 @@ public abstract class E2ETestBase {
                         new HttpEntity<>(null, headers),
                         String.class);
         return queryParam(callbackResp.getHeaders().getLocation().toString(), "access");
-    }
-
-    // ── S3 빈 교체 (LocalStack 엔드포인트) ───────────────────────────────────────
-
-    /**
-     * S3Config의 DefaultCredentialsProvider 빈을 LocalStack용으로 교체한다.
-     *
-     * <p>프로덕션 S3Config 빈도 생성되지만 @Primary 우선순위로 이 빈이 사용된다. 프로덕션 코드는 변경하지 않는다.
-     */
-    @TestConfiguration
-    static class S3TestConfig {
-
-        @Value("${aws.s3.endpoint}")
-        private String endpoint;
-
-        @Value("${aws.s3.region}")
-        private String region;
-
-        @Bean
-        @Primary
-        S3Presigner s3Presigner() {
-            return S3Presigner.builder()
-                    .region(Region.of(region))
-                    .endpointOverride(URI.create(endpoint))
-                    .credentialsProvider(
-                            StaticCredentialsProvider.create(
-                                    AwsBasicCredentials.create("test", "test")))
-                    .build();
-        }
-
-        @Bean
-        @Primary
-        S3Client s3Client() {
-            return S3Client.builder()
-                    .region(Region.of(region))
-                    .endpointOverride(URI.create(endpoint))
-                    .credentialsProvider(
-                            StaticCredentialsProvider.create(
-                                    AwsBasicCredentials.create("test", "test")))
-                    .build();
-        }
     }
 }
