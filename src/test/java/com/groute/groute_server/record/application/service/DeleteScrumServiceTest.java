@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.groute.groute_server.common.exception.BusinessException;
@@ -46,6 +47,7 @@ class DeleteScrumServiceTest {
     @Mock ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     @Mock StarRecordCascadePort starRecordCascadePort;
     @Mock StarImageCascadeCleaner starImageCascadeCleaner;
+    @Mock CacheManager cacheManager;
 
     @InjectMocks DeleteScrumService service;
 
