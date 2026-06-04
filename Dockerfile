@@ -1,10 +1,10 @@
-FROM eclipse-temurin:21-jre-jammy AS builder
+FROM eclipse-temurin:25-jre-jammy AS builder
 WORKDIR /builder
 ARG JAR_FILE=build/libs/*.jar
 COPY ${JAR_FILE} application.jar
 RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder /builder/extracted/dependencies/ ./
