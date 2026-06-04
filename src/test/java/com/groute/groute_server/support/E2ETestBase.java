@@ -3,8 +3,10 @@ package com.groute.groute_server.support;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,11 +15,14 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.client.TestRestTemplate.HttpClientOption;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -28,8 +33,6 @@ import org.springframework.web.client.RestTemplate;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import com.groute.groute_server.common.jwt.JwtTokenProvider;
@@ -44,13 +47,13 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 /**
  * E2E 플로우 테스트 공통 베이스.
  *
- * <p>PostgreSQL·Redis·LocalStack S3 컨테이너와 AI·OAuth2용 MockWebServer를 static으로 공유한다. 모든 외부 의존(S3, AI,
- * OAuth2)은 프로덕션 코드 변경 없이 @DynamicPropertySource + @TestConfiguration @Primary 빈으로 대체한다.
+ * <p>PostgreSQL·Redis·LocalStack S3 컨테이너와 AI·OAuth2용 MockWebServer를 static 초기화 블록에서 직접 기동한다.
+ * {@code @Container}를 사용하지 않으므로 Testcontainers가 클래스 종료 시 컨테이너를 중지하지 않는다 — 여러 테스트 클래스가 동일 컨테이너를
+ * 재사용해도 포트가 바뀌지 않는다.
  *
  * <p>각 테스트 메서드 실행 전 {@code TRUNCATE TABLE users CASCADE}와 Redis {@code FLUSHALL}로 상태를 초기화한다.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 @TestPropertySource(
         properties = {
             "spring.flyway.enabled=true",
@@ -65,35 +68,32 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 @Import(E2ETestBase.S3TestConfig.class)
 public abstract class E2ETestBase {
 
-    // ── Testcontainers (static = 전 테스트 클래스 공유) ──────────────────────────────
+    // ── 컨테이너 — @Container 없이 수동 기동 (클래스 종료 시 자동 중지 방지) ──────────────────
 
-    @Container @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
-
-    @SuppressWarnings("resource")
-    @Container
-    static final GenericContainer<?> REDIS =
-            new GenericContainer<>("redis:7-alpine").withExposedPorts(6379);
-
-    @Container
-    static final LocalStackContainer LOCALSTACK =
-            new LocalStackContainer(DockerImageName.parse("localstack/localstack:3.8.1"));
-
-    // ── MockWebServer (static 초기화 블록으로 기동) ───────────────────────────────────
-
-    /** AI FastAPI 모킹 — POST /v1/tagging, /v1/reports/mini 등 */
+    static final PostgreSQLContainer<?> POSTGRES;
+    static final GenericContainer<?> REDIS;
+    static final LocalStackContainer LOCALSTACK;
     protected static final MockWebServer AI_MOCK;
-
-    /** OAuth2 프로바이더 모킹 — token-uri, user-info-uri */
     protected static final MockWebServer OAUTH_MOCK;
 
     static {
         try {
+            POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+            POSTGRES.start();
+
+            REDIS = new GenericContainer<>("redis:7-alpine").withExposedPorts(6379);
+            REDIS.start();
+
+            LOCALSTACK =
+                    new LocalStackContainer(DockerImageName.parse("localstack/localstack:3.8.1"));
+            LOCALSTACK.start();
+            LOCALSTACK.execInContainer("awslocal", "s3", "mb", "s3://test-bucket");
+
             AI_MOCK = new MockWebServer();
             AI_MOCK.start();
             OAUTH_MOCK = new MockWebServer();
             OAUTH_MOCK.start();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new ExceptionInInitializerError(e);
         }
     }
@@ -102,6 +102,9 @@ public abstract class E2ETestBase {
 
     @DynamicPropertySource
     static void overrideExternalServices(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES::getUsername);
+        registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.data.redis.host", REDIS::getHost);
         registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
         registry.add("aws.s3.endpoint", () -> "http://localhost:" + LOCALSTACK.getMappedPort(4566));
@@ -121,21 +124,12 @@ public abstract class E2ETestBase {
                 () -> oauthBase + "/userinfo");
     }
 
-    // ── S3 버킷 초기화 ────────────────────────────────────────────────────────────
-
-    @BeforeAll
-    static void createS3Bucket() throws IOException, InterruptedException {
-        // 이미 존재해도 무시 — execInContainer는 non-zero exit에 예외를 던지지 않음
-        LOCALSTACK.execInContainer("awslocal", "s3", "mb", "s3://test-bucket");
-    }
-
     // ── 인스턴스 헬퍼 ────────────────────────────────────────────────────────────
 
     @LocalServerPort protected int port;
 
     @Autowired protected JwtTokenProvider jwtTokenProvider;
 
-    /** redirect를 따라가지 않는 기본 클라이언트 (TestRestTemplate 기본값). */
     @Autowired protected TestRestTemplate restTemplate;
 
     @Autowired protected JdbcTemplate jdbcTemplate;
@@ -194,6 +188,87 @@ public abstract class E2ETestBase {
 
     protected String url(String path) {
         return "http://localhost:" + port + path;
+    }
+
+    // ── 공통 HTTP 헬퍼 ────────────────────────────────────────────────────────────
+
+    protected HttpHeaders authHeaders(String accessToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + accessToken);
+        return headers;
+    }
+
+    protected HttpHeaders jsonAuthHeaders(String accessToken) {
+        HttpHeaders headers = authHeaders(accessToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return headers;
+    }
+
+    protected static String queryParam(String url, String name) {
+        int q = url.indexOf('?');
+        if (q < 0) return null;
+        for (String kv : url.substring(q + 1).split("&")) {
+            String[] pair = kv.split("=", 2);
+            if (pair.length == 2 && pair[0].equals(name)) {
+                return URLDecoder.decode(pair[1], StandardCharsets.UTF_8);
+            }
+        }
+        return null;
+    }
+
+    protected static String sessionCookie(List<String> setCookieHeaders) {
+        if (setCookieHeaders == null) return null;
+        return setCookieHeaders.stream()
+                .filter(c -> c.startsWith("JSESSIONID="))
+                .map(c -> c.split(";")[0].trim())
+                .findFirst()
+                .orElse(null);
+    }
+
+    protected static <T> T jsonRead(String json, String path, Class<T> type) {
+        return com.jayway.jsonpath.JsonPath.parse(json).read(path, type);
+    }
+
+    // ── OAuth2 로그인 헬퍼 ────────────────────────────────────────────────────────
+
+    /**
+     * 카카오 OAuth2 플로우로 신규 유저를 생성하고 access token을 반환한다.
+     *
+     * <p>OAUTH_MOCK에 token 교환·user-info 응답을 enqueue하고 noRedirectRest로 콜백까지 수행한다.
+     */
+    protected String loginAsNewKakaoUser(long kakaoId) {
+        var initResp =
+                noRedirectRest.getForEntity(url("/oauth2/authorization/kakao"), String.class);
+        String state = queryParam(initResp.getHeaders().getLocation().toString(), "state");
+        String session = sessionCookie(initResp.getHeaders().get("Set-Cookie"));
+
+        OAUTH_MOCK.enqueue(
+                new okhttp3.mockwebserver.MockResponse()
+                        .setResponseCode(200)
+                        .addHeader("Content-Type", "application/json")
+                        .setBody(
+                                "{\"access_token\":\"kakao-mock\",\"token_type\":\"Bearer\","
+                                        + "\"expires_in\":3600}"));
+        OAUTH_MOCK.enqueue(
+                new okhttp3.mockwebserver.MockResponse()
+                        .setResponseCode(200)
+                        .addHeader("Content-Type", "application/json")
+                        .setBody(
+                                "{\"id\":"
+                                        + kakaoId
+                                        + ",\"kakao_account\":{\"email\":\"test"
+                                        + kakaoId
+                                        + "@kakao.com\"}}"));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Cookie", session);
+        var callbackResp =
+                noRedirectRest.exchange(
+                        url("/login/oauth2/code/kakao?code=fake&state=" + state),
+                        HttpMethod.GET,
+                        new HttpEntity<>(null, headers),
+                        String.class);
+        return queryParam(callbackResp.getHeaders().getLocation().toString(), "access");
     }
 
     // ── S3 빈 교체 (LocalStack 엔드포인트) ───────────────────────────────────────
