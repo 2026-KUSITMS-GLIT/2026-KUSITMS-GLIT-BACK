@@ -27,6 +27,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingResultResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingStatusResponse;
 import com.groute.groute_server.record.application.port.out.AiTaggingJobPort;
@@ -67,6 +68,7 @@ class AiTaggingServiceTest {
     @Mock private UserPort userPort;
     @Mock private AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
     @Mock private CacheManager cacheManager;
+    @Mock private AfterCommitExecutor afterCommitExecutor;
 
     @InjectMocks private AiTaggingService aiTaggingService;
 
