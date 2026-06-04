@@ -2,6 +2,7 @@ package com.groute.groute_server.auth.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -51,6 +52,14 @@ class AuthControllerTest extends WebMvcTestBase {
                                     .content("{\"refreshToken\":\"valid-refresh-token\"}"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true));
+
+            then(authService).should().reissue("valid-refresh-token");
+            then(tokenDeliveryService)
+                    .should()
+                    .deliver(
+                            any(HttpServletResponse.class),
+                            eq("access-token"),
+                            eq("refresh-token"));
         }
 
         @Test
