@@ -40,8 +40,9 @@ class AuthControllerTest extends WebMvcTestBase {
         void should_return200_when_validRefreshToken() throws Exception {
             given(authService.reissue(anyString()))
                     .willReturn(new TokenResponse("access-token", "refresh-token"));
-            given(tokenDeliveryService.deliver(
-                            any(HttpServletResponse.class), anyString(), anyString()))
+            given(
+                            tokenDeliveryService.deliver(
+                                    any(HttpServletResponse.class), anyString(), anyString()))
                     .willReturn(new TokenResponse("access-token", null));
 
             mockMvc.perform(
