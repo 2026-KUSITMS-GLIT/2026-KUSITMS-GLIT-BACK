@@ -4,9 +4,11 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.report.application.port.in.GetReportDetailUseCase;
@@ -77,6 +79,7 @@ public class ReportQueryService
      *
      * <p>소유자 검증 후 MINI/CAREER 타입별 content를 반환한다.
      */
+    @Cacheable(cacheNames = CacheConfig.CACHE_REPORTS_DETAIL, key = "#reportId")
     @Override
     public ReportDetailView getDetail(Long reportId, Long userId) {
         Report report =

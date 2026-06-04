@@ -12,11 +12,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.calendar.repository.CalendarHomeRepository;
 import com.groute.groute_server.calendar.repository.StarDailyRow;
+import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
 import com.groute.groute_server.record.domain.enums.CompetencyCategory;
@@ -43,6 +45,7 @@ public class CalendarHomeService {
      * @param userId 조회 대상 사용자
      * @param month 조회 연월
      */
+    @Cacheable(cacheNames = CacheConfig.CACHE_CALENDAR_MONTHLY, key = "#userId + ':' + #month")
     public CalendarMonthlyView getMonthly(Long userId, YearMonth month) {
         LocalDate start = month.atDay(1);
         LocalDate end = month.atEndOfMonth();
