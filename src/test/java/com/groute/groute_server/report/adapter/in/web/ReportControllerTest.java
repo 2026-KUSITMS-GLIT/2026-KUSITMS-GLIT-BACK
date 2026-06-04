@@ -48,8 +48,7 @@ class ReportControllerTest extends WebMvcTestBase {
         @Test
         @DisplayName("인증된 사용자 요청 시 200 반환")
         void should_return200_when_authenticated() throws Exception {
-            given(getReportGaugeUseCase.getGauge(anyLong()))
-                    .willReturn(ReportGaugeView.of(7, 10));
+            given(getReportGaugeUseCase.getGauge(anyLong())).willReturn(ReportGaugeView.of(7, 10));
 
             mockMvc.perform(get(BASE_URL + "/gauge").with(auth(1L)))
                     .andExpect(status().isOk())
@@ -95,8 +94,7 @@ class ReportControllerTest extends WebMvcTestBase {
                             post(BASE_URL)
                                     .with(auth(1L))
                                     .contentType(MediaType.APPLICATION_JSON)
-                                    .content(
-                                            "{\"reportType\":\"MINI\",\"starRecordIds\":[1,2,3]}"))
+                                    .content("{\"reportType\":\"MINI\",\"starRecordIds\":[1,2,3]}"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.reportId").value(42));
