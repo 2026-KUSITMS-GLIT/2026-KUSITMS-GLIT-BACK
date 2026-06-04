@@ -1,13 +1,17 @@
 package com.groute.groute_server.record.application.service;
 
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumCommand;
@@ -48,6 +52,7 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
     private final StarImageCascadeCleaner starImageCascadeCleaner;
     private final UserReferencePort userReferencePort;
     private final UserStreakPort userStreakPort;
+    private final CacheManager cacheManager;
 
     @Override
     public BulkWriteScrumResult bulkWrite(BulkWriteScrumCommand command) {
@@ -137,7 +142,18 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
                     new BulkWriteScrumResult.GroupResult(
                             projects.get(i).getName(), savedTitles.get(i).getFreeText(), items));
         }
+
+        // 9. calendar:monthly 캐시 무효화
+        evictCalendarMonthly(command.userId(), command.date());
+
         return new BulkWriteScrumResult(results);
+    }
+
+    private void evictCalendarMonthly(Long userId, java.time.LocalDate date) {
+        Cache cache = cacheManager.getCache(CacheConfig.CACHE_CALENDAR_MONTHLY);
+        if (cache != null) {
+            cache.evict(userId + ":" + YearMonth.from(date));
+        }
     }
 
     private void cleanupPendingSession(List<Scrum> scrums) {

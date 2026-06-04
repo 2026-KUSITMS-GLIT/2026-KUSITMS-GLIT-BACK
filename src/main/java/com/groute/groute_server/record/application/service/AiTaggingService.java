@@ -1,12 +1,16 @@
 package com.groute.groute_server.record.application.service;
 
+import java.time.YearMonth;
 import java.util.List;
 
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingResultResponse;
@@ -48,6 +52,7 @@ public class AiTaggingService
     private final StarTagQueryPort starTagPort;
     private final StarTagSavePort starTagSavePort;
     private final AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
+    private final CacheManager cacheManager;
 
     /**
      * REC-005: AI 태깅 트리거.
@@ -172,9 +177,10 @@ public class AiTaggingService
     }
 
     /**
-     * FastAPI 태깅 완료 시 호출. StarRecord를 TAGGED로 전환하고, 세션 내 전체 완료 시 ScrumTitle을 COMMITTED로 전환한다.
+     * FastAPI 태깅 완료 시 호출. StarRecord를 TAGGED로 전환하고, star_tags를 저장한다.
      *
-     * <p>FastAPI 연동 구현 후 {@code AiTaggingClientAdapter}에서 이 메서드를 호출하도록 연결한다.
+     * <p>태깅 완료 시 home:radar / home:competency-stats / calendar:monthly 캐시를 수동 evict한다.
+     * {@code @CacheEvict} SpEL은 void 메서드에서 #result를 참조할 수 없어 {@link CacheManager}를 직접 사용한다.
      */
     @Override
     @Transactional
@@ -211,6 +217,22 @@ public class AiTaggingService
                                 .toList();
                 starTagSavePort.saveAll(tags);
             }
+        }
+
+        // 캐시 evict — STAR 완료로 home/calendar 집계가 변경되므로 무효화
+        Long userId = record.getUser().getId();
+        YearMonth month = YearMonth.from(record.getScrum().getScrumDate());
+        String monthKey = userId + ":" + month;
+
+        evict(CacheConfig.CACHE_HOME_RADAR, String.valueOf(userId));
+        evict(CacheConfig.CACHE_HOME_COMPETENCY_STATS, monthKey);
+        evict(CacheConfig.CACHE_CALENDAR_MONTHLY, monthKey);
+    }
+
+    private void evict(String cacheName, String key) {
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.evict(key);
         }
     }
 }
