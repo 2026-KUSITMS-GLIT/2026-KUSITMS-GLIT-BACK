@@ -48,6 +48,7 @@ spring:
     baseline-version: 1
     baseline-on-migrate: true
     out-of-order: true
+    execute-in-transaction: false
     placeholders:
       social_email_hash_pepper: ${SOCIAL_EMAIL_HASH_PEPPER}
 
