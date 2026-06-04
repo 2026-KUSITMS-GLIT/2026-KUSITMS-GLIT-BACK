@@ -3,10 +3,13 @@ package com.groute.groute_server.user.service;
 import java.time.Clock;
 import java.time.Duration;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.groute.groute_server.auth.repository.RefreshTokenRepository;
+import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.user.config.UserProperties;
@@ -41,6 +44,7 @@ public class UserService {
     }
 
     /** 내 프로필 조회 — 존재하지 않으면 {@link ErrorCode#USER_NOT_FOUND}. */
+    @Cacheable(cacheNames = CacheConfig.CACHE_USERS_ME, key = "#userId")
     public User getMyProfile(Long userId) {
         return userRepository
                 .findById(userId)
@@ -54,6 +58,7 @@ public class UserService {
      * ErrorCode#INVALID_USER_STATUS}. enum에서 던지는 {@link IllegalArgumentException}을 {@link
      * BusinessException}으로 래핑해 일관된 에러 포맷을 유지한다.
      */
+    @CacheEvict(cacheNames = CacheConfig.CACHE_USERS_ME, key = "#userId")
     @Transactional
     public User updateMyProfile(Long userId, String jobRoleLabel, String userStatusLabel) {
         JobRole jobRole = parseJobRole(jobRoleLabel);
@@ -109,6 +114,7 @@ public class UserService {
      *
      * @param userId 탈퇴할 사용자 ID
      */
+    @CacheEvict(cacheNames = CacheConfig.CACHE_USERS_ME, key = "#userId")
     @Transactional
     public void deleteMyAccount(Long userId) {
         User user =
