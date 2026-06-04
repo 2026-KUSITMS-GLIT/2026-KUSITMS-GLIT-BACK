@@ -1,6 +1,7 @@
 package com.groute.groute_server.support;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URI;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -17,14 +18,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.web.client.DefaultResponseErrorHandler;
+import org.springframework.web.client.RestTemplate;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -57,6 +60,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
             "aws.s3.region=us-east-1",
             "aws.s3.presigned-url-expiration-minutes=5",
             "aws.s3.cdn-base-url=http://localhost",
+            "spring.main.allow-bean-definition-overriding=true",
         })
 @Import(E2ETestBase.S3TestConfig.class)
 public abstract class E2ETestBase {
@@ -73,16 +77,15 @@ public abstract class E2ETestBase {
 
     @Container
     static final LocalStackContainer LOCALSTACK =
-            new LocalStackContainer(DockerImageName.parse("localstack/localstack"))
-                    .withServices(Service.S3);
+            new LocalStackContainer(DockerImageName.parse("localstack/localstack:3.8.1"));
 
     // ── MockWebServer (static 초기화 블록으로 기동) ───────────────────────────────────
 
     /** AI FastAPI 모킹 — POST /v1/tagging, /v1/reports/mini 등 */
-    static final MockWebServer AI_MOCK;
+    protected static final MockWebServer AI_MOCK;
 
     /** OAuth2 프로바이더 모킹 — token-uri, user-info-uri */
-    static final MockWebServer OAUTH_MOCK;
+    protected static final MockWebServer OAUTH_MOCK;
 
     static {
         try {
@@ -101,8 +104,7 @@ public abstract class E2ETestBase {
     static void overrideExternalServices(DynamicPropertyRegistry registry) {
         registry.add("spring.data.redis.host", REDIS::getHost);
         registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
-        registry.add(
-                "aws.s3.endpoint", () -> LOCALSTACK.getEndpointOverride(Service.S3).toString());
+        registry.add("aws.s3.endpoint", () -> "http://localhost:" + LOCALSTACK.getMappedPort(4566));
         registry.add("ai.base-url", () -> "http://localhost:" + AI_MOCK.getPort());
         String oauthBase = "http://localhost:" + OAUTH_MOCK.getPort();
         registry.add(
@@ -143,6 +145,38 @@ public abstract class E2ETestBase {
     /** OAuth2 플로우용 — 쿠키(세션) 유지, redirect 비활성. */
     protected final TestRestTemplate cookieRest =
             new TestRestTemplate(HttpClientOption.ENABLE_COOKIES);
+
+    /**
+     * OAuth2 state 캡처용 — HttpURLConnection의 기본 redirect 동작을 비활성화.
+     *
+     * <p>@Autowired TestRestTemplate과 TestRestTemplate(ENABLE_COOKIES) 모두
+     * SimpleClientHttpRequestFactory 또는 Apache HttpClient가 redirect를 따라가므로, HttpURLConnection 레벨에서
+     * 직접 비활성화한다.
+     */
+    protected final RestTemplate noRedirectRest = buildNoRedirectRest();
+
+    private static RestTemplate buildNoRedirectRest() {
+        var rest =
+                new RestTemplate(
+                        new SimpleClientHttpRequestFactory() {
+                            @Override
+                            protected void prepareConnection(
+                                    HttpURLConnection connection, String httpMethod)
+                                    throws IOException {
+                                super.prepareConnection(connection, httpMethod);
+                                connection.setInstanceFollowRedirects(false);
+                            }
+                        });
+        rest.setErrorHandler(
+                new DefaultResponseErrorHandler() {
+                    @Override
+                    public boolean hasError(
+                            org.springframework.http.client.ClientHttpResponse response) {
+                        return false;
+                    }
+                });
+        return rest;
+    }
 
     @BeforeEach
     void cleanState() {
