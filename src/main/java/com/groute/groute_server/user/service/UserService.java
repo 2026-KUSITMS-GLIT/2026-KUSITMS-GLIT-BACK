@@ -78,6 +78,7 @@ public class UserService {
      * 존재 여부로 {@link ErrorCode#USER_NOT_FOUND}와 {@link ErrorCode#ONBOARDING_ALREADY_COMPLETED}를
      * 구분한다.
      */
+    @CacheEvict(cacheNames = CacheConfig.CACHE_USERS_ME, key = "#userId")
     @Transactional
     public User completeOnboarding(
             Long userId, String nickname, String jobRoleLabel, String userStatusLabel) {
