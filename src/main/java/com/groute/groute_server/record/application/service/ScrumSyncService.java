@@ -1,6 +1,7 @@
 package com.groute.groute_server.record.application.service;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,9 +11,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.common.util.DateTimeFormatters;
@@ -51,6 +55,7 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
     private final StarImageCascadeCleaner starImageCascadeCleaner;
     private final UserReferencePort userReferencePort;
     private final UserStreakPort userStreakPort;
+    private final CacheManager cacheManager;
 
     /**
      * 일자별 스크럼을 요청 payload 상태로 동기화.
@@ -168,6 +173,12 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
         int survivingCount = currentScrums.size() - toDelete.size() + toCreate.size();
         if (survivingCount > 0) {
             userStreakPort.recordOnDate(command.userId(), command.date());
+        }
+
+        // 10. calendar:monthly 캐시 무효화
+        Cache cache = cacheManager.getCache(CacheConfig.CACHE_CALENDAR_MONTHLY);
+        if (cache != null) {
+            cache.evict(command.userId() + ":" + YearMonth.from(command.date()));
         }
     }
 

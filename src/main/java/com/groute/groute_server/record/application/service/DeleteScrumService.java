@@ -1,11 +1,15 @@
 package com.groute.groute_server.record.application.service;
 
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.application.port.in.scrum.DeleteScrumCommand;
@@ -35,6 +39,7 @@ public class DeleteScrumService implements DeleteScrumUseCase {
     private final ScrumTitleRepositoryPort scrumTitleRepositoryPort;
     private final StarRecordCascadePort starRecordCascadePort;
     private final StarImageCascadeCleaner starImageCascadeCleaner;
+    private final CacheManager cacheManager;
 
     @Override
     public void deleteScrum(DeleteScrumCommand command) {
@@ -50,5 +55,11 @@ public class DeleteScrumService implements DeleteScrumUseCase {
         scrumWritePort.softDeleteAllByIdIn(scrumIds);
         starRecordCascadePort.cascadeDeleteByScrumIdIn(scrumIds);
         scrumTitleRepositoryPort.applyScrumCountIncrement(titleId, -1);
+
+        // calendar:monthly 캐시 무효화
+        Cache cache = cacheManager.getCache(CacheConfig.CACHE_CALENDAR_MONTHLY);
+        if (cache != null) {
+            cache.evict(command.userId() + ":" + YearMonth.from(owned.get(0).getScrumDate()));
+        }
     }
 }
