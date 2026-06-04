@@ -27,7 +27,11 @@ import com.groute.groute_server.common.config.OffsetDateTimeProvider;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
 @Import(OffsetDateTimeProvider.class)
-@TestPropertySource(properties = "spring.flyway.enabled=true")
+@TestPropertySource(
+        properties = {
+            "spring.flyway.enabled=true",
+            "spring.flyway.placeholders.social_email_hash_pepper=test-pepper-must-be-at-least-32-bytes-for-hmac-sha256"
+        })
 public abstract class DataJpaTestBase {
 
     @Container @ServiceConnection
