@@ -19,8 +19,13 @@ import com.groute.groute_server.report.domain.enums.ReportType;
  */
 public interface ReportJpaRepository extends JpaRepository<Report, Long> {
 
-    /** 유저의 리포트 목록을 생성일 기준 내림차순으로 조회한다. */
-    List<Report> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+    /** 유저의 리포트 목록을 생성일 기준 내림차순으로 조회한다. user를 fetch join해 추가 쿼리를 방지한다. */
+    @Query(
+            "SELECT r FROM Report r "
+                    + "JOIN FETCH r.user "
+                    + "WHERE r.user.id = :userId "
+                    + "ORDER BY r.createdAt DESC")
+    List<Report> findAllByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
 
     /** 유저의 가장 최근 성공한 리포트를 조회한다. 게이지 계산 기준점으로 사용한다. */
     Optional<Report> findTopByUserIdAndStatusOrderByCreatedAtDesc(Long userId, ReportStatus status);
