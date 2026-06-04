@@ -1,0 +1,14 @@
+apiVersion: 1
+
+providers:
+  - name: 'default'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    options:
+      path: /etc/grafana/provisioning/dashboards
+
+# 4701 대시보드는 자동 import 미지원 (JSON 파일 필요).
+# Grafana UI에서 수동 import: Dashboards → New → Import → ID: 4701 → Load → Import
