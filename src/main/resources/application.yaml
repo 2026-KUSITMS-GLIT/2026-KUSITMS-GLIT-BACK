@@ -239,6 +239,15 @@ notification:
   copy-json: ${NOTIFICATION_COPY_JSON:}
   deep-link-url: ${NOTIFICATION_DEEP_LINK_URL:}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
 logging:
   level:
     com.groute: DEBUG
