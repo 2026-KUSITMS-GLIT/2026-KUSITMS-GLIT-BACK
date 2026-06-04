@@ -2,7 +2,9 @@ package com.groute.groute_server.report.adapter.in.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import com.groute.groute_server.report.application.port.in.CreateReportCommand;
 import com.groute.groute_server.report.application.port.in.CreateReportUseCase;
 import com.groute.groute_server.report.application.port.in.GetReportDetailUseCase;
 import com.groute.groute_server.report.application.port.in.GetReportGaugeUseCase;
@@ -26,6 +29,7 @@ import com.groute.groute_server.report.application.port.in.GetSelectableInfoUseC
 import com.groute.groute_server.report.application.port.in.RetryReportUseCase;
 import com.groute.groute_server.report.application.port.in.dto.ReportGaugeView;
 import com.groute.groute_server.report.application.port.in.dto.ReportListView;
+import com.groute.groute_server.report.domain.enums.ReportType;
 import com.groute.groute_server.support.WebMvcTestBase;
 
 @WebMvcTest(ReportController.class)
@@ -98,6 +102,16 @@ class ReportControllerTest extends WebMvcTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.reportId").value(42));
+
+            then(createReportUseCase)
+                    .should()
+                    .createReport(
+                            argThat(
+                                    (CreateReportCommand cmd) ->
+                                            cmd.userId().equals(1L)
+                                                    && cmd.reportType() == ReportType.MINI
+                                                    && cmd.starRecordIds()
+                                                            .equals(List.of(1L, 2L, 3L))));
         }
 
         @Test
