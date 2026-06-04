@@ -79,7 +79,7 @@ public class ReportQueryService
      *
      * <p>소유자 검증 후 MINI/CAREER 타입별 content를 반환한다.
      */
-    @Cacheable(cacheNames = CacheConfig.CACHE_REPORTS_DETAIL, key = "#reportId")
+    @Cacheable(cacheNames = CacheConfig.CACHE_REPORTS_DETAIL, key = "#userId + ':' + #reportId")
     @Override
     public ReportDetailView getDetail(Long reportId, Long userId) {
         Report report =
