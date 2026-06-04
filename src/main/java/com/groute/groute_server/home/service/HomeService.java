@@ -5,9 +5,11 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.home.dto.RadarResult;
@@ -27,6 +29,7 @@ public class HomeService {
     private final StarRecordRepositoryPort starRecordRepositoryPort;
     private final UserRepository userRepository;
 
+    @Cacheable(cacheNames = CacheConfig.CACHE_HOME_RADAR, key = "#userId")
     public RadarResult getRadar(Long userId) {
         List<CompetencyCount> rows =
                 starRecordRepositoryPort.countCompletedByCompetency(
@@ -45,6 +48,7 @@ public class HomeService {
         return new RadarResult(min, max, Collections.unmodifiableMap(categories));
     }
 
+    @Cacheable(cacheNames = CacheConfig.CACHE_USERS_ME, key = "'branding:' + #userId")
     public String getBrandingTitle(Long userId) {
         return userRepository
                 .findById(userId)

@@ -5,9 +5,11 @@ import java.time.YearMonth;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.home.repository.CompetencyStatsQueryRepository;
 import com.groute.groute_server.home.repository.CompetencyStatsQueryRepository.DateCountRow;
 
@@ -40,6 +42,7 @@ public class HomeCompetencyStatsService {
      * @param month 조회 월(KST)
      * @return 일자(KST) → STAR 완료 건수 맵. 0건 일자는 미포함.
      */
+    @Cacheable(cacheNames = CacheConfig.CACHE_HOME_COMPETENCY_STATS, key = "#userId + ':' + #month")
     public Map<LocalDate, Long> getCompletedStarCountsByMonth(Long userId, YearMonth month) {
         LocalDate startInclusive = month.atDay(1);
         LocalDate endExclusive = month.plusMonths(1).atDay(1);
