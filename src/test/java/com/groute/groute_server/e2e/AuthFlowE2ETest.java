@@ -2,10 +2,6 @@ package com.groute.groute_server.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -104,27 +100,6 @@ class AuthFlowE2ETest extends E2ETestBase {
                                 "{\"refreshToken\":\"" + rotatedRefresh + "\"}", jsonHeaders),
                         String.class);
         assertThat(afterLogoutResp.getStatusCode().value()).isEqualTo(401);
-    }
-
-    private static String queryParam(String url, String name) {
-        int q = url.indexOf('?');
-        if (q < 0) return null;
-        for (String kv : url.substring(q + 1).split("&")) {
-            String[] pair = kv.split("=", 2);
-            if (pair.length == 2 && pair[0].equals(name)) {
-                return URLDecoder.decode(pair[1], StandardCharsets.UTF_8);
-            }
-        }
-        return null;
-    }
-
-    private static String sessionCookie(List<String> setCookieHeaders) {
-        if (setCookieHeaders == null) return null;
-        return setCookieHeaders.stream()
-                .filter(c -> c.startsWith("JSESSIONID="))
-                .map(c -> c.split(";")[0].trim())
-                .findFirst()
-                .orElse(null);
     }
 
     private static String jsonRead(String json, String jsonPath) {
