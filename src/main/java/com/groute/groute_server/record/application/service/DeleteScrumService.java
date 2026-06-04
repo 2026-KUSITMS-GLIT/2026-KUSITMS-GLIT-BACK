@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.scrum.DeleteScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.DeleteScrumUseCase;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
@@ -40,6 +41,7 @@ public class DeleteScrumService implements DeleteScrumUseCase {
     private final StarRecordCascadePort starRecordCascadePort;
     private final StarImageCascadeCleaner starImageCascadeCleaner;
     private final CacheManager cacheManager;
+    private final AfterCommitExecutor afterCommitExecutor;
 
     @Override
     public void deleteScrum(DeleteScrumCommand command) {
@@ -56,10 +58,15 @@ public class DeleteScrumService implements DeleteScrumUseCase {
         starRecordCascadePort.cascadeDeleteByScrumIdIn(scrumIds);
         scrumTitleRepositoryPort.applyScrumCountIncrement(titleId, -1);
 
-        // calendar:monthly 캐시 무효화
-        Cache cache = cacheManager.getCache(CacheConfig.CACHE_CALENDAR_MONTHLY);
-        if (cache != null) {
-            cache.evict(command.userId() + ":" + YearMonth.from(owned.get(0).getScrumDate()));
-        }
+        // calendar:monthly 캐시 무효화 (커밋 후)
+        final Long userId = command.userId();
+        final YearMonth month = YearMonth.from(owned.get(0).getScrumDate());
+        afterCommitExecutor.execute(
+                () -> {
+                    Cache cache = cacheManager.getCache(CacheConfig.CACHE_CALENDAR_MONTHLY);
+                    if (cache != null) {
+                        cache.evict(userId + ":" + month);
+                    }
+                });
     }
 }
