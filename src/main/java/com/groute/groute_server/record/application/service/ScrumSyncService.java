@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.common.util.DateTimeFormatters;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.SyncDailyScrumUseCase;
@@ -56,6 +57,7 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
     private final UserReferencePort userReferencePort;
     private final UserStreakPort userStreakPort;
     private final CacheManager cacheManager;
+    private final AfterCommitExecutor afterCommitExecutor;
 
     /**
      * 일자별 스크럼을 요청 payload 상태로 동기화.
@@ -175,11 +177,16 @@ public class ScrumSyncService implements SyncDailyScrumUseCase {
             userStreakPort.recordOnDate(command.userId(), command.date());
         }
 
-        // 10. calendar:monthly 캐시 무효화
-        Cache cache = cacheManager.getCache(CacheConfig.CACHE_CALENDAR_MONTHLY);
-        if (cache != null) {
-            cache.evict(command.userId() + ":" + YearMonth.from(command.date()));
-        }
+        // 10. calendar:monthly 캐시 무효화 (커밋 후)
+        final Long userId = command.userId();
+        final YearMonth evictMonth = YearMonth.from(command.date());
+        afterCommitExecutor.execute(
+                () -> {
+                    Cache cache = cacheManager.getCache(CacheConfig.CACHE_CALENDAR_MONTHLY);
+                    if (cache != null) {
+                        cache.evict(userId + ":" + evictMonth);
+                    }
+                });
     }
 
     /** 14일 초과 또는 hasStar=true인 변경 대상이면 예외. */

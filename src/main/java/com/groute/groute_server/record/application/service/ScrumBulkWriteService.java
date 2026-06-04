@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumCommand;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumResult;
 import com.groute.groute_server.record.application.port.in.scrum.BulkWriteScrumUseCase;
@@ -53,6 +54,7 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
     private final UserReferencePort userReferencePort;
     private final UserStreakPort userStreakPort;
     private final CacheManager cacheManager;
+    private final AfterCommitExecutor afterCommitExecutor;
 
     @Override
     public BulkWriteScrumResult bulkWrite(BulkWriteScrumCommand command) {
@@ -150,10 +152,14 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
     }
 
     private void evictCalendarMonthly(Long userId, java.time.LocalDate date) {
-        Cache cache = cacheManager.getCache(CacheConfig.CACHE_CALENDAR_MONTHLY);
-        if (cache != null) {
-            cache.evict(userId + ":" + YearMonth.from(date));
-        }
+        final YearMonth month = YearMonth.from(date);
+        afterCommitExecutor.execute(
+                () -> {
+                    Cache cache = cacheManager.getCache(CacheConfig.CACHE_CALENDAR_MONTHLY);
+                    if (cache != null) {
+                        cache.evict(userId + ":" + month);
+                    }
+                });
     }
 
     private void cleanupPendingSession(List<Scrum> scrums) {

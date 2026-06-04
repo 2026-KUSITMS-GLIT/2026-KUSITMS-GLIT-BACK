@@ -13,6 +13,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import com.groute.groute_server.common.config.CacheConfig;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
+import com.groute.groute_server.common.transaction.AfterCommitExecutor;
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingResultResponse;
 import com.groute.groute_server.record.adapter.in.web.dto.AiTaggingStatusResponse;
 import com.groute.groute_server.record.application.port.in.CompleteAiTaggingUseCase;
@@ -53,6 +54,7 @@ public class AiTaggingService
     private final StarTagSavePort starTagSavePort;
     private final AiTaggingAsyncExecutor aiTaggingAsyncExecutor;
     private final CacheManager cacheManager;
+    private final AfterCommitExecutor afterCommitExecutor;
 
     /**
      * REC-005: AI 태깅 트리거.
@@ -219,14 +221,17 @@ public class AiTaggingService
             }
         }
 
-        // 캐시 evict — STAR 완료로 home/calendar 집계가 변경되므로 무효화
+        // 캐시 evict — STAR 완료로 home/calendar 집계가 변경되므로 커밋 후 무효화
         Long userId = record.getUser().getId();
         YearMonth month = YearMonth.from(record.getScrum().getScrumDate());
         String monthKey = userId + ":" + month;
 
-        evict(CacheConfig.CACHE_HOME_RADAR, String.valueOf(userId));
-        evict(CacheConfig.CACHE_HOME_COMPETENCY_STATS, monthKey);
-        evict(CacheConfig.CACHE_CALENDAR_MONTHLY, monthKey);
+        afterCommitExecutor.execute(
+                () -> {
+                    evict(CacheConfig.CACHE_HOME_RADAR, String.valueOf(userId));
+                    evict(CacheConfig.CACHE_HOME_COMPETENCY_STATS, monthKey);
+                    evict(CacheConfig.CACHE_CALENDAR_MONTHLY, monthKey);
+                });
     }
 
     private void evict(String cacheName, String key) {
