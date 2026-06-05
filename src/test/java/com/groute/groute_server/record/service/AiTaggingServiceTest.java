@@ -409,11 +409,11 @@ class AiTaggingServiceTest {
     class RevertTaggingComplete {
 
         @Test
-        @DisplayName("StarRecord가 존재하면 isCompleted를 false로 변경한다")
+        @DisplayName("StarRecord가 존재하면 isCompleted를 false로 변경하고 캐시를 evict한다")
         void setsIsCompletedFalse_whenRecordExists() {
-            StarRecord record = makeStarRecord(USER_ID, StarStep.DONE);
+            StarRecord record = makeStarRecordWithScrum(USER_ID, StarStep.DONE);
             ReflectionTestUtils.setField(record, "isCompleted", true);
-            given(starRecordPort.findById(STAR_RECORD_ID)).willReturn(Optional.of(record));
+            given(starRecordPort.findByIdWithScrum(STAR_RECORD_ID)).willReturn(Optional.of(record));
 
             aiTaggingService.revertTaggingComplete(STAR_RECORD_ID);
 
@@ -423,7 +423,7 @@ class AiTaggingServiceTest {
         @Test
         @DisplayName("StarRecord가 없으면 아무 동작도 하지 않는다")
         void doesNothing_whenRecordNotFound() {
-            given(starRecordPort.findById(STAR_RECORD_ID)).willReturn(Optional.empty());
+            given(starRecordPort.findByIdWithScrum(STAR_RECORD_ID)).willReturn(Optional.empty());
 
             aiTaggingService.revertTaggingComplete(STAR_RECORD_ID);
             // 예외 없이 정상 종료
