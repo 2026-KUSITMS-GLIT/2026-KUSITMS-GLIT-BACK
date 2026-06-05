@@ -401,6 +401,36 @@ class AiTaggingServiceTest {
     }
 
     // =========================================================
+    // revertTaggingComplete
+    // =========================================================
+
+    @Nested
+    @DisplayName("AI 태깅 최종 실패 롤백")
+    class RevertTaggingComplete {
+
+        @Test
+        @DisplayName("StarRecord가 존재하면 isCompleted를 false로 변경한다")
+        void setsIsCompletedFalse_whenRecordExists() {
+            StarRecord record = makeStarRecord(USER_ID, StarStep.DONE);
+            ReflectionTestUtils.setField(record, "isCompleted", true);
+            given(starRecordPort.findById(STAR_RECORD_ID)).willReturn(Optional.of(record));
+
+            aiTaggingService.revertTaggingComplete(STAR_RECORD_ID);
+
+            assertThat((Boolean) ReflectionTestUtils.getField(record, "isCompleted")).isFalse();
+        }
+
+        @Test
+        @DisplayName("StarRecord가 없으면 아무 동작도 하지 않는다")
+        void doesNothing_whenRecordNotFound() {
+            given(starRecordPort.findById(STAR_RECORD_ID)).willReturn(Optional.empty());
+
+            aiTaggingService.revertTaggingComplete(STAR_RECORD_ID);
+            // 예외 없이 정상 종료
+        }
+    }
+
+    // =========================================================
     // completeTagging
     // =========================================================
 
