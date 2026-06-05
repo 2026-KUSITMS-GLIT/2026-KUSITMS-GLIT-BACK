@@ -158,7 +158,7 @@ class AiTaggingClientAdapterTest {
             assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
             assertThat(job.getStatus()).isEqualTo(JobStatus.FAILED);
             assertThat(job.getRetryCount()).isEqualTo((short) 2);
-            then(completeAiTaggingUseCase).shouldHaveNoInteractions();
+            then(completeAiTaggingUseCase).should().revertTaggingComplete(STAR_RECORD_ID);
         }
     }
 }
