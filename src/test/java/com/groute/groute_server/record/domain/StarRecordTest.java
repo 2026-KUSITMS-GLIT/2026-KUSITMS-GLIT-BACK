@@ -44,4 +44,15 @@ class StarRecordTest {
 
         assertThat(record).isNotNull();
     }
+
+    @Test
+    @DisplayName("revertComplete 호출 시 isCompleted가 false로 변경된다")
+    void should_setIsCompletedFalse_when_revertComplete() {
+        StarRecord record = new StarRecord();
+        ReflectionTestUtils.setField(record, "isCompleted", true);
+
+        record.revertComplete();
+
+        assertThat((Boolean) ReflectionTestUtils.getField(record, "isCompleted")).isFalse();
+    }
 }
