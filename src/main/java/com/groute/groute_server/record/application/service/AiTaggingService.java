@@ -234,10 +234,30 @@ public class AiTaggingService
                 });
     }
 
+    /**
+     * AI 태깅 최종 실패 시 StarRecord.isCompleted를 false로 롤백하고 관련 캐시를 무효화한다.
+     *
+     * <p>{@link #completeTagging}과 대칭적으로 home:radar / home:competency-stats / calendar:monthly 캐시를
+     * evict한다. isCompleted 변경으로 집계 값이 달라지므로 stale 데이터 방지를 위해 트랜잭션 커밋 후 evict한다.
+     */
     @Override
     @Transactional
     public void revertTaggingComplete(Long starRecordId) {
-        starRecordPort.findById(starRecordId).ifPresent(StarRecord::revertComplete);
+        starRecordPort
+                .findByIdWithScrum(starRecordId)
+                .ifPresent(
+                        record -> {
+                            record.revertComplete();
+                            Long userId = record.getUser().getId();
+                            YearMonth month = YearMonth.from(record.getScrum().getScrumDate());
+                            String monthKey = userId + ":" + month;
+                            afterCommitExecutor.execute(
+                                    () -> {
+                                        evict(CacheConfig.CACHE_HOME_RADAR, String.valueOf(userId));
+                                        evict(CacheConfig.CACHE_HOME_COMPETENCY_STATS, monthKey);
+                                        evict(CacheConfig.CACHE_CALENDAR_MONTHLY, monthKey);
+                                    });
+                        });
     }
 
     private void evict(String cacheName, String key) {
