@@ -48,7 +48,10 @@ public class HomeService {
         return new RadarResult(min, max, Collections.unmodifiableMap(categories));
     }
 
-    @Cacheable(cacheNames = CacheConfig.CACHE_USERS_ME, key = "'branding:' + #userId")
+    @Cacheable(
+            cacheNames = CacheConfig.CACHE_USERS_ME,
+            key = "'branding:' + #userId",
+            unless = "#result == null")
     public String getBrandingTitle(Long userId) {
         return userRepository
                 .findById(userId)
