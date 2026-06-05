@@ -152,6 +152,7 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
                         retryEx.getMessage());
                 job.fail(retryEx.getMessage());
                 aiTaggingJobPort.saveJob(job);
+                completeAiTaggingUseCase.revertTaggingComplete(job.getStarRecord().getId());
                 return;
             }
             completeAiTaggingUseCase.completeTagging(
@@ -162,6 +163,7 @@ public class AiTaggingClientAdapter implements AiTaggingClient {
             log.error("[AI Tagging] 최종 실패 — jobId={}, error={}", job.getId(), errorMessage);
             job.fail(errorMessage);
             aiTaggingJobPort.saveJob(job);
+            completeAiTaggingUseCase.revertTaggingComplete(job.getStarRecord().getId());
         }
     }
 }

@@ -119,6 +119,16 @@ public class StarRecord extends SoftDeleteEntity {
         this.isCompleted = true;
     }
 
+    /**
+     * AI 태깅 최종 실패 시 완료 상태 롤백.
+     *
+     * <p>isCompleted=false로 되돌려 리포트 카운트·캘린더·잔디 집계에서 제외한다. CalendarHomeService의 LEFT JOIN 쿼리가
+     * primaryCategory=null 행을 반환해 NPE가 발생하는 문제를 방지한다.
+     */
+    public void revertComplete() {
+        this.isCompleted = false;
+    }
+
     /** AI 태깅 완료 처리. status=TAGGED로 전환하고 isCompleted=true로 설정. */
     public void tag() {
         this.status = StarRecordStatus.TAGGED;
