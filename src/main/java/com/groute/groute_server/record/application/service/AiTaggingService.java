@@ -234,6 +234,12 @@ public class AiTaggingService
                 });
     }
 
+    @Override
+    @Transactional
+    public void revertTaggingComplete(Long starRecordId) {
+        starRecordPort.findById(starRecordId).ifPresent(StarRecord::revertComplete);
+    }
+
     private void evict(String cacheName, String key) {
         Cache cache = cacheManager.getCache(cacheName);
         if (cache != null) {
