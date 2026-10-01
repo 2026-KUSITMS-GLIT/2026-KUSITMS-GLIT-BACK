@@ -1,5 +1,9 @@
 package com.groute.groute_server.user.dto;
 
+import java.time.LocalDate;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.groute.groute_server.common.util.DateTimeFormatters;
 import com.groute.groute_server.user.entity.RecordStreakSnapshot;
 import com.groute.groute_server.user.entity.User;
 
@@ -22,13 +26,17 @@ public record ProfileResponse(
                         description =
                                 "째려보는 캐릭터 노출 여부. 마지막 기록일이 3일 이상 이전이면 true, 그 외/0건은 false(REC-001).",
                         example = "false")
-                boolean glaring) {
+                boolean glaring,
+        @Schema(description = "가입일(KST 기준, yyyy-MM-dd) — 홈 출석부 노출 시작월 계산용", example = "2026-05-15")
+                @JsonFormat(pattern = "yyyy-MM-dd")
+                LocalDate joinedAt) {
 
     /**
      * 엔티티 + 기본 프로필 이미지 URL + streak 산정 결과로부터 응답 DTO를 생성하는 정적 팩토리.
      *
      * <p>enum → 한글 라벨 변환은 이 팩토리에서 수행한다. 온보딩 미완료 상태의 유저는 {@code jobRole}/{@code userStatus}가 DB에서
-     * {@code null}일 수 있으므로 방어적으로 null을 허용한다.
+     * {@code null}일 수 있으므로 방어적으로 null을 허용한다. {@code joinedAt}은 UTC로 저장된 {@code createdAt}을 KST 날짜로
+     * 변환한다.
      */
     public static ProfileResponse from(
             User user, String profileImageUrl, RecordStreakSnapshot streak) {
@@ -41,6 +49,7 @@ public record ProfileResponse(
                 jobRoleLabel,
                 userStatusLabel,
                 streak.consecutiveDays(),
-                streak.glaring());
+                streak.glaring(),
+                user.getCreatedAt().atZoneSameInstant(DateTimeFormatters.ZONE_KST).toLocalDate());
     }
 }
