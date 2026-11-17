@@ -2,7 +2,9 @@ package com.groute.groute_server.record.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -35,6 +37,7 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
+import com.groute.groute_server.record.application.port.out.user.UserStreakPort;
 import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
@@ -54,6 +57,13 @@ class ScrumBulkWriteServiceTest {
     @Mock StarRecordRepositoryPort starRecordRepositoryPort;
     @Mock StarImageCascadeCleaner starImageCascadeCleaner;
     @Mock UserReferencePort userReferencePort;
+
+    /**
+     * 서비스가 더 이상 의존하지 않는 포트. 누군가 임시저장 단계에 streak 갱신을 되돌려 넣으면 Mockito가 이 mock을 주입해 아래 {@code never()}
+     * 검증이 깨지므로, 회귀 가드로 남겨둔다.
+     */
+    @Mock UserStreakPort userStreakPort;
+
     @Mock CacheManager cacheManager;
     @Mock AfterCommitExecutor afterCommitExecutor;
 
@@ -201,6 +211,57 @@ class ScrumBulkWriteServiceTest {
             assertThat(result.groups().get(0).scrums().get(1).content()).isEqualTo("B");
             assertThat(result.groups().get(1).scrums()).hasSize(1);
             assertThat(result.groups().get(1).scrums().get(0).content()).isEqualTo("C");
+        }
+    }
+
+    @Nested
+    @DisplayName("확정 전 카운터 미반영 (QA-34)")
+    class PendingCounters {
+
+        @Test
+        @DisplayName("스크럼 저장만으로는 Project.titleCount를 증가시키지 않는다")
+        void should_notIncrementTitleCount_when_onlyScrumsWritten() {
+            given(projectPort.findByIdAndUserId(100L, USER_ID))
+                    .willReturn(Optional.of(project(100L, "프로젝트A")));
+            given(projectPort.findByIdAndUserId(101L, USER_ID))
+                    .willReturn(Optional.of(project(101L, "프로젝트B")));
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
+            stubSaveTitles();
+            stubSaveScrums();
+
+            service.bulkWrite(command(group(100L, "제목1", "A"), group(101L, "제목2", "B")));
+
+            verify(projectPort, never()).applyTitleCountIncrement(anyLong(), anyInt());
+        }
+
+        @Test
+        @DisplayName("스크럼 저장만으로는 user streak를 갱신하지 않는다")
+        void should_notRecordStreak_when_onlyScrumsWritten() {
+            given(projectPort.findByIdAndUserId(100L, USER_ID))
+                    .willReturn(Optional.of(project(100L, "프로젝트A")));
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
+            stubSaveTitles();
+            stubSaveScrums();
+
+            service.bulkWrite(command(group(100L, "제목", "스크럼1")));
+
+            verify(userStreakPort, never()).recordOnDate(anyLong(), any(LocalDate.class));
+        }
+
+        @Test
+        @DisplayName("PENDING 세션을 정리하고 재저장해도 titleCount를 건드리지 않는다")
+        void should_notTouchTitleCount_when_pendingSessionCleaned() {
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
+                    .willReturn(List.of(scrumWithTitle(50L, 10L, ScrumTitleStatus.PENDING, 100L)));
+            given(projectPort.findByIdAndUserId(100L, USER_ID))
+                    .willReturn(Optional.of(project(100L, "프로젝트A")));
+            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
+            stubSaveTitles();
+            stubSaveScrums();
+
+            service.bulkWrite(command(group(100L, "제목", "스크럼1")));
+
+            verify(projectPort, never()).applyTitleCountIncrement(anyLong(), anyInt());
         }
     }
 
