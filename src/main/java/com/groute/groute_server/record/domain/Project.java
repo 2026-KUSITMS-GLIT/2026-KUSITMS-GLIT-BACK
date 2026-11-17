@@ -37,7 +37,12 @@ public class Project extends SoftDeleteEntity {
     @Column(name = "name", nullable = false, length = 15)
     private String name;
 
-    /** 비정규화 카운터: 이 프로젝트에 연결된 scrum_titles 수. 0이면 태그 삭제 가능(REC002 태그 삭제 조건). */
+    /**
+     * 비정규화 카운터: 이 프로젝트에 연결된 COMMITTED scrum_titles 수. 0이면 태그 삭제 가능(REC002 태그 삭제 조건).
+     *
+     * <p>스크럼 임시저장(PENDING) 단계에서는 증가하지 않고, STAR 완료로 ScrumTitle이 COMMITTED로 확정될 때 증가한다. 심화기록을 완료하지 않고
+     * 이탈한 세션이 태그 삭제를 막지 않도록 하기 위함이다.
+     */
     @Builder.Default
     @Column(name = "title_count", nullable = false)
     private Short titleCount = 0;

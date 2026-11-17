@@ -26,14 +26,18 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.groute.groute_server.common.exception.BusinessException;
 import com.groute.groute_server.common.exception.ErrorCode;
 import com.groute.groute_server.record.application.port.in.star.UpdateStarRecordStepCommand;
+import com.groute.groute_server.record.application.port.out.ProjectPort;
 import com.groute.groute_server.record.application.port.out.UserPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumQueryPort;
 import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort;
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
+import com.groute.groute_server.record.application.port.out.user.UserStreakPort;
+import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
 import com.groute.groute_server.record.domain.StarRecord;
+import com.groute.groute_server.record.domain.enums.ScrumTitleStatus;
 import com.groute.groute_server.record.domain.enums.StarStep;
 import com.groute.groute_server.user.entity.User;
 
@@ -49,6 +53,8 @@ class UpdateStarRecordStepServiceTest {
     @Mock ScrumWritePort scrumWritePort;
     @Mock ScrumQueryPort scrumQueryPort;
     @Mock ScrumTitleRepositoryPort scrumTitleRepositoryPort;
+    @Mock ProjectPort projectPort;
+    @Mock UserStreakPort userStreakPort;
     @Mock UserPort userPort;
 
     @InjectMocks UpdateStarRecordStepService service;
@@ -66,9 +72,14 @@ class UpdateStarRecordStepServiceTest {
         mockOwner = Mockito.mock(User.class);
         Mockito.lenient().when(mockOwner.getId()).thenReturn(USER_ID);
 
+        Project project = Project.builder().name("프로젝트").build();
+        ReflectionTestUtils.setField(project, "id", 100L);
+
         ScrumTitle title = new ScrumTitle();
         ReflectionTestUtils.setField(title, "id", 10L);
         ReflectionTestUtils.setField(title, "user", owner);
+        ReflectionTestUtils.setField(title, "status", ScrumTitleStatus.PENDING);
+        ReflectionTestUtils.setField(title, "project", project);
 
         scrum = Scrum.create(owner, title, "내용", DATE);
         ReflectionTestUtils.setField(scrum, "id", 50L);

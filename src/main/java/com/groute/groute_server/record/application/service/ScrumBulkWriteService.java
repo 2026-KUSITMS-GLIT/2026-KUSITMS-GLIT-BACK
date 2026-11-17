@@ -3,7 +3,6 @@ package com.groute.groute_server.record.application.service;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.springframework.cache.Cache;
@@ -24,7 +23,6 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
-import com.groute.groute_server.record.application.port.out.user.UserStreakPort;
 import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
@@ -52,7 +50,6 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
     private final StarRecordRepositoryPort starRecordRepositoryPort;
     private final StarImageCascadeCleaner starImageCascadeCleaner;
     private final UserReferencePort userReferencePort;
-    private final UserStreakPort userStreakPort;
     private final CacheManager cacheManager;
     private final AfterCommitExecutor afterCommitExecutor;
 
@@ -117,20 +114,7 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
         }
         List<Scrum> savedScrums = scrumWritePort.saveAll(scrums);
 
-        // 6. user streak 갱신 (REC-001) — 같은 날 재작성은 entity 단에서 멱등 처리
-        userStreakPort.recordOnDate(command.userId(), command.date());
-
-        // 7. Project.titleCount 증감 (동일 projectId 중복 시 count만큼)
-        groups.stream()
-                .collect(
-                        Collectors.groupingBy(
-                                BulkWriteScrumCommand.GroupCommand::projectId,
-                                Collectors.counting()))
-                .forEach(
-                        (projectId, count) ->
-                                projectPort.applyTitleCountIncrement(projectId, count.intValue()));
-
-        // 8. 결과 조립 (저장 순서 보장)
+        // 6. 결과 조립 (저장 순서 보장)
         List<BulkWriteScrumResult.GroupResult> results = new ArrayList<>();
         int scrumIdx = 0;
         for (int i = 0; i < savedTitles.size(); i++) {
@@ -145,7 +129,7 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
                             projects.get(i).getName(), savedTitles.get(i).getFreeText(), items));
         }
 
-        // 9. calendar:monthly 캐시 무효화
+        // 7. calendar:monthly 캐시 무효화
         evictCalendarMonthly(command.userId(), command.date());
 
         return new BulkWriteScrumResult(results);
@@ -171,13 +155,5 @@ public class ScrumBulkWriteService implements BulkWriteScrumUseCase {
         starRecordRepositoryPort.softDeleteByScrumIds(scrumIds);
         scrumWritePort.softDeleteAllByIdIn(scrumIds);
         scrumTitleRepositoryPort.softDeleteAllByIds(titleIds);
-
-        scrums.stream()
-                .collect(
-                        Collectors.groupingBy(
-                                s -> s.getTitle().getProject().getId(), Collectors.counting()))
-                .forEach(
-                        (projectId, count) ->
-                                projectPort.applyTitleCountIncrement(projectId, -count.intValue()));
     }
 }

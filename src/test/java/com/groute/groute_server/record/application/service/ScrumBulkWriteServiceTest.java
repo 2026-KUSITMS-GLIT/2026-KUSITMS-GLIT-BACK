@@ -2,7 +2,6 @@ package com.groute.groute_server.record.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -36,7 +35,6 @@ import com.groute.groute_server.record.application.port.out.scrum.ScrumWritePort
 import com.groute.groute_server.record.application.port.out.scrumtitle.ScrumTitleRepositoryPort;
 import com.groute.groute_server.record.application.port.out.star.StarRecordRepositoryPort;
 import com.groute.groute_server.record.application.port.out.user.UserReferencePort;
-import com.groute.groute_server.record.application.port.out.user.UserStreakPort;
 import com.groute.groute_server.record.domain.Project;
 import com.groute.groute_server.record.domain.Scrum;
 import com.groute.groute_server.record.domain.ScrumTitle;
@@ -56,7 +54,6 @@ class ScrumBulkWriteServiceTest {
     @Mock StarRecordRepositoryPort starRecordRepositoryPort;
     @Mock StarImageCascadeCleaner starImageCascadeCleaner;
     @Mock UserReferencePort userReferencePort;
-    @Mock UserStreakPort userStreakPort;
     @Mock CacheManager cacheManager;
     @Mock AfterCommitExecutor afterCommitExecutor;
 
@@ -98,7 +95,6 @@ class ScrumBulkWriteServiceTest {
             verify(starRecordRepositoryPort).softDeleteByScrumIds(List.of(50L));
             verify(scrumWritePort).softDeleteAllByIdIn(List.of(50L));
             verify(scrumTitleRepositoryPort).softDeleteAllByIds(List.of(10L));
-            verify(projectPort).applyTitleCountIncrement(100L, -1);
             verify(scrumTitleRepositoryPort).saveAll(anyList());
         }
 
@@ -185,37 +181,6 @@ class ScrumBulkWriteServiceTest {
         }
 
         @Test
-        @DisplayName("여러 그룹 저장 시 각 프로젝트에 titleCount +1을 수행한다")
-        void should_incrementTitleCount_when_multipleGroups() {
-            given(projectPort.findByIdAndUserId(100L, USER_ID))
-                    .willReturn(Optional.of(project(100L, "프로젝트A")));
-            given(projectPort.findByIdAndUserId(101L, USER_ID))
-                    .willReturn(Optional.of(project(101L, "프로젝트B")));
-            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
-            stubSaveTitles();
-            stubSaveScrums();
-
-            service.bulkWrite(command(group(100L, "제목1", "A", "B"), group(101L, "제목2", "C")));
-
-            verify(projectPort).applyTitleCountIncrement(100L, 1);
-            verify(projectPort).applyTitleCountIncrement(101L, 1);
-        }
-
-        @Test
-        @DisplayName("동일 projectId가 두 그룹에 쓰이면 titleCount를 2 증가한다")
-        void should_incrementTitleCountByTwo_when_sameProjectInTwoGroups() {
-            given(projectPort.findByIdAndUserId(anyLong(), anyLong()))
-                    .willReturn(Optional.of(project(100L, "프로젝트A")));
-            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
-            stubSaveTitles();
-            stubSaveScrums();
-
-            service.bulkWrite(command(group(100L, "제목1", "A"), group(100L, "제목2", "B")));
-
-            verify(projectPort).applyTitleCountIncrement(100L, 2);
-        }
-
-        @Test
         @DisplayName("여러 그룹의 스크럼 순서가 결과에 올바르게 매핑된다")
         void should_mapScrumResultsInOrder_when_multipleGroups() {
             given(projectPort.findByIdAndUserId(100L, USER_ID))
@@ -236,50 +201,6 @@ class ScrumBulkWriteServiceTest {
             assertThat(result.groups().get(0).scrums().get(1).content()).isEqualTo("B");
             assertThat(result.groups().get(1).scrums()).hasSize(1);
             assertThat(result.groups().get(1).scrums().get(0).content()).isEqualTo("C");
-        }
-    }
-
-    @Nested
-    @DisplayName("streak 갱신")
-    class Streak {
-
-        @Test
-        @DisplayName("저장 성공 시 user streak를 userId·date로 갱신한다")
-        void should_recordStreak_when_writeSucceeds() {
-            given(projectPort.findByIdAndUserId(100L, USER_ID))
-                    .willReturn(Optional.of(project(100L, "프로젝트A")));
-            given(userReferencePort.getReferenceById(USER_ID)).willReturn(userRef());
-            stubSaveTitles();
-            stubSaveScrums();
-
-            service.bulkWrite(command(group(100L, "제목", "스크럼1")));
-
-            verify(userStreakPort).recordOnDate(USER_ID, DATE);
-        }
-
-        @Test
-        @DisplayName("COMMITTED 충돌로 실패하면 streak를 갱신하지 않는다")
-        void should_notRecordStreak_when_committedConflict() {
-            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
-                    .willReturn(
-                            List.of(scrumWithTitle(50L, 10L, ScrumTitleStatus.COMMITTED, 100L)));
-
-            assertThatThrownBy(() -> service.bulkWrite(command(group(100L, "제목", "스크럼1"))))
-                    .isInstanceOf(BusinessException.class);
-
-            verify(userStreakPort, never()).recordOnDate(anyLong(), any(LocalDate.class));
-        }
-
-        @Test
-        @DisplayName("스크럼 개수 초과로 실패하면 streak를 갱신하지 않는다")
-        void should_notRecordStreak_when_dateLimitExceeded() {
-            BulkWriteScrumCommand command =
-                    command(group(100L, "제목", "a", "b", "c", "d", "e", "f"));
-
-            assertThatThrownBy(() -> service.bulkWrite(command))
-                    .isInstanceOf(BusinessException.class);
-
-            verify(userStreakPort, never()).recordOnDate(anyLong(), any(LocalDate.class));
         }
     }
 
