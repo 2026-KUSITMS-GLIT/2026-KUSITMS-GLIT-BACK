@@ -2,6 +2,7 @@ package com.groute.groute_server.record.application.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -11,6 +12,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -61,6 +63,7 @@ class UpdateStarRecordStepServiceTest {
 
     private User owner;
     private User mockOwner;
+    private ScrumTitle title;
     private Scrum scrum;
     private StarRecord record;
 
@@ -75,7 +78,7 @@ class UpdateStarRecordStepServiceTest {
         Project project = Project.builder().name("프로젝트").build();
         ReflectionTestUtils.setField(project, "id", 100L);
 
-        ScrumTitle title = new ScrumTitle();
+        title = new ScrumTitle();
         ReflectionTestUtils.setField(title, "id", 10L);
         ReflectionTestUtils.setField(title, "user", owner);
         ReflectionTestUtils.setField(title, "status", ScrumTitleStatus.PENDING);
@@ -259,9 +262,92 @@ class UpdateStarRecordStepServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("확정 시점 카운터 반영 (QA-34)")
+    class CommitCounters {
+
+        @BeforeEach
+        void setUpR() {
+            record.saveStep(StarStep.ST, "ST 답변");
+            record.saveStep(StarStep.A, "A 답변");
+            given(starRecordRepositoryPort.findByIdWithScrum(STAR_ID))
+                    .willReturn(Optional.of(record));
+            given(scrumWritePort.completeStar(scrum.getId())).willReturn(1);
+            given(starRecordRepositoryPort.countCompleted(USER_ID)).willReturn(1L);
+            Mockito.lenient()
+                    .when(scrumQueryPort.findAllByUserAndDate(any(), any()))
+                    .thenReturn(List.of(scrum));
+            Mockito.lenient().when(userPort.findById(USER_ID)).thenReturn(mockOwner);
+        }
+
+        @Test
+        @DisplayName("PENDING title만 COMMITTED로 전환하고 COMMITTED title은 제외한다")
+        void should_commitOnlyPendingTitles_when_stepIsR() {
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
+                    .willReturn(
+                            List.of(scrum, scrumWith(51L, 11L, ScrumTitleStatus.COMMITTED, 101L)));
+
+            service.updateStep(command(StarStep.R));
+
+            verify(scrumTitleRepositoryPort).commitAllByIds(Set.of(10L));
+        }
+
+        @Test
+        @DisplayName("전환된 title 수만큼 project별 titleCount를 증가시킨다")
+        void should_incrementTitleCountPerProject_when_stepIsR() {
+            given(scrumQueryPort.findAllByUserAndDate(USER_ID, DATE))
+                    .willReturn(
+                            List.of(
+                                    scrum,
+                                    scrumWith(51L, 11L, ScrumTitleStatus.PENDING, 100L),
+                                    scrumWith(52L, 12L, ScrumTitleStatus.PENDING, 101L)));
+
+            service.updateStep(command(StarStep.R));
+
+            verify(projectPort).applyTitleCountIncrement(100L, 2);
+            verify(projectPort).applyTitleCountIncrement(101L, 1);
+        }
+
+        @Test
+        @DisplayName("user streak를 scrum 일자로 갱신한다")
+        void should_recordStreak_when_stepIsR() {
+            service.updateStep(command(StarStep.R));
+
+            verify(userStreakPort).recordOnDate(USER_ID, DATE);
+        }
+
+        @Test
+        @DisplayName("같은 일자 두 번째 STAR 완료 — 이미 COMMITTED면 commit·titleCount 증가를 수행하지 않는다")
+        void should_notIncrementTitleCount_when_allTitlesAlreadyCommitted() {
+            title.commit();
+
+            service.updateStep(command(StarStep.R));
+
+            verify(scrumTitleRepositoryPort, never()).commitAllByIds(any());
+            verify(projectPort, never()).applyTitleCountIncrement(anyLong(), anyInt());
+            verify(userStreakPort).recordOnDate(USER_ID, DATE);
+        }
+    }
+
     // ============== helpers ==============
 
     private UpdateStarRecordStepCommand command(StarStep step) {
         return new UpdateStarRecordStepCommand(USER_ID, STAR_ID, step, "답변 내용");
+    }
+
+    /** 지정 status·project를 가진 ScrumTitle 산하의 Scrum을 만든다. 소유자는 {@link #owner} 고정. */
+    private Scrum scrumWith(Long scrumId, Long titleId, ScrumTitleStatus status, Long projectId) {
+        Project project = Project.builder().name("P" + projectId).build();
+        ReflectionTestUtils.setField(project, "id", projectId);
+
+        ScrumTitle title = new ScrumTitle();
+        ReflectionTestUtils.setField(title, "id", titleId);
+        ReflectionTestUtils.setField(title, "user", owner);
+        ReflectionTestUtils.setField(title, "status", status);
+        ReflectionTestUtils.setField(title, "project", project);
+
+        Scrum created = Scrum.create(owner, title, "내용", DATE);
+        ReflectionTestUtils.setField(created, "id", scrumId);
+        return created;
     }
 }
